@@ -1,0 +1,7 @@
+framework:
+    # Messages de validation renvoyés en français
+    default_locale: fr
+    translator:
+        default_path: '%kernel.project_dir%/translations'
+        fallbacks: ['fr']
+        providers:

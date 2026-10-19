@@ -1,0 +1,36 @@
+security:
+    providers:
+        # Les utilisateurs ne sont pas stockés : ils sont construits à partir des claims du JWT Keycloak
+        keycloak:
+            id: App\Security\KeycloakUserProvider
+
+    firewalls:
+        dev:
+            pattern: ^/(_profiler|_wdt)/
+            security: false
+        health:
+            pattern: ^/api/comptable/health$
+            security: false
+        api:
+            pattern: ^/api/comptable
+            stateless: true
+            provider: keycloak
+            entry_point: App\Security\JsonAuthenticationEntryPoint
+            access_token:
+                # Authorization: Bearer <JWT émis par Keycloak, relayé par la Gateway>
+                token_handler:
+                    oidc:
+                        claim: sub
+                        audience: '%env(KEYCLOAK_AUDIENCE)%'
+                        issuers: ['%env(KEYCLOAK_ISSUER)%']
+                        algorithms: ['RS256']
+                        # Clés publiques récupérées via /.well-known/openid-configuration (JWKS), mises en cache
+                        discovery:
+                            base_uri: '%env(KEYCLOAK_ISSUER)%/'
+                            cache:
+                                id: cache.app
+                failure_handler: App\Security\JsonAuthenticationFailureHandler
+
+    # Toute route de l'API exige l'un des rôles métier ; le détail est géré par les Voters
+    access_control:
+        - { path: ^/api/comptable, roles: [ROLE_ACCOUNTANT, ROLE_ENTREPRENEUR, ROLE_ADMIN] }

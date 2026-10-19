@@ -2,14 +2,15 @@
 framework:
     secret: '%env(APP_SECRET)%'
 
-    # Note that the session will be started ONLY if you read or write from it.
-    session: true
-
-    #esi: true
-    #fragments: true
+    # API stateless : aucune session
+    session: false
 
 when@test:
     framework:
         test: true
-        session:
-            storage_factory_id: session.storage.factory.mock_file
+        # Cache en mémoire : les clés JWKS de test ne survivent pas d'une exécution à l'autre
+        cache:
+            app: cache.adapter.array
+        # Keycloak simulé : les appels HTTP de découverte OIDC sont servis par une fabrique de réponses
+        http_client:
+            mock_response_factory: App\Tests\Security\KeycloakMockResponseFactory
