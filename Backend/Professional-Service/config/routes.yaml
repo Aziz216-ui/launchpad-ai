@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=../vendor/symfony/routing/Loader/schema/routing.schema.json
+
+# Toutes les routes du service sont exposées sous /api/comptable
+# (route Spring Cloud Gateway : /api/comptable/** -> http://localhost:8085).
+#   bin/console debug:router
+
+controllers:
+    resource: routing.controllers
+    prefix: /api/comptable

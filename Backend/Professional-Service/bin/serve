@@ -1,0 +1,35 @@
+#!/usr/bin/env php
+<?php
+
+/*
+ * Lance le serveur de développement PHP intégré sur le port défini par APP_PORT
+ * (lu depuis .env / .env.local, 8085 par défaut).
+ * Usage : composer serve   ou   php bin/serve
+ */
+
+use Symfony\Component\Dotenv\Dotenv;
+
+$projectDir = dirname(__DIR__);
+
+require $projectDir.'/vendor/autoload.php';
+
+(new Dotenv())->bootEnv($projectDir.'/.env');
+
+$host = $_SERVER['APP_HOST'] ?? '127.0.0.1';
+$port = (int) ($_SERVER['APP_PORT'] ?? 8085);
+
+if ($port < 1 || $port > 65535) {
+    fwrite(STDERR, "APP_PORT invalide : {$port}\n");
+    exit(1);
+}
+
+echo "Service comptable disponible sur http://{$host}:{$port}/api/comptable\n";
+
+passthru(sprintf(
+    '%s -S %s -t %s',
+    escapeshellarg(PHP_BINARY),
+    escapeshellarg("{$host}:{$port}"),
+    escapeshellarg($projectDir.'/public'),
+), $exitCode);
+
+exit($exitCode);
