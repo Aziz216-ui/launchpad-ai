@@ -9,19 +9,19 @@ use Symfony\Component\Validator\Constraints as Assert;
 final class ExternalDocumentRequest
 {
     public function __construct(
-        #[Assert\NotBlank]
+        #[Assert\NotBlank(normalizer: 'trim')]
         #[Assert\Length(max: 200)]
         public readonly string $title = '',
 
         #[Assert\NotNull]
         public readonly ?DocumentType $type = null,
 
-        #[Assert\NotBlank]
+        #[Assert\NotBlank(normalizer: 'trim')]
         #[Assert\Length(max: 255)]
         public readonly string $externalRef = '',
 
         /** Nom technique du service source, ex. financial-service. */
-        #[Assert\NotBlank]
+        #[Assert\NotBlank(normalizer: 'trim')]
         #[Assert\Length(max: 50)]
         #[Assert\Regex(pattern: '/^[a-z0-9][a-z0-9-]*$/', message: 'Utilisez des minuscules, chiffres et tirets (ex. financial-service).')]
         public readonly string $externalService = '',

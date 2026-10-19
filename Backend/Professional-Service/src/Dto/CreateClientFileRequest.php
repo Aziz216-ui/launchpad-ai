@@ -8,11 +8,11 @@ use Symfony\Component\Validator\Constraints as Assert;
 final class CreateClientFileRequest
 {
     public function __construct(
-        #[Assert\NotBlank]
+        #[Assert\NotBlank(normalizer: 'trim')]
         #[Assert\Uuid]
         public readonly string $workspaceId = '',
 
-        #[Assert\NotBlank]
+        #[Assert\NotBlank(normalizer: 'trim')]
         #[Assert\Length(max: 150)]
         public readonly string $startupName = '',
 

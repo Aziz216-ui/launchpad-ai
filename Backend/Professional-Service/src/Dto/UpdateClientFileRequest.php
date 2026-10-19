@@ -8,7 +8,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 final class UpdateClientFileRequest
 {
     public function __construct(
-        #[Assert\NotBlank(allowNull: true)]
+        #[Assert\NotBlank(allowNull: true, normalizer: 'trim')]
         #[Assert\Length(max: 150)]
         public readonly ?string $startupName = null,
 

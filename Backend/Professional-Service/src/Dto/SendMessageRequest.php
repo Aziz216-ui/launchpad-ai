@@ -7,7 +7,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 final class SendMessageRequest
 {
     public function __construct(
-        #[Assert\NotBlank]
+        #[Assert\NotBlank(normalizer: 'trim')]
         #[Assert\Length(max: 5000)]
         public readonly string $content = '',
 

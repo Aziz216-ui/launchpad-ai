@@ -8,7 +8,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 final class AssignClientFileRequest
 {
     public function __construct(
-        #[Assert\NotBlank]
+        #[Assert\NotBlank(normalizer: 'trim')]
         #[Assert\Uuid]
         public readonly string $workspaceId = '',
 

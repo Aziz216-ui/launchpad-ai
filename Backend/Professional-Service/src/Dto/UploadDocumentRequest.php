@@ -9,7 +9,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 final class UploadDocumentRequest
 {
     public function __construct(
-        #[Assert\NotBlank]
+        #[Assert\NotBlank(normalizer: 'trim')]
         #[Assert\Length(max: 200)]
         public readonly string $title = '',
 
