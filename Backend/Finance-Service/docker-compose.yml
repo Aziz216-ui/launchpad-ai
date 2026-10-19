@@ -1,0 +1,32 @@
+services:
+  financial-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: financial_db
+      POSTGRES_USER: ${DB_USERNAME:-finance}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-finance}
+    ports:
+      - "${DB_HOST_PORT:-5432}:5432"
+    volumes:
+      - financial-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d financial_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  finance-service:
+    build: .
+    image: launchpad/finance-service:latest
+    depends_on:
+      financial-db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://financial-db:5432/financial_db
+      DB_USERNAME: ${DB_USERNAME:-finance}
+      DB_PASSWORD: ${DB_PASSWORD:-finance}
+    ports:
+      - "${FINANCE_HTTP_PORT:-8080}:8080"
+
+volumes:
+  financial-db-data:
