@@ -1,0 +1,41 @@
+# docker-compose LOCAL du Market-Service (tests en autonomie).
+# Lancement : docker compose up --build
+services:
+  market-db:
+    image: postgres:16
+    container_name: market-db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-market_db}
+      POSTGRES_USER: ${DB_USER:-market_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-market_password}
+    ports:
+      - "5433:5432"   # 5433 côté machine pour ne pas gêner un PostgreSQL local
+    volumes:
+      - market_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-market_user} -d ${DB_NAME:-market_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  market-service:
+    build: .
+    container_name: market-service
+    env_file: .env
+    environment:
+      DB_HOST: market-db   # nom du service PostgreSQL dans le réseau Docker
+      DB_PORT: "5432"
+      # Eureka tourne sur la machine hôte ; le service s'annonce sur localhost:8005 (port publié).
+      # EUREKA_ENABLED reste lu dans .env.
+      EUREKA_SERVER_URL: http://host.docker.internal:8761/eureka/
+      EUREKA_INSTANCE_HOST: localhost
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # nécessaire sous Linux, sans effet sous Docker Desktop
+    ports:
+      - "8005:8005"
+    depends_on:
+      market-db:
+        condition: service_healthy
+
+volumes:
+  market_db_data:
