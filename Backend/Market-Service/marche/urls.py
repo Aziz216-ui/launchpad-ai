@@ -10,6 +10,8 @@ router.register("secteurs", views.SecteurViewSet, basename="secteur")
 router.register("concurrents", views.ConcurrentViewSet, basename="concurrent")
 router.register("etudes", views.EtudeMarcheViewSet, basename="etude")
 router.register("tendances", views.TendanceViewSet, basename="tendance")
+router.register("personas", views.PersonaViewSet, basename="persona")
+router.register("swot", views.ElementSWOTViewSet, basename="swot")
 
 urlpatterns = [
     path("health/", views.HealthView.as_view(), name="health"),

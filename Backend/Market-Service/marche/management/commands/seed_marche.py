@@ -2,8 +2,9 @@
 Commande : python manage.py seed_marche [--reset]
 
 Insère des données de démonstration : 3 secteurs, 10 concurrents,
-des études de marché et des tendances. La commande peut être relancée
-sans créer de doublons (get_or_create).
+des études de marché et des tendances. Deux études sont "complètes"
+(entrepreneur, offre, hypothèses, concurrents, tendances, personas, SWOT).
+La commande peut être relancée sans créer de doublons (get_or_create).
 """
 
 from decimal import Decimal
@@ -11,7 +12,8 @@ from decimal import Decimal
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from marche.models import Concurrent, EtudeMarche, Secteur, Tendance
+from marche.models import Concurrent, ElementSWOT, EtudeMarche, Persona, Secteur, Tendance
+from marche.services import generer_swot
 
 SECTEURS = [
     ("FinTech", "Services financiers numériques : paiement, néobanques, crédit."),
@@ -73,6 +75,102 @@ TENDANCES = [
      "Contraintes fortes sur l'hébergement des données."),
 ]
 
+# Compléments des études "complètes", indexés par (projet_id, titre)
+ETUDES_COMPLETES = {
+    (1, "Paiement mobile pour PME"): {
+        "entrepreneur_id": 101,
+        "statut": EtudeMarche.Statut.FINALISEE,
+        "hypotheses": (
+            "Les commerçants acceptent une commission si l'encaissement est instantané.\n"
+            "30 % des PME du Grand Tunis équipées d'un smartphone d'ici 2 ans."
+        ),
+        "description_offre": (
+            "Application d'encaissement par QR code pour les commerçants, "
+            "avec tableau de bord des ventes."
+        ),
+        "prix_propose": "15",
+        "concurrents": ["Flouci", "Konnect", "Paymee", "Stripe"],
+        "tendances": [
+            "Adoption massive du paiement mobile",
+            "Renforcement de la réglementation BCT",
+            "Open banking",
+        ],
+        "personas": [
+            {
+                "nom": "Sami, épicier de quartier",
+                "tranche_age": "35-50 ans",
+                "profession": "Gérant d'épicerie",
+                "localisation": "Tunis",
+                "revenu_estime": "2500",
+                "besoins": "Encaisser sans manipuler d'espèces, suivre ses ventes.",
+                "frustrations": "Manque de monnaie, frais des terminaux bancaires.",
+                "comportement_achat": "Achète sur recommandation d'autres commerçants.",
+            },
+            {
+                "nom": "Leila, gérante de PME",
+                "tranche_age": "30-45 ans",
+                "profession": "Gérante d'une boutique de prêt-à-porter",
+                "localisation": "Sfax",
+                "revenu_estime": "4000",
+                "besoins": "Paiement en ligne et en boutique sur un seul outil.",
+                "frustrations": "Délais de virement, intégration e-commerce compliquée.",
+                "comportement_achat": "Compare les offres en ligne, sensible au prix.",
+            },
+        ],
+        "swot_manuel": [
+            (ElementSWOT.Type.FORCE, "Équipe fondatrice issue du secteur bancaire."),
+        ],
+    },
+    (2, "Plateforme de soutien scolaire"): {
+        "entrepreneur_id": 102,
+        "statut": EtudeMarche.Statut.BROUILLON,
+        "hypotheses": "Les parents paient un abonnement mensuel pour un suivi régulier.",
+        "description_offre": (
+            "Cours de soutien en ligne en petits groupes avec des enseignants certifiés, "
+            "abonnement mensuel."
+        ),
+        "prix_propose": "120",
+        "concurrents": ["GoMyCode", "OpenClassrooms", "Coursera"],
+        "tendances": ["Apprentissage hybride", "Baisse du pouvoir d'achat des ménages"],
+        "personas": [
+            {
+                "nom": "Nadia, mère de lycéen",
+                "tranche_age": "40-50 ans",
+                "profession": "Fonctionnaire",
+                "localisation": "Sousse",
+                "revenu_estime": "2200",
+                "besoins": "Faire progresser son fils avant le baccalauréat.",
+                "frustrations": "Cours particuliers chers et difficiles à organiser.",
+                "comportement_achat": "Paie au mois, attentive aux résultats.",
+            },
+        ],
+        "swot_manuel": [],
+    },
+}
+
+
+def completer_etude(etude, donnees, concurrents, tendances):
+    """Complète une étude de démonstration (une seule fois, si elle n'a pas d'entrepreneur)."""
+    if etude.entrepreneur_id is not None:
+        return
+    etude.entrepreneur_id = donnees["entrepreneur_id"]
+    etude.statut = donnees["statut"]
+    etude.hypotheses = donnees["hypotheses"]
+    etude.description_offre = donnees["description_offre"]
+    etude.prix_propose = Decimal(donnees["prix_propose"])
+    etude.save()
+
+    etude.concurrents.set([concurrents[nom] for nom in donnees["concurrents"]])
+    etude.tendances.set([tendances[titre] for titre in donnees["tendances"]])
+    for persona in donnees["personas"]:
+        Persona.objects.get_or_create(
+            etude=etude, nom=persona["nom"],
+            defaults={**persona, "revenu_estime": Decimal(persona["revenu_estime"])},
+        )
+    for type_, description in donnees["swot_manuel"]:
+        ElementSWOT.objects.get_or_create(etude=etude, type=type_, description=description)
+    generer_swot(etude)
+
 
 class Command(BaseCommand):
     help = "Insère des données de test pour le Market-Service."
@@ -96,8 +194,9 @@ class Command(BaseCommand):
                 nom=nom, defaults={"description": description}
             )
 
+        concurrents = {}
         for nom, secteur, pays, prix, part, site, forces, faiblesses in CONCURRENTS:
-            Concurrent.objects.get_or_create(
+            concurrents[nom], _ = Concurrent.objects.get_or_create(
                 nom=nom,
                 secteur=secteurs[secteur],
                 defaults={
@@ -110,8 +209,9 @@ class Command(BaseCommand):
                 },
             )
 
+        etudes = {}
         for projet_id, secteur, titre, taille, croissance, cible, zone in ETUDES:
-            EtudeMarche.objects.get_or_create(
+            etudes[(projet_id, titre)], _ = EtudeMarche.objects.get_or_create(
                 projet_id=projet_id,
                 titre=titre,
                 defaults={
@@ -123,16 +223,22 @@ class Command(BaseCommand):
                 },
             )
 
+        tendances = {}
         for titre, secteur, impact, description in TENDANCES:
-            Tendance.objects.get_or_create(
+            tendances[titre], _ = Tendance.objects.get_or_create(
                 titre=titre,
                 secteur=secteurs[secteur],
                 defaults={"impact": impact, "description": description},
             )
 
+        for cle, donnees in ETUDES_COMPLETES.items():
+            completer_etude(etudes[cle], donnees, concurrents, tendances)
+
         self.stdout.write(self.style.SUCCESS(
             f"Seed terminé : {Secteur.objects.count()} secteurs, "
             f"{Concurrent.objects.count()} concurrents, "
             f"{EtudeMarche.objects.count()} études, "
-            f"{Tendance.objects.count()} tendances."
+            f"{Tendance.objects.count()} tendances, "
+            f"{Persona.objects.count()} personas, "
+            f"{ElementSWOT.objects.count()} éléments SWOT."
         ))

@@ -1,10 +1,13 @@
 # Market-Service — LaunchPad AI
 
-Microservice Django chargé d'**analyser le marché et les concurrents** d'un projet.
-Il est appelé en REST par le **AI-Service** pour récupérer les données de marché.
+Microservice Django de **gestion de l'étude de marché** des projets LaunchPad AI.
+Il permet à l'**entrepreneur** de comprendre son marché, d'étudier la concurrence et
+d'évaluer le potentiel commercial de son projet (personas, comparaison des prix, SWOT,
+rapport JSON/PDF). Il est aussi appelé en REST par le **AI-Service** pour récupérer les
+données de marché.
 
 Les utilisateurs et les projets appartiennent à d'autres microservices : on ne stocke ici
-que l'identifiant du projet (`projet_id`), **sans clé étrangère**.
+que leurs identifiants (`projet_id`, `entrepreneur_id`), **sans clé étrangère**.
 
 | Élément | Valeur |
 |---|---|
@@ -15,7 +18,7 @@ que l'identifiant du projet (`projet_id`), **sans clé étrangère**.
 | Admin Django | http://localhost:8005/admin/ |
 
 **Stack :** Python 3.11+, Django 5, Django REST Framework, PostgreSQL, django-cors-headers,
-drf-spectacular, python-dotenv, Gunicorn et WhiteNoise (pour Docker).
+drf-spectacular, python-dotenv, reportlab (rapport PDF), Gunicorn et WhiteNoise (pour Docker).
 
 ---
 
@@ -25,13 +28,17 @@ drf-spectacular, python-dotenv, Gunicorn et WhiteNoise (pour Docker).
 Market-Service/
 ├── config/                 # projet Django (settings, urls)
 ├── marche/                 # application métier
-│   ├── models.py           # Secteur, Concurrent, EtudeMarche, Tendance
+│   ├── models.py           # Secteur, Concurrent, EtudeMarche, Tendance, Persona, ElementSWOT
 │   ├── serializers.py
-│   ├── services.py         # logique d'analyse (secteur, projet, niveau de concurrence)
-│   ├── views.py            # ViewSets CRUD + vues d'analyse + health
+│   ├── services/           # logique métier (les vues ne font qu'appeler ces fonctions)
+│   │   ├── analyse.py      # analyses secteur / projet, niveau de concurrence
+│   │   ├── etude.py        # comparaison des prix, opportunités/menaces, SWOT, rapport
+│   │   └── rapport_pdf.py  # mise en forme PDF du rapport (reportlab)
+│   ├── views.py            # ViewSets CRUD + actions d'étude + vues d'analyse + health
 │   ├── urls.py
-│   ├── admin.py
-│   ├── tests.py
+│   ├── admin.py            # Persona et ElementSWOT en inline dans EtudeMarche
+│   ├── tests.py            # tests d'origine (CRUD concurrents, analyses, Swagger)
+│   ├── tests_etude.py      # tests de l'étude de marché
 │   └── management/commands/seed_marche.py
 ├── Dockerfile
 ├── docker-compose.yml      # compose LOCAL (service + PostgreSQL 16)
@@ -45,8 +52,36 @@ Market-Service/
 |---|---|
 | `Secteur` | `nom` (unique), `description`, `date_creation` |
 | `Concurrent` | `nom`, `secteur` (FK), `site_web`, `description`, `forces`, `faiblesses`, `prix_moyen` (≥ 0), `part_de_marche` (0–100 %), `pays`, `date_creation` |
-| `EtudeMarche` | `projet_id` (entier, pas de FK), `secteur` (FK), `titre`, `taille_marche`, `taux_croissance` (%), `cible`, `zone_geographique`, `date_creation`, `date_mise_a_jour` |
+| `EtudeMarche` | `projet_id` (entier, pas de FK), `entrepreneur_id` (entier, pas de FK, nullable), `statut` (`brouillon` / `finalisee`), `secteur` (FK), `titre`, `taille_marche`, `taux_croissance` (%), `cible`, `zone_geographique`, `hypotheses`, `description_offre`, `prix_propose` (≥ 0, nullable), `concurrents` (M2M), `tendances` (M2M), `date_creation`, `date_mise_a_jour` |
 | `Tendance` | `titre`, `secteur` (FK), `description`, `impact` (`positif` / `negatif` / `neutre`), `date_creation` |
+| `Persona` | `etude` (FK, `related_name="personas"`), `nom`, `tranche_age`, `profession`, `localisation`, `revenu_estime` (≥ 0), `besoins`, `frustrations`, `comportement_achat`, `date_creation` |
+| `ElementSWOT` | `etude` (FK, `related_name="swot"`), `type` (`force` / `faiblesse` / `opportunite` / `menace`), `description`, `genere_automatiquement`, `date_creation` |
+
+Le marché cible d'une étude est décrit par `secteur`, `cible`, `zone_geographique`,
+`taille_marche` et `taux_croissance`. Les `concurrents` et `tendances` d'une étude sont ceux
+retenus **pour cette étude** : c'est sur eux que portent la comparaison des prix, les
+opportunités/menaces, la SWOT et le rapport.
+
+---
+
+## Cahier des charges → endpoints
+
+| Fonctionnalité | Endpoint(s) |
+|---|---|
+| Créer une étude de marché | `POST /api/market/etudes/` |
+| Définir le marché cible | `POST` / `PATCH /api/market/etudes/<id>/` (`secteur`, `cible`, `zone_geographique`, `taille_marche`, `taux_croissance`) |
+| Analyser les tendances | `/api/market/tendances/` + champ `tendances` (IDs) de l'étude ; `GET /api/market/analyse/secteur/<id>/` |
+| Identifier les concurrents | `/api/market/concurrents/` + champ `concurrents` (IDs) de l'étude |
+| Comparer les offres et les prix | `GET /api/market/etudes/<id>/comparaison-prix/` |
+| Définir les personas | CRUD `/api/market/personas/` (`?etude=<id>`) |
+| Évaluer opportunités et menaces | `GET /api/market/etudes/<id>/opportunites-menaces/` |
+| Générer une analyse SWOT | `POST /api/market/etudes/<id>/generer-swot/` ; saisie manuelle : CRUD `/api/market/swot/` |
+| Générer un rapport d'étude de marché | `GET /api/market/etudes/<id>/rapport/` (JSON) et `/rapport/pdf/` (PDF) |
+| Consulter les résultats et rapports | `GET /api/market/etudes/<id>/` (détail complet), `/rapport/`, `/rapport/pdf/` |
+| Modifier critères, marché cible, hypothèses | `PATCH /api/market/etudes/<id>/` |
+| Finaliser une étude | `POST /api/market/etudes/<id>/finaliser/` |
+| Supprimer une étude ou un brouillon | `DELETE /api/market/etudes/<id>/` (supprime aussi ses personas et sa SWOT) |
+| Lister les études d'un entrepreneur | `GET /api/market/etudes/?entrepreneur_id=<id>&statut=brouillon` |
 
 ---
 
@@ -183,11 +218,32 @@ Depuis un autre conteneur (ex. AI-Service), le service est joignable à l'adress
 |---|---|---|
 | Secteurs | `/api/market/secteurs/` | `?search=<nom>` |
 | Concurrents | `/api/market/concurrents/` | `?secteur=<id>`, `?pays=<pays>`, `?search=<nom>`, `?ordering=-part_de_marche` |
-| Études de marché | `/api/market/etudes/` | `?projet_id=<id>` |
+| Études de marché | `/api/market/etudes/` | `?projet_id=<id>`, `?entrepreneur_id=<id>`, `?statut=brouillon\|finalisee`, `?search=<titre>` |
 | Tendances | `/api/market/tendances/` | `?secteur=<id>`, `?impact=positif\|negatif\|neutre` |
+| Personas | `/api/market/personas/` | `?etude=<id>`, `?search=<nom>` |
+| Éléments SWOT | `/api/market/swot/` | `?etude=<id>`, `?type=force\|faiblesse\|opportunite\|menace` |
 
 Chaque ressource supporte : `GET` (liste), `POST` (création), `GET /<id>/`,
 `PUT /<id>/`, `PATCH /<id>/`, `DELETE /<id>/`.
+
+Particularités des études :
+- `concurrents` et `tendances` s'écrivent et se lisent sous forme de **listes d'IDs** ;
+- le détail `GET /etudes/<id>/` ajoute `concurrents_details`, `tendances_details`,
+  `personas` et `swot` ;
+- `statut` est en lecture seule : il passe à `finalisee` via `/finaliser/`.
+
+Un élément SWOT créé via `/swot/` est toujours une saisie manuelle (`genere_automatiquement = false`).
+
+### Actions sur une étude
+
+| Méthode | URL | Description |
+|---|---|---|
+| POST | `/api/market/etudes/<id>/finaliser/` | Passe le statut à `finalisee` (idempotent) |
+| GET | `/api/market/etudes/<id>/comparaison-prix/` | Prix proposé vs concurrents de l'étude : min / moyen / max, écart en % avec la moyenne, positionnement, concurrents triés par prix |
+| GET | `/api/market/etudes/<id>/opportunites-menaces/` | Opportunités et menaces calculées (tendances, concurrence, croissance, prix) |
+| POST | `/api/market/etudes/<id>/generer-swot/` | (Re)génère la SWOT par règles ; **conserve les éléments saisis à la main** |
+| GET | `/api/market/etudes/<id>/rapport/` | Rapport complet en JSON |
+| GET | `/api/market/etudes/<id>/rapport/pdf/` | Même rapport en PDF (`application/pdf`) |
 
 ### Analyses
 
@@ -207,6 +263,51 @@ Chaque ressource supporte : `GET` (liste), `POST` (création), `GET /<id>/`,
 | `inconnu` | projet sans aucune étude de marché (impossible d'évaluer) |
 
 Pour un projet couvrant plusieurs secteurs, le niveau global est **le plus élevé** de ses secteurs.
+
+### Règles de l'étude de marché (`marche/services/etude.py`)
+
+**Positionnement prix** (prix proposé vs prix moyen des concurrents de l'étude) :
+
+| Positionnement | Règle |
+|---|---|
+| `economique` | écart < -10 % |
+| `aligne` | -10 % ≤ écart ≤ +10 % |
+| `premium` | écart > +10 % |
+| `inconnu` | pas de prix proposé ou aucun concurrent associé |
+
+**Niveau de concurrence d'une étude** : mêmes seuils que ci-dessus, calculés sur les
+concurrents **associés à l'étude** (`inconnu` s'il n'y en a aucun).
+
+**Opportunités / menaces :**
+
+| Source | Opportunité | Menace |
+|---|---|---|
+| Tendances de l'étude | impact `positif` | impact `negatif` |
+| Concurrence | niveau `faible` | niveau `eleve` |
+| Croissance | taux > 10 %/an | taux < 0 |
+| Prix | positionnement `economique` | positionnement `premium` |
+
+**SWOT générée** (`POST /generer-swot/`) :
+- Forces : prix économique ou aligné, personas définis ;
+- Faiblesses : prix premium, aucun prix proposé, aucun persona (« Cible clients non définie »),
+  offre non décrite, aucun concurrent identifié ;
+- Opportunités / menaces : celles du tableau ci-dessus, hors prix (déjà compté en force/faiblesse).
+
+Seuls les éléments `genere_automatiquement = true` sont remplacés à chaque génération.
+Si une étude n'a aucun élément SWOT enregistré, le rapport la calcule à la volée
+(`swot.source = "calculee"`) sans rien enregistrer.
+
+**Potentiel commercial** (score sur 7) :
+
+| Critère | Points |
+|---|---|
+| Croissance | > 10 % : +2 · > 0 : +1 · < 0 : -1 |
+| Concurrence | faible : +2 · moyen : +1 · élevé : -1 |
+| Prix | économique ou aligné : +1 |
+| Tendances | plus de positives : +1 · plus de négatives : -1 |
+| Personas | au moins un : +1 |
+
+Score ≥ 5 → `fort` · score ≥ 2 → `moyen` · sinon `faible`.
 
 ### Projet sans étude de marché
 
@@ -272,6 +373,21 @@ curl "http://localhost:8005/api/market/tendances/?secteur=1&impact=positif"
 # Analyses
 curl http://localhost:8005/api/market/analyse/secteur/1/
 curl http://localhost:8005/api/market/analyse/projet/1/
+
+# Étude de marché d'un entrepreneur : création avec concurrents et tendances (IDs)
+curl -X POST http://localhost:8005/api/market/etudes/ \
+  -H "Content-Type: application/json" \
+  -d '{"projet_id": 7, "entrepreneur_id": 42, "secteur": 1, "titre": "Caisse mobile", "cible": "Commerçants", "taux_croissance": "12", "description_offre": "Encaissement par QR code", "prix_propose": "15", "concurrents": [1, 2, 4], "tendances": [1, 2]}'
+
+# Ajouter un persona à l'étude 5, puis générer la SWOT et le rapport
+curl -X POST http://localhost:8005/api/market/personas/ \
+  -H "Content-Type: application/json" \
+  -d '{"etude": 5, "nom": "Sami, épicier", "tranche_age": "35-50 ans", "besoins": "Encaisser sans espèces"}'
+curl -X POST http://localhost:8005/api/market/etudes/5/generer-swot/
+curl http://localhost:8005/api/market/etudes/5/comparaison-prix/
+curl http://localhost:8005/api/market/etudes/5/rapport/
+curl -o rapport.pdf http://localhost:8005/api/market/etudes/5/rapport/pdf/
+curl -X POST http://localhost:8005/api/market/etudes/5/finaliser/
 ```
 
 Exemple de réponse de `/api/market/analyse/secteur/1/` (après `seed_marche`) :
@@ -301,12 +417,20 @@ avec le détail de l'erreur.
 ## Données de test
 
 ```bash
-python manage.py seed_marche          # 3 secteurs, 10 concurrents, 4 études, 7 tendances
+python manage.py seed_marche          # 3 secteurs, 10 concurrents, 4 études, 7 tendances, 3 personas
 python manage.py seed_marche --reset  # vide les données du marché puis réinsère
 ```
 
 La commande peut être relancée sans créer de doublons. Les études sont rattachées aux
-projets `1`, `2` et `3`.
+projets `1`, `2` et `3`. Deux études sont **complètes** (entrepreneur, offre, hypothèses,
+concurrents, tendances, personas et SWOT générée) :
+
+| Étude | Entrepreneur | Statut | Positionnement prix | Potentiel |
+|---|---|---|---|---|
+| Paiement mobile pour PME (projet 1) | 101 | `finalisee` | économique (-20 %) | moyen (3/7) |
+| Plateforme de soutien scolaire (projet 2) | 102 | `brouillon` | aligné (-5,26 %) | fort (5/7) |
+
+Une étude déjà complétée n'est pas réécrite lors d'une nouvelle exécution.
 
 ## Tests
 
@@ -314,6 +438,16 @@ projets `1`, `2` et `3`.
 python manage.py test
 ```
 
-22 tests (`APITestCase`) : CRUD complet des concurrents (dont validations, filtres et format
-numérique), analyse de secteur, analyse de projet (y compris projet sans étude), règles du
-niveau de concurrence, health check, seed et documentation Swagger.
+55 tests (`APITestCase`) :
+- `tests.py` (22) : CRUD complet des concurrents (dont validations, filtres et format
+  numérique), analyse de secteur, analyse de projet (y compris projet sans étude), règles du
+  niveau de concurrence, health check, seed et documentation Swagger ;
+- `tests_etude.py` (33) : CRUD des études (nouveaux champs, M2M, filtres, compatibilité avec
+  l'ancien format), CRUD personas et SWOT, finaliser, comparaison des prix, opportunités/menaces,
+  génération de la SWOT (éléments manuels conservés), rapport JSON et PDF, seed et Swagger.
+
+```bash
+# Sans PostgreSQL (SQLite)
+DB_ENGINE=sqlite python manage.py test             # Linux / macOS / Git Bash
+# $env:DB_ENGINE="sqlite"; python manage.py test   # PowerShell
+```

@@ -121,9 +121,10 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- CORS ---------------------------------------------------------------------
-# En développement on autorise tout ; sinon on liste les origines autorisées.
-CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", DEBUG)
-CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:3000")
+# Origines autorisées (liste séparée par des virgules). Par défaut : le frontend
+# Angular en développement. CORS_ALLOW_ALL_ORIGINS=True autorise tout (à éviter).
+CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", False)
+CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:4200")
 
 # --- Django REST Framework ----------------------------------------------------
 REST_FRAMEWORK = {
@@ -139,7 +140,14 @@ REST_FRAMEWORK = {
 # --- Documentation Swagger (drf-spectacular) ----------------------------------
 SPECTACULAR_SETTINGS = {
     "TITLE": "LaunchPad AI - Market Service",
-    "DESCRIPTION": "Analyse du marché et des concurrents des projets LaunchPad AI.",
-    "VERSION": "1.0.0",
+    "DESCRIPTION": (
+        "Étude de marché des projets LaunchPad AI : marché cible, tendances, concurrents, "
+        "comparaison des prix, personas, opportunités/menaces, SWOT et rapport (JSON/PDF)."
+    ),
+    "VERSION": "1.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    # Même choix de positionnement prix pour "positionnement" et "positionnement_prix"
+    "ENUM_NAME_OVERRIDES": {
+        "PositionnementPrixEnum": "marche.serializers.POSITIONNEMENTS_PRIX",
+    },
 }

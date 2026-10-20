@@ -9,7 +9,7 @@ from decimal import Decimal
 
 from django.db.models import Avg, Count, Sum
 
-from .models import Concurrent, EtudeMarche, Secteur, Tendance
+from ..models import Concurrent, EtudeMarche, Secteur, Tendance
 
 # Seuils utilisés pour déterminer le niveau de concurrence
 SEUIL_NB_MOYEN = 3       # à partir de 3 concurrents -> au moins "moyen"

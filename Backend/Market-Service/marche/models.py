@@ -61,9 +61,29 @@ class Concurrent(models.Model):
 class EtudeMarche(models.Model):
     """Étude de marché réalisée pour un projet (projet géré par un autre service)."""
 
+    class Statut(models.TextChoices):
+        BROUILLON = "brouillon", "Brouillon"
+        FINALISEE = "finalisee", "Finalisée"
+
     projet_id = models.PositiveIntegerField(db_index=True)  # pas de FK : autre microservice
+    # Entrepreneur (utilisateur du User-Service) : pas de FK, nullable pour les études existantes
+    entrepreneur_id = models.PositiveIntegerField(null=True, blank=True, db_index=True)
+    statut = models.CharField(max_length=10, choices=Statut.choices, default=Statut.BROUILLON)
     secteur = models.ForeignKey(Secteur, on_delete=models.CASCADE, related_name="etudes")
     titre = models.CharField(max_length=200)
+    hypotheses = models.TextField(blank=True)
+    # Offre de l'entrepreneur, comparée aux prix des concurrents
+    description_offre = models.TextField(blank=True)
+    prix_propose = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0"))],
+    )
+    # Concurrents et tendances retenus pour CETTE étude
+    concurrents = models.ManyToManyField(Concurrent, blank=True, related_name="etudes")
+    tendances = models.ManyToManyField("Tendance", blank=True, related_name="etudes")
     # Taille du marché (valeur monétaire)
     taille_marche = models.DecimalField(
         max_digits=15,
@@ -106,3 +126,56 @@ class Tendance(models.Model):
 
     def __str__(self):
         return f"{self.titre} ({self.get_impact_display()})"
+
+
+class Persona(models.Model):
+    """Client type visé par l'offre d'une étude de marché."""
+
+    etude = models.ForeignKey(EtudeMarche, on_delete=models.CASCADE, related_name="personas")
+    nom = models.CharField(max_length=150)
+    tranche_age = models.CharField(max_length=50, blank=True)
+    profession = models.CharField(max_length=150, blank=True)
+    localisation = models.CharField(max_length=150, blank=True)
+    # Revenu mensuel estimé (doit être >= 0)
+    revenu_estime = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0"))],
+    )
+    besoins = models.TextField(blank=True)
+    frustrations = models.TextField(blank=True)
+    comportement_achat = models.TextField(blank=True)
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["id"]
+
+    def __str__(self):
+        return f"{self.nom} (étude {self.etude_id})"
+
+
+class ElementSWOT(models.Model):
+    """Élément de l'analyse SWOT d'une étude (saisi à la main ou généré)."""
+
+    class Type(models.TextChoices):
+        FORCE = "force", "Force"
+        FAIBLESSE = "faiblesse", "Faiblesse"
+        OPPORTUNITE = "opportunite", "Opportunité"
+        MENACE = "menace", "Menace"
+
+    etude = models.ForeignKey(EtudeMarche, on_delete=models.CASCADE, related_name="swot")
+    type = models.CharField(max_length=12, choices=Type.choices)
+    description = models.TextField()
+    # True : créé par POST /etudes/<id>/generer-swot/ (remplacé à chaque génération)
+    genere_automatiquement = models.BooleanField(default=False)
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["type", "id"]
+        verbose_name = "élément SWOT"
+        verbose_name_plural = "éléments SWOT"
+
+    def __str__(self):
+        return f"{self.get_type_display()} : {self.description[:50]}"
