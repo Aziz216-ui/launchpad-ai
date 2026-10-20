@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="finance-service">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/Backend/Finance-Service/target/finance-service.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

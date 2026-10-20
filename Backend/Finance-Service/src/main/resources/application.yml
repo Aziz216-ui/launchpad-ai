@@ -18,7 +18,14 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
 finance:
+  cors:
+    # Origines autorisées (séparées par des virgules) : l'application Angular en dev.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
   stockage:
     # Profil dev : fichiers exportés sur le disque local.
     local:
