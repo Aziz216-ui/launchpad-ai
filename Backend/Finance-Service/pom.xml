@@ -27,6 +27,7 @@
         <openpdf.version>2.0.5</openpdf.version>
         <!-- springdoc 2.8.x : ligne compatible Spring Boot 3.5 (3.x vise Spring Boot 4). -->
         <springdoc.version>2.8.17</springdoc.version>
+        <spring-cloud.version>2025.0.1</spring-cloud.version>
     </properties>
 
     <dependencies>
@@ -42,6 +43,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>
@@ -121,6 +126,18 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <finalName>finance-service</finalName>
