@@ -29,7 +29,7 @@ services:
     environment:
       PORT: 3003
       NODE_ENV: production
-      GLOBAL_PREFIX: api/v1/juridique
+      GLOBAL_PREFIX: api/legal
       DB_HOST: legal-postgres
       DB_PORT: 5432
       DB_USERNAME: postgres
@@ -37,6 +37,10 @@ services:
       DB_NAME: legal_db
       DB_SYNCHRONIZE: "true"
       DB_LOGGING: "false"
+      EUREKA_ENABLED: "true"
+      EUREKA_HOST: host.docker.internal
+      EUREKA_PORT: 8761
+      EUREKA_APP_NAME: LEGAL-SERVICE
     ports:
       - "3003:3003"
 

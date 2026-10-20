@@ -3,7 +3,7 @@
 ### Compatible avec VS Code REST Client, IntelliJ HTTP Client & Postman
 ### ==============================================================================
 
-@baseUrl = http://localhost:3003/api/v1/juridique
+@baseUrl = http://localhost:3003/api/legal
 @contentType = application/json
 
 ### ------------------------------------------------------------------------------

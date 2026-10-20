@@ -5,6 +5,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { getDatabaseConfig } from './config/database.config';
 import { DocumentsModule } from './documents/documents.module';
 import { VerificationModule } from './verification/verification.module';
+import { EurekaModule } from './eureka/eureka.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { VerificationModule } from './verification/verification.module';
     }),
     DocumentsModule,
     VerificationModule,
+    EurekaModule,
   ],
 })
 export class AppModule {}

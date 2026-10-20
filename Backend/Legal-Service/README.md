@@ -7,12 +7,14 @@ Microservice backend NestJS / TypeScript dédié à la **génération, gestion, 
 ## 🛠 Stack Technique & Conventions
 
 - **Framework** : [NestJS](https://nestjs.com/) v11 avec TypeScript en mode strict (`strict: true`)
-- **Préfixe global REST** : `/api/v1/juridique`
+- **Préfixe global REST** : `/api/legal` (conforme au routage API Gateway)
+- **Port** : `3003`
+- **Nom Eureka** : `LEGAL-SERVICE`
 - **Base de données** : PostgreSQL avec [TypeORM](https://typeorm.io/)
 - **Configuration** : `@nestjs/config` avec validation et fichier `.env` / `.env.example`
 - **Validation** : `class-validator` & `class-transformer` avec `ValidationPipe` global (`whitelist: true`)
 - **Documentation OpenAPI / Swagger** : Accessible sur `/api/docs`
-- **Architecture d'accès** : API REST ouverte (les vérifications d'authentification et de permissions peuvent être gérées en amont par l'API Gateway ou le Service Utilisateurs)
+- **CORS** : Géré par l'API Gateway en amont (désactivé au niveau du microservice)
 - **Événements de domaine** : `@nestjs/event-emitter` (`document.validation.requested`, `document.status.changed`, `document.signature.requested`, `document.signed`, `document.archived`, etc.)
 - **Génération & Export PDF** : `pdfkit` avec streaming de fichiers et mise en page soignée
 - **Conteneurisation** : `Dockerfile` multi-stage et `docker-compose.yml` (service + PostgreSQL)
@@ -109,7 +111,7 @@ Legal-Service/
 
 ## 📡 Matrice Complète des Endpoints
 
-Tous les endpoints sont préfixés par `/api/v1/juridique`.
+Tous les endpoints sont préfixés par `/api/legal`.
 
 ### 1. Gestion des documents
 
@@ -183,8 +185,10 @@ npm run start:prod
 ```
 
 L'application écoute sur le port `3003`.
-- **Swagger UI** : [http://localhost:3003/api/docs](http://localhost:3003/api/docs)
-- **Préfixe API** : [http://localhost:3003/api/v1/juridique](http://localhost:3003/api/v1/juridique)
+- **Swagger UI** : [http://localhost:3003/api/legal/docs](http://localhost:3003/api/legal/docs)
+- **OpenAPI JSON Spec** : [http://localhost:3003/api/legal/docs-json](http://localhost:3003/api/legal/docs-json)
+- **Via Gateway** : [http://localhost:<GATEWAY_PORT>/docs/legal](http://localhost:<GATEWAY_PORT>/docs/legal)
+- **Préfixe API** : [http://localhost:3003/api/legal](http://localhost:3003/api/legal)
 
 ---
 

@@ -13,17 +13,13 @@ async function bootstrap() {
   const port = configService.get<number>('PORT', 3003);
   const globalPrefix = configService.get<string>(
     'GLOBAL_PREFIX',
-    'api/v1/juridique',
+    'api/legal',
   );
 
-  // Activation CORS pour les frontends et autres microservices
-  app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-  });
+  // Le CORS est géré en amont par l'API Gateway (règle 3 de la gateway)
+  // app.enableCors(); désactivé
 
-  // Préfixe global d'API
+  // Préfixe global d'API : toutes les routes commencent par /api/legal
   app.setGlobalPrefix(globalPrefix);
 
   // Validation globale stricte avec class-validator
@@ -41,7 +37,7 @@ async function bootstrap() {
   // Filtre d'exception global avec format d'erreur uniforme
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  // Configuration Swagger / OpenAPI à /api/docs
+  // Configuration Swagger / OpenAPI à /api/legal/docs et /api/legal/docs-json
   const swaggerConfig = new DocumentBuilder()
     .setTitle('LaunchPad - Microservice Gestion Juridique')
     .setDescription(
@@ -54,7 +50,8 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document, {
+  SwaggerModule.setup('api/legal/docs', app, document, {
+    jsonDocumentUrl: 'api/legal/docs-json',
     swaggerOptions: {
       docExpansion: 'list',
       filter: true,
@@ -62,10 +59,14 @@ async function bootstrap() {
     customSiteTitle: 'Documentation API Juridique - LaunchPad',
   });
 
+  // Active les shutdown hooks pour le désenregistrement propre auprès d'Eureka
+  app.enableShutdownHooks();
+
   await app.listen(port);
 
   logger.log(`🚀 Microservice juridique démarré avec succès sur le port ${port}`);
-  logger.log(`📚 Documentation Swagger accessible sur : http://localhost:${port}/api/docs`);
+  logger.log(`📚 Documentation Swagger accessible sur : http://localhost:${port}/api/legal/docs`);
+  logger.log(`📄 Spécification JSON Swagger accessible sur : http://localhost:${port}/api/legal/docs-json`);
   logger.log(`🔗 API Base URL : http://localhost:${port}/${globalPrefix}`);
 }
 
