@@ -1,7 +1,9 @@
 package com.launchpad.finance.infrastructure.config;
 
+import com.launchpad.finance.domain.port.PrevisionRepository;
 import com.launchpad.finance.domain.service.CalculateurMarge;
 import com.launchpad.finance.domain.service.ComparateurRevenusDepenses;
+import com.launchpad.finance.domain.service.GenerateurDocsFinanciers;
 import com.launchpad.finance.domain.service.ModelePrevisionnel;
 import com.launchpad.finance.domain.strategie.CroissanceParTaux;
 import com.launchpad.finance.domain.strategie.StrategieProjection;
@@ -33,5 +35,12 @@ public class DomaineConfig {
     @Bean
     ModelePrevisionnel modelePrevisionnel(StrategieProjection strategieProjection) {
         return new ModelePrevisionnel(strategieProjection);
+    }
+
+    @Bean
+    GenerateurDocsFinanciers generateurDocsFinanciers(PrevisionRepository previsionRepository,
+                                                      CalculateurMarge calculateurMarge,
+                                                      ComparateurRevenusDepenses comparateurRevenusDepenses) {
+        return new GenerateurDocsFinanciers(previsionRepository, calculateurMarge, comparateurRevenusDepenses);
     }
 }

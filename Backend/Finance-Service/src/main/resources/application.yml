@@ -18,6 +18,19 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
+finance:
+  stockage:
+    # Profil dev : fichiers exportés sur le disque local.
+    local:
+      repertoire: ${STOCKAGE_LOCAL_REPERTOIRE:./data/documents}
+    # Autres profils : stockage objet compatible S3 / MinIO.
+    objet:
+      endpoint: ${STOCKAGE_OBJET_ENDPOINT:http://localhost:9000}
+      region: ${STOCKAGE_OBJET_REGION:us-east-1}
+      bucket: ${STOCKAGE_OBJET_BUCKET:finance-documents}
+      access-key: ${STOCKAGE_OBJET_ACCESS_KEY:}
+      secret-key: ${STOCKAGE_OBJET_SECRET_KEY:}
+
 management:
   endpoints:
     web:

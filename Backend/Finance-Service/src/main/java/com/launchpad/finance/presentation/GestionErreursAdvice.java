@@ -36,6 +36,14 @@ public class GestionErreursAdvice extends ResponseEntityExceptionHandler {
         return probleme(HttpStatus.BAD_REQUEST, "Données invalides", exception.getMessage());
     }
 
+    /** Toute autre erreur : 500 sans divulguer le détail technique, qui est journalisé. */
+    @ExceptionHandler(Exception.class)
+    public ProblemDetail erreurInterne(Exception exception) {
+        logger.error("Erreur interne non gérée", exception);
+        return probleme(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur interne",
+                "Une erreur inattendue est survenue. Réessayez plus tard.");
+    }
+
     /** Erreurs de Bean Validation : détail par champ dans la propriété "erreurs". */
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException exception,
