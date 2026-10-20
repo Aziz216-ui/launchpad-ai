@@ -40,10 +40,21 @@ This service manages user registration, login, token refresh, and profile manage
 
 ---
 
+## Service Discovery (Eureka)
+
+This service automatically registers with **Eureka Discovery Server** on startup:
+- **Application Name**: `user-service`
+- **Default Eureka Server**: `http://localhost:8761/eureka`
+- **Status / Documentation Page**: `http://localhost:8001/api/docs/`
+- **Health Check Endpoint**: `http://localhost:8001/api/auth/health/`
+
+---
+
 ## Running the Server
 
 ```powershell
 # From Backend/User-Service
 .\venv\Scripts\activate
-python manage.py runserver 8000
+python manage.py runserver 8001
 ```
+

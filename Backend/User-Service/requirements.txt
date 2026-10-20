@@ -7,3 +7,4 @@ python-dotenv>=1.0.1
 requests>=2.32.0
 pyjwt[crypto]>=2.9.0
 drf-spectacular>=0.28.0
+py-eureka-client>=0.13.0

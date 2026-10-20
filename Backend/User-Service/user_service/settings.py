@@ -125,3 +125,9 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Eureka Discovery Configuration
+EUREKA_SERVER_URL = os.getenv("EUREKA_SERVER_URL", "http://localhost:8761/eureka")
+EUREKA_ENABLED = os.getenv("EUREKA_ENABLED", "True").lower() in ("true", "1", "yes")
+SERVICE_PORT = int(os.getenv("PORT", "8001"))
+
