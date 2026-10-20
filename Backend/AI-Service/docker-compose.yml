@@ -1,0 +1,68 @@
+version: "3.9"
+
+services:
+  cofondateur_db:
+    image: postgres:16-alpine
+    container_name: cofondateur_db
+    environment:
+      POSTGRES_DB: cofondateur_db
+      POSTGRES_USER: cofondateur_user
+      POSTGRES_PASSWORD: cofondateur_password
+    volumes:
+      - cofondateur_db_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cofondateur_user -d cofondateur_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ai_service:
+    build: .
+    container_name: ai_service
+    depends_on:
+      cofondateur_db:
+        condition: service_healthy
+    environment:
+      # Django
+      SECRET_KEY: "docker-secret-key-change-in-production"
+      DEBUG: "False"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,0.0.0.0,ai_service"
+
+      # Base de donnees
+      DB_NAME: cofondateur_db
+      DB_USER: cofondateur_user
+      DB_PASSWORD: cofondateur_password
+      DB_HOST: cofondateur_db
+      DB_PORT: "5432"
+
+      # Eureka
+      # Dans Docker, utilise le nom du conteneur eureka-server (resolu par le reseau Docker)
+      EUREKA_SERVER: "http://eureka-server:8761/eureka/"
+      APP_NAME: "ai-service"
+      APP_PORT: "8085"
+      # HOST_IP : IP de la machine hote, joignable depuis le gateway.
+      # Sous Docker Desktop (Windows/Mac) : host.docker.internal
+      # En prod Linux : mettre l'IP reelle de la machine.
+      HOST_IP: "host.docker.internal"
+
+      # Market-Service
+      MARKET_SERVICE_NAME: "market-service"
+      MARKET_SERVICE_URL: "http://host.docker.internal:8005"
+
+      # LLM
+      LLM_PROVIDER: "openai"
+      LLM_API_KEY: ""
+      LLM_MODEL: "gpt-4o-mini"
+      LLM_BASE_URL: "https://api.openai.com/v1"
+    ports:
+      - "8085:8085"
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py seed_ia &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8085 --workers 1 --timeout 120"
+    restart: unless-stopped
+
+volumes:
+  cofondateur_db_data:
