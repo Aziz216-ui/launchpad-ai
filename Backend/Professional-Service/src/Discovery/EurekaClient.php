@@ -106,8 +106,9 @@ final class EurekaClient
             'status' => 'UP',
             'port' => ['$' => $this->port, '@enabled' => 'true'],
             'securePort' => ['$' => 443, '@enabled' => 'false'],
-            'homePageUrl' => $baseUrl.'/',
-            'statusPageUrl' => $baseUrl.'/api/comptable/health',
+            // Lien du tableau de bord Eureka : ouvre la documentation Swagger du service
+            'homePageUrl' => $baseUrl.'/api/comptable/docs',
+            'statusPageUrl' => $baseUrl.'/api/comptable/docs',
             'healthCheckUrl' => $baseUrl.'/api/comptable/health',
             'dataCenterInfo' => [
                 '@class' => 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',

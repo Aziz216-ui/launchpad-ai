@@ -1,0 +1,59 @@
+# Documentation OpenAPI générée à partir des routes, des DTO et des attributs #[OA\...]
+# JSON : /api/comptable/docs.json — Swagger UI : /api/comptable/docs
+nelmio_api_doc:
+    documentation:
+        info:
+            title: Service comptable — LaunchPad
+            description: |
+                Espace comptable de LaunchPad : dossiers clients, documents comptables, validations et messages.
+
+                **Authentification** : cliquez sur *Authorize* et collez un access token Keycloak
+                (sans le préfixe `Bearer`). Voir le README pour obtenir un jeton.
+            version: 1.0.0
+        servers:
+            - url: /
+              description: Ce service (ou la Gateway, même préfixe /api/comptable)
+        components:
+            securitySchemes:
+                Bearer:
+                    type: http
+                    scheme: bearer
+                    bearerFormat: JWT
+                    description: Access token Keycloak (realm launchpad, audience launchpad-app)
+            schemas:
+                Error:
+                    type: object
+                    properties:
+                        error:
+                            type: object
+                            properties:
+                                status: { type: integer, example: 409 }
+                                code: { type: string, example: INVALID_STATUS }
+                                message: { type: string, example: Seule une demande en attente peut être acceptée. }
+                                details:
+                                    type: array
+                                    items:
+                                        type: object
+                                        properties:
+                                            field: { type: string, example: comment }
+                                            message: { type: string, example: Un commentaire est obligatoire pour rejeter un document. }
+                PaginationMeta:
+                    type: object
+                    properties:
+                        page: { type: integer, example: 1 }
+                        limit: { type: integer, example: 20 }
+                        total: { type: integer, example: 42 }
+                        pages: { type: integer, example: 3 }
+        security:
+            - Bearer: []
+        tags:
+            - { name: Santé, description: Disponibilité du service }
+            - { name: Utilisateur, description: Identité lue dans le jeton Keycloak }
+            - { name: Espaces comptables }
+            - { name: Dossiers }
+            - { name: Documents }
+            - { name: Messages }
+    areas:
+        default:
+            path_patterns:
+                - ^/api/comptable/(?!docs)

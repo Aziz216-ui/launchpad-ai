@@ -8,8 +8,9 @@ security:
         dev:
             pattern: ^/(_profiler|_wdt)/
             security: false
-        health:
-            pattern: ^/api/comptable/health$
+        # Routes publiques : santé et documentation (Swagger UI + spécification OpenAPI)
+        public:
+            pattern: ^/api/comptable/(health|docs|docs\.json)$
             security: false
         api:
             pattern: ^/api/comptable

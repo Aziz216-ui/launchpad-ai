@@ -113,6 +113,17 @@ composer serve
 
 Vérification : `curl http://127.0.0.1:8085/api/comptable/health` → `{"status":"UP","service":"accounting-service"}`
 
+### Swagger (documentation interactive)
+
+- **Swagger UI** : http://127.0.0.1:8085/api/comptable/docs
+- Spécification OpenAPI (JSON) : http://127.0.0.1:8085/api/comptable/docs.json
+- Depuis le tableau de bord Eureka (http://localhost:8761), le lien de l'instance `PROFESSIONAL-SERVICE` ouvre aussi Swagger UI.
+
+Pour tester une route protégée : cliquez sur **Authorize**, collez un access token Keycloak (sans `Bearer`),
+puis **Try it out** > **Execute**. La documentation est générée à partir des routes et des DTO
+(`nelmio/api-doc-bundle`) ; les conventions communes (codes de réponse, erreurs, pagination) sont ajoutées par
+`src/ApiDoc/ApiConventionsDescriber.php`. Swagger UI est une page statique (CDN jsDelivr), sans Twig.
+
 ---
 
 ## 3. Configuration
@@ -362,6 +373,8 @@ Tous les chemins sont préfixés par `/api/comptable`. `{id}` est un UUID.
 | Méthode | Chemin | Rôle(s) | Description |
 |---|---|---|---|
 | GET | `/health` | public | Disponibilité du service |
+| GET | `/docs` | public | Swagger UI |
+| GET | `/docs.json` | public | Spécification OpenAPI 3 |
 | GET | `/me` | tous | Identité lue dans le jeton, rôles reconnus |
 | GET | `/workspaces` | tous | Comptables disponibles (admin : `?all=true`) |
 | GET | `/workspaces/me` | ACCOUNTANT | Mon espace (créé au besoin) |
@@ -723,7 +736,8 @@ Le service s'enregistre dans Eureka sous le nom **`PROFESSIONAL-SERVICE`**. La G
 Il n'existe pas de client Eureka officiel en PHP : l'enregistrement passe par l'API REST d'Eureka
 (`src/Discovery/EurekaClient.php`) et la commande `app:eureka:register` :
 
-1. `POST /eureka/apps/PROFESSIONAL-SERVICE` au démarrage (statut `UP`, `healthCheckUrl` = `/api/comptable/health`) ;
+1. `POST /eureka/apps/PROFESSIONAL-SERVICE` au démarrage (statut `UP`, `healthCheckUrl` = `/api/comptable/health`,
+   `statusPageUrl` = `/api/comptable/docs` : le lien du tableau de bord Eureka ouvre Swagger UI) ;
 2. `PUT .../{instanceId}` toutes les `EUREKA_HEARTBEAT_INTERVAL` secondes (si Eureka a redémarré, l'instance est réenregistrée) ;
 3. `DELETE .../{instanceId}` à l'arrêt (Ctrl+C). Si le processus est tué brutalement, Eureka retire l'instance au bout de 90 s.
 
@@ -761,7 +775,7 @@ composer test
 ```
 
 Ce script recrée la base `accounting_db_test`, exécute les migrations, charge les fixtures, puis lance PHPUnit
-(71 tests fonctionnels et unitaires). Chaque test s'exécute dans une transaction annulée à la fin
+(73 tests fonctionnels et unitaires). Chaque test s'exécute dans une transaction annulée à la fin
 (`dama/doctrine-test-bundle`) : les fixtures restent intactes d'un test à l'autre.
 
 - **Aucun Keycloak réel n'est nécessaire.** Une paire de clés RSA est générée au premier lancement dans `var/test-keys`

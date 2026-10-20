@@ -30,6 +30,7 @@ final class EurekaClientTest extends TestCase
         self::assertSame('UP', $instance['status']);
         self::assertSame(['$' => 8085, '@enabled' => 'true'], $instance['port']);
         self::assertSame('http://localhost:8085/api/comptable/health', $instance['healthCheckUrl']);
+        self::assertSame('http://localhost:8085/api/comptable/docs', $instance['statusPageUrl'], 'Le lien Eureka ouvre Swagger UI.');
         self::assertSame('MyOwn', $instance['dataCenterInfo']['name']);
         self::assertSame(30, $instance['leaseInfo']['renewalIntervalInSecs']);
     }
