@@ -68,7 +68,7 @@ DATABASES = {
         "USER": os.getenv("DB_USER", "cofondateur_user"),
         "PASSWORD": os.getenv("DB_PASSWORD", "cofondateur_password"),
         "HOST": os.getenv("DB_HOST", "localhost"),
-        "PORT": os.getenv("DB_PORT", "5434"),
+        "PORT": os.getenv("DB_PORT", "5432"),
         "CONN_MAX_AGE": 60,  # Reutilise les connexions (evite un nouveau handshake a chaque requete)
     }
 }
