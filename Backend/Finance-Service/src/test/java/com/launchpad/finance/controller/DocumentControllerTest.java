@@ -1,13 +1,15 @@
 package com.launchpad.finance.controller;
 
-import com.launchpad.finance.service.GestionDocuments;
-import com.launchpad.finance.exception.DocumentIntrouvable;
-import com.launchpad.finance.exception.PrevisionIntrouvable;
 import com.launchpad.finance.domain.ContenuDocument;
 import com.launchpad.finance.domain.DocumentFinancier;
+import com.launchpad.finance.domain.FichierExporte;
+import com.launchpad.finance.domain.FormatExport;
 import com.launchpad.finance.domain.LigneDocument;
 import com.launchpad.finance.domain.SectionDocument;
 import com.launchpad.finance.domain.TypeDocument;
+import com.launchpad.finance.exception.DocumentIntrouvable;
+import com.launchpad.finance.exception.PrevisionIntrouvable;
+import com.launchpad.finance.service.GestionDocuments;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -21,8 +23,11 @@ import java.util.UUID;
 import static com.launchpad.finance.domain.Fixtures.PROJET_ID;
 import static com.launchpad.finance.domain.Fixtures.montant;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -120,5 +125,63 @@ class DocumentControllerTest {
                 .andExpect(jsonPath("$.title").value("Erreur interne"))
                 .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.not(
                         org.hamcrest.Matchers.containsString("secret"))));
+    }
+
+    @Test
+    void export_pdf_renvoie_le_fichier_en_telechargement() throws Exception {
+        UUID id = UUID.randomUUID();
+        byte[] octets = {37, 80, 68, 70};
+        when(gestionDocuments.exporterDocument(id, FormatExport.PDF))
+                .thenReturn(new FichierExporte("business-plan-" + id + ".pdf", "application/pdf", octets));
+
+        mockMvc.perform(get("/api/finance/documents/{id}/export", id).param("format", "pdf"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/pdf"))
+                .andExpect(header().string("Content-Disposition",
+                        "attachment; filename=\"business-plan-" + id + ".pdf\""))
+                .andExpect(content().bytes(octets));
+    }
+
+    @Test
+    void export_xlsx_utilise_le_format_excel() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(gestionDocuments.exporterDocument(id, FormatExport.EXCEL))
+                .thenReturn(new FichierExporte("doc.xlsx", FormatExport.EXCEL.typeContenu(), new byte[]{80, 75}));
+
+        mockMvc.perform(get("/api/finance/documents/{id}/export", id).param("format", "XLSX"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(FormatExport.EXCEL.typeContenu()));
+    }
+
+    @Test
+    void export_format_inconnu_ou_absent_renvoie_400() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/finance/documents/{id}/export", id).param("format", "docx"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Format d'export inconnu : docx (pdf ou xlsx)"));
+        mockMvc.perform(get("/api/finance/documents/{id}/export", id))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON));
+        verifyNoInteractions(gestionDocuments);
+    }
+
+    @Test
+    void delete_supprime_et_renvoie_204() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(delete("/api/finance/documents/{id}", id))
+                .andExpect(status().isNoContent());
+        verify(gestionDocuments).supprimerDocument(id);
+    }
+
+    @Test
+    void delete_document_inconnu_renvoie_404() throws Exception {
+        UUID id = UUID.randomUUID();
+        doThrow(new DocumentIntrouvable(id)).when(gestionDocuments).supprimerDocument(id);
+
+        mockMvc.perform(delete("/api/finance/documents/{id}", id))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON));
     }
 }

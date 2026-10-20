@@ -1,7 +1,5 @@
 package com.launchpad.finance.service;
 
-import com.launchpad.finance.exception.DonneesInvalides;
-import com.launchpad.finance.exception.PrevisionIntrouvable;
 import com.launchpad.finance.domain.ContenuDocument;
 import com.launchpad.finance.domain.EcartFinancier;
 import com.launchpad.finance.domain.LigneDocument;
@@ -11,6 +9,8 @@ import com.launchpad.finance.domain.PrevisionFinanciere;
 import com.launchpad.finance.domain.ProjectionFinanciere;
 import com.launchpad.finance.domain.SectionDocument;
 import com.launchpad.finance.domain.TypeDocument;
+import com.launchpad.finance.exception.DonneesInvalides;
+import com.launchpad.finance.exception.PrevisionIntrouvable;
 import com.launchpad.finance.repository.PrevisionRepository;
 
 import java.math.BigDecimal;

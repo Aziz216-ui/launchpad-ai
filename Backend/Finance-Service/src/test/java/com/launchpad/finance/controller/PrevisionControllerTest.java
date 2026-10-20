@@ -1,13 +1,13 @@
 package com.launchpad.finance.controller;
 
-import com.launchpad.finance.service.GestionPrevisions;
-import com.launchpad.finance.exception.DonneesInvalides;
-import com.launchpad.finance.exception.PrevisionIntrouvable;
 import com.launchpad.finance.domain.EcartFinancier;
 import com.launchpad.finance.domain.Marges;
 import com.launchpad.finance.domain.PrevisionFinanciere;
 import com.launchpad.finance.domain.ProjectionFinanciere;
 import com.launchpad.finance.domain.StatutEcart;
+import com.launchpad.finance.exception.DonneesInvalides;
+import com.launchpad.finance.exception.PrevisionIntrouvable;
+import com.launchpad.finance.service.GestionPrevisions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;

@@ -1,8 +1,8 @@
 package com.launchpad.finance.service;
 
-import com.launchpad.finance.exception.DonneesInvalides;
 import com.launchpad.finance.domain.HypothesesPrevisionnelles;
 import com.launchpad.finance.domain.ProjectionFinanciere;
+import com.launchpad.finance.exception.DonneesInvalides;
 import com.launchpad.finance.service.strategie.CroissanceParTaux;
 import com.launchpad.finance.service.strategie.StrategieProjection;
 import org.junit.jupiter.api.Test;

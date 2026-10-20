@@ -1,6 +1,5 @@
 package com.launchpad.finance.controller;
 
-import com.launchpad.finance.service.GestionPrevisions;
 import com.launchpad.finance.domain.PrevisionFinanciere;
 import com.launchpad.finance.dto.CreerPrevisionRequest;
 import com.launchpad.finance.dto.EcartResponse;
@@ -8,6 +7,7 @@ import com.launchpad.finance.dto.GenererProjectionsRequest;
 import com.launchpad.finance.dto.MargesResponse;
 import com.launchpad.finance.dto.PrevisionResponse;
 import com.launchpad.finance.dto.ProjectionResponse;
+import com.launchpad.finance.service.GestionPrevisions;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -1,11 +1,11 @@
 package com.launchpad.finance.service;
 
-import com.launchpad.finance.exception.DonneesInvalides;
-import com.launchpad.finance.exception.PrevisionIntrouvable;
 import com.launchpad.finance.domain.EcartFinancier;
 import com.launchpad.finance.domain.PrevisionFinanciere;
 import com.launchpad.finance.domain.ProjectionFinanciere;
 import com.launchpad.finance.domain.StatutEcart;
+import com.launchpad.finance.exception.DonneesInvalides;
+import com.launchpad.finance.exception.PrevisionIntrouvable;
 import com.launchpad.finance.repository.PrevisionRepository;
 import com.launchpad.finance.service.strategie.CroissanceParTaux;
 import org.junit.jupiter.api.BeforeEach;

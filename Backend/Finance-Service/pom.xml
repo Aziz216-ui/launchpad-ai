@@ -22,6 +22,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <archunit.version>1.5.1</archunit.version>
         <aws-sdk.version>2.39.6</aws-sdk.version>
+        <poi.version>5.5.1</poi.version>
+        <!-- OpenPDF >= 2.1 est compilé pour Java 21 : 2.0.5 est la dernière version compatible Java 17. -->
+        <openpdf.version>2.0.5</openpdf.version>
     </properties>
 
     <dependencies>
@@ -58,7 +61,19 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Infrastructure : stockage objet compatible S3 / MinIO (StockageDocumentsObjet) -->
+        <!-- Export des documents : Excel (Apache POI) et PDF (OpenPDF) -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>${poi.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>${openpdf.version}</version>
+        </dependency>
+
+        <!-- Stockage objet compatible S3 / MinIO (StockageDocumentsObjet) -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>

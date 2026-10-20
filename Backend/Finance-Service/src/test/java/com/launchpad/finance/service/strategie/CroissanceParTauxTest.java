@@ -1,7 +1,7 @@
 package com.launchpad.finance.service.strategie;
 
-import com.launchpad.finance.exception.DonneesInvalides;
 import com.launchpad.finance.domain.HypothesesPrevisionnelles;
+import com.launchpad.finance.exception.DonneesInvalides;
 import org.junit.jupiter.api.Test;
 
 import static com.launchpad.finance.domain.Fixtures.montant;

@@ -1,17 +1,24 @@
 package com.launchpad.finance.controller;
 
-import com.launchpad.finance.service.GestionDocuments;
 import com.launchpad.finance.domain.DocumentFinancier;
+import com.launchpad.finance.domain.FichierExporte;
+import com.launchpad.finance.domain.FormatExport;
 import com.launchpad.finance.dto.CreerDocumentRequest;
 import com.launchpad.finance.dto.DocumentResponse;
 import com.launchpad.finance.dto.DocumentResumeResponse;
+import com.launchpad.finance.service.GestionDocuments;
 import jakarta.validation.Valid;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -49,5 +56,22 @@ public class DocumentController {
     @GetMapping("/documents/{id}")
     public DocumentResponse consulterDocument(@PathVariable UUID id) {
         return DocumentResponse.depuis(gestionDocuments.consulterDocument(id));
+    }
+
+    /** Téléchargement du document au format pdf ou xlsx. */
+    @GetMapping("/documents/{id}/export")
+    public ResponseEntity<byte[]> exporterDocument(@PathVariable UUID id, @RequestParam String format) {
+        FichierExporte fichier = gestionDocuments.exporterDocument(id, FormatExport.depuisExtension(format));
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(fichier.typeContenu()))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(fichier.nomFichier()).build().toString())
+                .body(fichier.contenu());
+    }
+
+    @DeleteMapping("/documents/{id}")
+    public ResponseEntity<Void> supprimerDocument(@PathVariable UUID id) {
+        gestionDocuments.supprimerDocument(id);
+        return ResponseEntity.noContent().build();
     }
 }
