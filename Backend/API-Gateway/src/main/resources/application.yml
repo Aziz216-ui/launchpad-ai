@@ -1,0 +1,194 @@
+# =============================================================================
+# API Gateway LaunchPad AI : point d'entrée unique du frontend (port 8090).
+#
+# Profils :
+#   eureka (par défaut) : enregistrement dans Eureka, routes en lb://<NOM-EUREKA>
+#   local               : sans Eureka, URL directes http://localhost:<port>
+#                         (voir application-eureka.yml et application-local.yml)
+#
+# Chaque route lit son URI dans launchpad.services.<service>.uri, surchargeable
+# par la variable d'environnement <NOM>_SERVICE_URI (ex. MARKET_SERVICE_URI).
+# =============================================================================
+
+server:
+  port: ${SERVER_PORT:8090}   # 8080 est pris par Keycloak
+
+spring:
+  application:
+    name: API-GATEWAY
+  profiles:
+    default: eureka
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          # Seules les routes déclarées ci-dessous sont exposées
+          discovery:
+            locator:
+              enabled: false
+
+          httpclient:
+            connect-timeout: 3000      # ms : service éteint -> 503 rapide
+            response-timeout: 30s
+
+          # ----------------------------------------------------------------------
+          # CORS : géré UNIQUEMENT par la gateway (aucun service n'envoie d'en-têtes
+          # CORS). Appliqué par la chaîne de sécurité (SecurityConfig), donc aussi
+          # sur les réponses 401 et 503.
+          # ----------------------------------------------------------------------
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+                allowed-methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
+                allowed-headers: Authorization, Content-Type
+                exposed-headers: X-Request-Id, Content-Disposition
+                max-age: 3600
+
+          default-filters:
+            # Si un service renvoie quand même des en-têtes CORS, on n'en garde qu'un exemplaire
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
+
+          # ----------------------------------------------------------------------
+          # Routes. Les routes métier ne réécrivent PAS le chemin : chaque service
+          # garde son préfixe (/api/market/** arrive tel quel au Market-Service).
+          # metadata.service = nom affiché dans le 503 "Service indisponible".
+          # ----------------------------------------------------------------------
+          routes:
+            # --- Market-Service (étude de marché) : Django, port 8005 -------------
+            # Docs : /api/market/docs/ et /api/market/schema/ (dans le préfixe)
+            - id: market-service
+              uri: ${launchpad.services.market.uri}
+              predicates:
+                - Path=/api/market/**
+              metadata:
+                service: MARKET-SERVICE
+
+            # --- Comptable : Professional-Service, port 8085 --------------------
+            # Docs : /api/comptable/docs et /api/comptable/docs.json (dans le préfixe)
+            - id: accounting-service
+              uri: ${launchpad.services.accounting.uri}
+              predicates:
+                - Path=/api/comptable/**
+              metadata:
+                service: PROFESSIONAL-SERVICE
+
+            # --- Avocat : lawyer-space (nom Eureka en minuscules), port 8082 ------
+            - id: lawyer-service
+              uri: ${launchpad.services.lawyer.uri}
+              predicates:
+                - Path=/api/lawyer/**
+              metadata:
+                service: lawyer-space
+
+            # Docs avocat, servies hors préfixe par le service (springdoc) :
+            #   /docs/lawyer/swagger-ui/**   -> /swagger-ui/**
+            #   /docs/lawyer/v3/api-docs/**  -> /v3/api-docs/**
+            - id: lawyer-docs
+              uri: ${launchpad.services.lawyer.uri}
+              predicates:
+                - Path=/docs/lawyer/swagger-ui/**, /docs/lawyer/v3/api-docs/**
+              filters:
+                - RewritePath=/docs/lawyer/(?<segment>.*), /$\{segment}
+              metadata:
+                service: lawyer-space
+
+            # --- Juridique : Legal-Service, port 3003 ----------------------------
+            - id: legal-service
+              uri: ${launchpad.services.legal.uri}
+              predicates:
+                - Path=/api/legal/**
+              metadata:
+                service: LEGAL-SERVICE
+
+            # Docs juridique, servies hors préfixe par le service :
+            #   /docs/legal/**   -> /api/docs/**
+            #   /docs/legal-json -> /api/docs-json
+            # À supprimer si le Legal-Service passe ses docs sous /api/legal/docs.
+            - id: legal-docs
+              uri: ${launchpad.services.legal.uri}
+              predicates:
+                - Path=/docs/legal, /docs/legal/**
+              filters:
+                - RewritePath=/docs/legal(?<segment>/?.*), /api/docs$\{segment}
+              metadata:
+                service: LEGAL-SERVICE
+            - id: legal-docs-json
+              uri: ${launchpad.services.legal.uri}
+              predicates:
+                - Path=/docs/legal-json
+              filters:
+                - SetPath=/api/docs-json
+              metadata:
+                service: LEGAL-SERVICE
+
+            # --- IA : AI-Service (nom Eureka et port À CONFIRMER) ----------------
+            - id: ai-service
+              uri: ${launchpad.services.ai.uri}
+              predicates:
+                - Path=/api/ai/**
+              metadata:
+                service: AI-SERVICE
+
+            # --- Finance : Finance-Service (nom Eureka et port À CONFIRMER) -------
+            - id: finance-service
+              uri: ${launchpad.services.finance.uri}
+              predicates:
+                - Path=/api/finance/**
+              metadata:
+                service: FINANCE-SERVICE
+
+            # --- Utilisateurs : User-Service (nom Eureka et port À CONFIRMER) -----
+            - id: user-service
+              uri: ${launchpad.services.user.uri}
+              predicates:
+                - Path=/api/auth/**, /api/users/**
+              metadata:
+                service: USER-SERVICE
+
+  # Keycloak : validation des JWT RS256 avec les clés publiques du realm (JWKS).
+  # Utilisé seulement si JWT_ENABLED=true (voir SecurityConfig).
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8080/realms/launchpad/protocol/openid-connect/certs}
+
+launchpad:
+  security:
+    jwt-enabled: ${JWT_ENABLED:false}   # false : tout est ouvert (tests sans Keycloak)
+
+  # URI de chaque service (profil eureka : lb://<NOM-EUREKA>).
+  # Le profil local remplace ces valeurs par des URL directes.
+  services:
+    market:
+      uri: ${MARKET_SERVICE_URI:lb://MARKET-SERVICE}
+    accounting:
+      uri: ${ACCOUNTING_SERVICE_URI:lb://PROFESSIONAL-SERVICE}
+    lawyer:
+      uri: ${LAWYER_SERVICE_URI:lb://lawyer-space}
+    legal:
+      uri: ${LEGAL_SERVICE_URI:lb://LEGAL-SERVICE}
+    ai:
+      uri: ${AI_SERVICE_URI:lb://AI-SERVICE}            # À CONFIRMER
+    finance:
+      uri: ${FINANCE_SERVICE_URI:lb://FINANCE-SERVICE}  # À CONFIRMER
+    user:
+      uri: ${USER_SERVICE_URI:lb://USER-SERVICE}        # À CONFIRMER
+
+# Actuator : /actuator/health et /actuator/gateway/routes
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, gateway
+  endpoint:
+    gateway:
+      access: read-only     # consultation des routes, pas de modification
+    health:
+      show-details: never
+
+logging:
+  level:
+    com.example.gateway: INFO

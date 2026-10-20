@@ -1,0 +1,20 @@
+# =============================================================================
+# Profil "eureka" (par défaut) : la gateway s'enregistre dans Eureka
+# (Backend/Eureka, port 8761) et résout les routes lb://<NOM-EUREKA>.
+# =============================================================================
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+    # Registre relu toutes les 5 s : un service qui démarre est routé rapidement
+    registry-fetch-interval-seconds: 5
+  instance:
+    hostname: ${EUREKA_INSTANCE_HOST:localhost}
+    instance-id: ${eureka.instance.hostname}:${spring.application.name}:${server.port}
+
+spring:
+  cloud:
+    loadbalancer:
+      cache:
+        ttl: 5s   # même raison (35 s par défaut)
