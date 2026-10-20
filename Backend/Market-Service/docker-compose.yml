@@ -25,6 +25,12 @@ services:
     environment:
       DB_HOST: market-db   # nom du service PostgreSQL dans le réseau Docker
       DB_PORT: "5432"
+      # Eureka tourne sur la machine hôte ; le service s'annonce sur localhost:8005 (port publié).
+      # EUREKA_ENABLED reste lu dans .env.
+      EUREKA_SERVER_URL: http://host.docker.internal:8761/eureka/
+      EUREKA_INSTANCE_HOST: localhost
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # nécessaire sous Linux, sans effet sous Docker Desktop
     ports:
       - "8005:8005"
     depends_on:

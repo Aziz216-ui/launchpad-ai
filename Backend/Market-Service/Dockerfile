@@ -18,5 +18,9 @@ RUN python manage.py collectstatic --noinput
 
 EXPOSE 8005
 
-# Au démarrage : migrations puis lancement du serveur
-CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8005 --workers 3"]
+# Au démarrage : migrations puis lancement du serveur.
+# --preload : Django est chargé une seule fois dans le processus maître, qui fait
+# l'enregistrement Eureka (sinon chacun des 3 workers s'enregistrerait).
+# exec : gunicorn remplace sh et reçoit le SIGTERM de "docker stop" (arrêt propre,
+# désenregistrement Eureka).
+CMD ["sh", "-c", "python manage.py migrate --noinput && exec gunicorn config.wsgi:application --bind 0.0.0.0:8005 --workers 3 --preload"]

@@ -126,6 +126,24 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", False)
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:4200")
 
+# --- Eureka (découverte de services) -------------------------------------------
+# Désactivé par défaut : EUREKA_ENABLED=true enregistre le service au démarrage
+# du serveur (voir marche/eureka.py). Serveur Eureka du projet : Backend/Eureka.
+EUREKA_ENABLED = env_bool("EUREKA_ENABLED", False)
+EUREKA_SERVER_URL = os.getenv("EUREKA_SERVER_URL", "http://localhost:8761/eureka/")
+EUREKA_INSTANCE_HOST = os.getenv("EUREKA_INSTANCE_HOST", "localhost")
+EUREKA_APP_NAME = "MARKET-SERVICE"
+EUREKA_INSTANCE_PORT = 8005
+
+# --- Logs -----------------------------------------------------------------------
+# Affiche les messages INFO/WARNING du service (dont ceux d'Eureka) dans la console
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "loggers": {"marche": {"handlers": ["console"], "level": "INFO"}},
+}
+
 # --- Django REST Framework ----------------------------------------------------
 REST_FRAMEWORK = {
     # Les décimaux sont renvoyés en nombres JSON (18.75) et non en chaînes ("18.75")

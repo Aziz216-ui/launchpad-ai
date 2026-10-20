@@ -18,7 +18,8 @@ que leurs identifiants (`projet_id`, `entrepreneur_id`), **sans clé étrangère
 | Admin Django | http://localhost:8005/admin/ |
 
 **Stack :** Python 3.11+, Django 5, Django REST Framework, PostgreSQL, django-cors-headers,
-drf-spectacular, python-dotenv, reportlab (rapport PDF), Gunicorn et WhiteNoise (pour Docker).
+drf-spectacular, python-dotenv, reportlab (rapport PDF), py-eureka-client (enregistrement
+Eureka), Gunicorn et WhiteNoise (pour Docker).
 
 ---
 
@@ -37,8 +38,11 @@ Market-Service/
 │   ├── views.py            # ViewSets CRUD + actions d'étude + vues d'analyse + health
 │   ├── urls.py
 │   ├── admin.py            # Persona et ElementSWOT en inline dans EtudeMarche
+│   ├── apps.py             # MarcheConfig.ready() : lance l'enregistrement Eureka
+│   ├── eureka.py           # enregistrement dans Eureka (py-eureka-client)
 │   ├── tests.py            # tests d'origine (CRUD concurrents, analyses, Swagger)
 │   ├── tests_etude.py      # tests de l'étude de marché
+│   ├── tests_eureka.py     # tests de l'enregistrement Eureka (sans serveur réel)
 │   └── management/commands/seed_marche.py
 ├── Dockerfile
 ├── docker-compose.yml      # compose LOCAL (service + PostgreSQL 16)
@@ -207,6 +211,69 @@ volumes:
 
 Depuis un autre conteneur (ex. AI-Service), le service est joignable à l'adresse
 `http://market-service:8005/api/market/`.
+
+---
+
+## Eureka (découverte de services)
+
+Le service s'enregistre dans le serveur Eureka du projet (`Backend/Eureka`, port **8761**,
+URL `http://localhost:8761/eureka/`) sous le nom **`MARKET-SERVICE`**, port **8005**.
+L'enregistrement est **désactivé par défaut**.
+
+| Variable (`.env`) | Défaut | Rôle |
+|---|---|---|
+| `EUREKA_ENABLED` | `false` | `true` pour s'enregistrer au démarrage |
+| `EUREKA_SERVER_URL` | `http://localhost:8761/eureka/` | URL du serveur Eureka |
+| `EUREKA_INSTANCE_HOST` | `localhost` | Adresse annoncée aux autres services |
+
+Fonctionnement (`marche/eureka.py`, appelé par `MarcheConfig.ready()`) :
+- enregistrement **une seule fois**, uniquement quand Django sert des requêtes
+  (`runserver` ou `gunicorn`) : jamais pendant `migrate`, `test`, `seed_marche`, `shell`... ;
+- health check annoncé : `http://<EUREKA_INSTANCE_HOST>:8005/api/market/health/`
+  (page de statut : `/api/market/docs/`) ;
+- **si Eureka est injoignable**, un avertissement est loggé et le service démarre quand même.
+  L'enregistrement est retenté à chaque heartbeat (30 s) : il suffit de lancer Eureka ensuite ;
+- à l'arrêt du serveur (`docker stop`, Ctrl+C), le service se désenregistre
+  (`DELETE /eureka/apps/MARKET-SERVICE/localhost:market-service:8005`). Après un arrêt brutal,
+  Eureka retire l'instance seul, faute de heartbeat (bail de 90 s).
+
+Dans Docker, gunicorn est lancé avec `--preload` : Django est chargé une seule fois dans le
+processus maître, qui fait l'enregistrement (sans cette option, chacun des 3 workers
+s'enregistrerait). Il est lancé avec `exec` pour recevoir le SIGTERM de `docker stop` et se
+désenregistrer avant de s'arrêter.
+
+> **Windows, hors Docker :** si l'avertissement indique `FileNotFoundError`, vérifier la
+> variable d'environnement `SSL_CERT_FILE` : si elle pointe vers un fichier qui n'existe pas,
+> httpx (utilisé par py-eureka-client) ne peut pas créer sa connexion.
+
+### Lancer avec Eureka
+
+```bash
+# 1. Serveur Eureka (machine hôte)
+cd Backend/Eureka
+mvnw spring-boot:run          # Windows ; ./mvnw spring-boot:run sous Linux/macOS
+
+# 2. Dans Backend/Market-Service/.env
+EUREKA_ENABLED=true
+
+# 3a. Sans Docker
+python manage.py runserver 8005
+
+# 3b. Ou avec Docker (recréer le conteneur pour relire le .env)
+docker compose up -d --build --force-recreate market-service
+docker compose logs market-service    # "Enregistré dans Eureka (...) sous MARKET-SERVICE."
+```
+
+Ouvrir http://localhost:8761 : `MARKET-SERVICE` apparaît dans « Instances currently registered
+with Eureka », statut **UP** (instance `localhost:market-service:8005`).
+
+**Dans Docker**, Eureka tourne sur la machine hôte : `docker-compose.yml` remplace
+`EUREKA_SERVER_URL` par `http://host.docker.internal:8761/eureka/` et garde
+`EUREKA_INSTANCE_HOST=localhost`, puisque le port 8005 est publié sur la machine
+(`extra_hosts` rend `host.docker.internal` disponible aussi sous Linux). Le `.env` ne sert
+qu'à activer Eureka (`EUREKA_ENABLED`). Quand Eureka sera lancé dans le même réseau Docker
+que les services, il suffira de remplacer ces deux valeurs (ex. `http://eureka:8761/eureka/`
+et `market-service`).
 
 ---
 
@@ -438,13 +505,16 @@ Une étude déjà complétée n'est pas réécrite lors d'une nouvelle exécutio
 python manage.py test
 ```
 
-55 tests (`APITestCase`) :
+70 tests :
 - `tests.py` (22) : CRUD complet des concurrents (dont validations, filtres et format
   numérique), analyse de secteur, analyse de projet (y compris projet sans étude), règles du
   niveau de concurrence, health check, seed et documentation Swagger ;
 - `tests_etude.py` (33) : CRUD des études (nouveaux champs, M2M, filtres, compatibilité avec
   l'ancien format), CRUD personas et SWOT, finaliser, comparaison des prix, opportunités/menaces,
-  génération de la SWOT (éléments manuels conservés), rapport JSON et PDF, seed et Swagger.
+  génération de la SWOT (éléments manuels conservés), rapport JSON et PDF, seed et Swagger ;
+- `tests_eureka.py` (15) : enregistrement Eureka simulé (paramètres envoyés, une seule fois,
+  désactivé par défaut, jamais pendant `migrate`/`test`, démarrage malgré un Eureka injoignable,
+  désenregistrement à l'arrêt par le seul processus maître).
 
 ```bash
 # Sans PostgreSQL (SQLite)
