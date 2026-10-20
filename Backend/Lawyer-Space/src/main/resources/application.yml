@@ -32,3 +32,31 @@ management:
     web:
       exposure:
         include: health,info
+  endpoint:
+    health:
+      show-details: always
+    info:
+      enabled: true
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: lawyer-space
+    description: Espace Avocat microservice for LaunchPad AI
+    version: 1.0.0-SNAPSHOT
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+    status-page-url-path: /actuator/info
+    health-check-url-path: /actuator/health
+
+

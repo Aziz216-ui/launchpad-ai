@@ -91,12 +91,22 @@ Located in [`Backend/Lawyer-Space/src/main/java/com/launchpad/lawyer`](./src/mai
 
 ---
 
+## Service Discovery (Eureka)
+
+This service automatically registers with **Eureka Discovery Server**:
+- **Default Server URL**: `http://localhost:8761/eureka/`
+- **Instance ID**: `lawyer-space:8082`
+- Overridable via environment variable: `EUREKA_SERVER_URL`
+
+---
+
 ## Running and Testing
 
 ```powershell
-# Run the microservice
-mvn spring-boot:run
+# Run the microservice using wrapper
+.\mvnw.cmd spring-boot:run
 
 # Run test suite
-mvn test
+.\mvnw.cmd test
 ```
+
