@@ -1,0 +1,23 @@
+# =============================================================================
+# Profil "local" : sans Eureka, les routes pointent directement vers
+# http://localhost:<port>. Chaque URL reste surchargeable par <NOM>_SERVICE_URI.
+#
+# Les services dont le port est encore À CONFIRMER gardent leur lb:// : sans
+# Eureka, aucune instance n'est trouvée et la gateway répond 503 "Service
+# indisponible". Définir AI_SERVICE_URI=http://localhost:<port> (etc.) pour les router.
+# =============================================================================
+
+eureka:
+  client:
+    enabled: false
+
+launchpad:
+  services:
+    market:
+      uri: ${MARKET_SERVICE_URI:http://localhost:8005}
+    accounting:
+      uri: ${ACCOUNTING_SERVICE_URI:http://localhost:8085}
+    lawyer:
+      uri: ${LAWYER_SERVICE_URI:http://localhost:8082}
+    legal:
+      uri: ${LEGAL_SERVICE_URI:http://localhost:3003}
