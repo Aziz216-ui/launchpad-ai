@@ -56,7 +56,8 @@ eureka:
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
-    status-page-url-path: /actuator/info
+    status-page-url-path: /swagger-ui.html
+    home-page-url-path: /swagger-ui.html
     health-check-url-path: /actuator/health
 
 
