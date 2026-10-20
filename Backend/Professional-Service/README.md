@@ -127,8 +127,8 @@ APP_SECRET=remplacez_par_une_chaine_aleatoire_de_32_caracteres
 DATABASE_URL="mysql://root:@127.0.0.1:3306/accounting_db?serverVersion=10.4.32-MariaDB&charset=utf8mb4"
 # Facultatif
 APP_PORT=8085
-CORS_ALLOW_ORIGIN='^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$'
 KEYCLOAK_BASE_URL=http://localhost:8180
+EUREKA_ENABLED=true
 ```
 
 Générer un secret : `php -r "echo bin2hex(random_bytes(16));"`
@@ -148,7 +148,6 @@ DATABASE_URL="mysql://root:@127.0.0.1:3306/accounting_db?serverVersion=10.4.32-M
 | `APP_SECRET` | *(vide)* | Secret Symfony, à définir dans `.env.local` |
 | `APP_HOST` / `APP_PORT` | `127.0.0.1` / `8085` | Adresse du serveur de développement (`composer serve`) |
 | `DATABASE_URL` | exemple | Connexion MySQL/MariaDB ; **indiquez `serverVersion`** |
-| `CORS_ALLOW_ORIGIN` | localhost, tout port | Expression régulière des origines autorisées (Angular : `http://localhost:4200`) |
 | `KEYCLOAK_BASE_URL` | `http://localhost:8180` | URL publique de Keycloak |
 | `KEYCLOAK_REALM` | `launchpad` | Realm |
 | `KEYCLOAK_CLIENT_ID` | `launchpad-app` | Client OIDC de l'application |
@@ -749,9 +748,8 @@ Remarques :
 - Aucune réécriture de chemin : le service expose déjà `/api/comptable/**`.
 - Si la Gateway reçoit déjà `Authorization: Bearer …` du frontend (mode resource server), l'en-tête est transmis tel quel ;
   `TokenRelay` n'est utile que si la Gateway gère la session OAuth2 (client OAuth2).
-- Si le CORS est géré par la Gateway, évitez les en-têtes en double : ajoutez
-  `- DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST`
-  ou restreignez `CORS_ALLOW_ORIGIN` côté service.
+- **CORS** : géré uniquement par la Gateway. Le service n'envoie aucun en-tête `Access-Control-*` :
+  appelez-le via la Gateway depuis le frontend, jamais directement.
 - En Docker, remplacez `http://localhost:8085` par le nom du service (ex. `http://accounting-service:8085`).
 
 ---

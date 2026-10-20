@@ -98,15 +98,14 @@ final class SecurityTest extends ApiTestCase
         self::assertNotNull($data['workspaceId']);
     }
 
-    public function testPreflightCorsRequestIsAllowedForConfiguredOrigin(): void
+    public function testServiceDoesNotEmitCorsHeaders(): void
     {
-        $this->client->request('OPTIONS', self::PREFIX.'/files', server: [
-            'HTTP_ORIGIN' => 'http://localhost:4200',
-            'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'GET',
-            'HTTP_ACCESS_CONTROL_REQUEST_HEADERS' => 'authorization',
-        ]);
+        // Le CORS est géré par la Gateway : pas d'en-têtes en double côté service
+        $this->actingAs(FixtureUsers::ENTREPRENEUR_AMINE);
+        $this->client->setServerParameter('HTTP_ORIGIN', 'http://localhost:4200');
+        $this->request('GET', '/files');
 
         $this->assertStatus(200);
-        self::assertSame('http://localhost:4200', $this->client->getResponse()->headers->get('Access-Control-Allow-Origin'));
+        self::assertFalse($this->client->getResponse()->headers->has('Access-Control-Allow-Origin'));
     }
 }
