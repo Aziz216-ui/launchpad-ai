@@ -25,11 +25,23 @@ if ($port < 1 || $port > 65535) {
 
 echo "Service comptable disponible sur http://{$host}:{$port}/api/comptable\n";
 
+// Enregistrement Eureka en parallèle du serveur (EUREKA_ENABLED=true)
+$eureka = null;
+if (filter_var($_SERVER['EUREKA_ENABLED'] ?? false, FILTER_VALIDATE_BOOL)) {
+    echo "Enregistrement dans Eureka ({$_SERVER['EUREKA_SERVER_URL']}) sous {$_SERVER['EUREKA_APP_NAME']}\n";
+    $eureka = proc_open([PHP_BINARY, $projectDir.'/bin/console', 'app:eureka:register'], [STDIN, STDOUT, STDERR], $pipes, $projectDir);
+}
+
 passthru(sprintf(
     '%s -S %s -t %s',
     escapeshellarg(PHP_BINARY),
     escapeshellarg("{$host}:{$port}"),
     escapeshellarg($projectDir.'/public'),
 ), $exitCode);
+
+if (\is_resource($eureka)) {
+    // Ctrl+C est aussi reçu par la commande Eureka, qui se désinscrit avant de s'arrêter
+    proc_close($eureka);
+}
 
 exit($exitCode);

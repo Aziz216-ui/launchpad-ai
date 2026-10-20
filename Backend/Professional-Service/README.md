@@ -158,6 +158,11 @@ DATABASE_URL="mysql://root:@127.0.0.1:3306/accounting_db?serverVersion=10.4.32-M
 | `KEYCLOAK_ROLE_ACCOUNTANT` | `ACCOUNTANT` | Nom du rôle Keycloak → `ROLE_ACCOUNTANT` |
 | `KEYCLOAK_ROLE_ENTREPRENEUR` | `ENTREPRENEUR` | Nom du rôle Keycloak → `ROLE_ENTREPRENEUR` |
 | `KEYCLOAK_ROLE_ADMIN` | `ADMIN` | Nom du rôle Keycloak → `ROLE_ADMIN` |
+| `EUREKA_ENABLED` | `false` | `true` : `composer serve` enregistre aussi le service dans Eureka |
+| `EUREKA_SERVER_URL` | `http://localhost:8761/eureka` | URL du serveur Eureka |
+| `EUREKA_APP_NAME` | `PROFESSIONAL-SERVICE` | Nom d'enregistrement (utilisé par la Gateway : `lb://PROFESSIONAL-SERVICE`) |
+| `EUREKA_INSTANCE_HOST` / `EUREKA_INSTANCE_IP` | `localhost` / `127.0.0.1` | Adresse annoncée à Eureka (le port annoncé est `APP_PORT`) |
+| `EUREKA_HEARTBEAT_INTERVAL` | `30` | Intervalle du battement de cœur, en secondes |
 | `DOCUMENT_STORAGE_DIR` | `%kernel.project_dir%/var/uploads` | Répertoire **privé** des fichiers déposés |
 | `DOCUMENT_MAX_SIZE` | `10M` | Taille maximale d'un fichier |
 
@@ -705,6 +710,41 @@ spring:
                 - TokenRelay=
 ```
 
+### Avec Eureka
+
+Le service s'enregistre dans Eureka sous le nom **`PROFESSIONAL-SERVICE`**. La Gateway peut alors le joindre par son nom :
+
+```yaml
+            - id: accounting-service
+              uri: lb://PROFESSIONAL-SERVICE
+              predicates:
+                - Path=/api/comptable/**
+```
+
+Il n'existe pas de client Eureka officiel en PHP : l'enregistrement passe par l'API REST d'Eureka
+(`src/Discovery/EurekaClient.php`) et la commande `app:eureka:register` :
+
+1. `POST /eureka/apps/PROFESSIONAL-SERVICE` au démarrage (statut `UP`, `healthCheckUrl` = `/api/comptable/health`) ;
+2. `PUT .../{instanceId}` toutes les `EUREKA_HEARTBEAT_INTERVAL` secondes (si Eureka a redémarré, l'instance est réenregistrée) ;
+3. `DELETE .../{instanceId}` à l'arrêt (Ctrl+C). Si le processus est tué brutalement, Eureka retire l'instance au bout de 90 s.
+
+Lancement :
+
+```bash
+# Avec EUREKA_ENABLED=true dans .env.local : serveur + enregistrement en une commande
+composer serve
+
+# Ou séparément, dans un second terminal
+php bin/console app:eureka:register
+```
+
+Si Eureka n'est pas joignable, la commande affiche une erreur et réessaie à chaque intervalle, sans arrêter le service.
+Vérification : tableau de bord `http://localhost:8761`, ou
+`curl -H "Accept: application/json" http://localhost:8761/eureka/apps/PROFESSIONAL-SERVICE`.
+
+Identifiant d'instance : `localhost:professional-service:8085` (format Spring Cloud `hôte:application:port`).
+En Docker, définissez `EUREKA_INSTANCE_HOST` avec le nom du conteneur, joignable par la Gateway.
+
 Remarques :
 - Aucune réécriture de chemin : le service expose déjà `/api/comptable/**`.
 - Si la Gateway reçoit déjà `Authorization: Bearer …` du frontend (mode resource server), l'en-tête est transmis tel quel ;
@@ -723,7 +763,7 @@ composer test
 ```
 
 Ce script recrée la base `accounting_db_test`, exécute les migrations, charge les fixtures, puis lance PHPUnit
-(65 tests fonctionnels et unitaires). Chaque test s'exécute dans une transaction annulée à la fin
+(71 tests fonctionnels et unitaires). Chaque test s'exécute dans une transaction annulée à la fin
 (`dama/doctrine-test-bundle`) : les fixtures restent intactes d'un test à l'autre.
 
 - **Aucun Keycloak réel n'est nécessaire.** Une paire de clés RSA est générée au premier lancement dans `var/test-keys`
