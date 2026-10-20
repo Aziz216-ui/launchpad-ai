@@ -1,0 +1,210 @@
+### ==============================================================================
+### LaunchPad - Microservice Juridique (Legal Service) - HTTP Requests Collection
+### Compatible avec VS Code REST Client, IntelliJ HTTP Client & Postman
+### ==============================================================================
+
+@baseUrl = http://localhost:3003/api/v1/juridique
+@contentType = application/json
+
+### ------------------------------------------------------------------------------
+### 1. GESTION DES DOCUMENTS
+### ------------------------------------------------------------------------------
+
+### 1.1 Générer des STATUTS constitutifs (SAS)
+# @name createStatuts
+POST {{baseUrl}}/documents/generate
+Content-Type: {{contentType}}
+
+{
+  "type": "STATUTS",
+  "projetId": "proj-launchpad-88",
+  "params": {
+    "denomination": "NeuraCloud SAS",
+    "forme": "SAS",
+    "capital": 25000,
+    "siegeSocial": "25 Rue du Faubourg Saint-Honoré, 75008 Paris",
+    "objetSocial": "Édition de logiciels d’intelligence artificielle générative et services SaaS",
+    "dirigeant": "Alice Durand (Présidente)",
+    "associes": ["Alice Durand", "Marc Vallet"]
+  }
+}
+
+### Récupération de l'ID du document généré
+@docId = {{createStatuts.response.body.id}}
+
+### 1.2 Générer un Contrat de Prestation
+POST {{baseUrl}}/documents/generate
+Content-Type: {{contentType}}
+
+{
+  "type": "CONTRAT",
+  "projetId": "proj-launchpad-88",
+  "params": {
+    "prestataire": "NeuraCloud SAS",
+    "client": "GrandGroupe International SA",
+    "objet": "Développement et intégration d’un LLM sur infrastructure privée",
+    "montant": 45000,
+    "delai": "6 mois"
+  }
+}
+
+### 1.3 Générer un Accord de Confidentialité (NDA)
+POST {{baseUrl}}/documents/generate
+Content-Type: {{contentType}}
+
+{
+  "type": "NDA",
+  "projetId": "proj-launchpad-88",
+  "params": {
+    "partieA": "NeuraCloud SAS",
+    "partieB": "Venture Capital Partner Ltd",
+    "objet": "Audit technique et négociations de levée de fonds Seed",
+    "dureeMois": 36
+  }
+}
+
+### 1.4 Générer un Procès-Verbal d'Assemblée (PV)
+POST {{baseUrl}}/documents/generate
+Content-Type: {{contentType}}
+
+{
+  "type": "PV",
+  "projetId": "proj-launchpad-88",
+  "params": {
+    "assembleeType": "Générale Ordinaire",
+    "dateSeance": "2026-10-19",
+    "president": "Alice Durand",
+    "ordreDuJour": "Approbation de la convention de partenariat et délégation de signature"
+  }
+}
+
+### 1.5 Lister les documents (avec filtres optionnels)
+GET {{baseUrl}}/documents?type=STATUTS
+
+### 1.6 Consulter les détails d'un document par son UUID
+GET {{baseUrl}}/documents/{{docId}}
+
+### 1.7 Modifier les informations générales d'un document (incrémente version)
+PATCH {{baseUrl}}/documents/{{docId}}
+Content-Type: {{contentType}}
+
+{
+  "titre": "Statuts constitutifs SAS NeuraCloud - Version Finalisée",
+  "metadata": {
+    "capital": 30000,
+    "banqueDepot": "Qonto"
+  }
+}
+
+### 1.8 Lister les clauses d'un document
+GET {{baseUrl}}/documents/{{docId}}/clauses
+
+### 1.9 Modifier le texte d'une clause spécifique (incrémente version doc)
+PATCH {{baseUrl}}/documents/{{docId}}/clauses/3
+Content-Type: {{contentType}}
+
+{
+  "texte": "La société a pour objet en France et à l'étranger : le développement de solutions d'IA, le conseil technologique, ainsi que toutes activités annexes ou connexes directes et indirectes."
+}
+
+### 1.10 Exporter le document au format PDF (Téléchargement binaire streamé)
+GET {{baseUrl}}/documents/{{docId}}/export?format=pdf
+
+### 1.11 Envoyer le document pour validation juridique par un avocat (BROUILLON -> EN_VALIDATION)
+POST {{baseUrl}}/documents/{{docId}}/validation-requests
+Content-Type: {{contentType}}
+
+{
+  "clientId": "usr-entrepreneur-alice-01"
+}
+
+### 1.12 Lister les commentaires et observations d'un document
+GET {{baseUrl}}/documents/{{docId}}/comments
+
+### ------------------------------------------------------------------------------
+### 2. VÉRIFICATION PAR AVOCAT
+### ------------------------------------------------------------------------------
+
+### 2.1 Consulter le document soumis pour revue
+GET {{baseUrl}}/verification/documents/{{docId}}
+
+### 2.2 Ajouter une observation juridique ou un commentaire
+POST {{baseUrl}}/verification/documents/{{docId}}/comments
+Content-Type: {{contentType}}
+
+{
+  "texte": "Clause 5 vérifiée. Penser à mentionner la date de libération intégrale des apports en numéraire.",
+  "auteur": "Me Marc Dupont (Barreau de Paris)"
+}
+
+### 2.3 Demander des informations complémentaires au porteur de projet
+POST {{baseUrl}}/verification/documents/{{docId}}/info-requests
+Content-Type: {{contentType}}
+
+{
+  "question": "Pouvez-vous confirmer si un commissaire aux apports est requis pour les apports en nature ?",
+  "avocat": "Me Marc Dupont"
+}
+
+### 2.4 Ajuster directement une clause (incrémente version)
+PATCH {{baseUrl}}/verification/documents/{{docId}}/clauses/5
+Content-Type: {{contentType}}
+
+{
+  "texte": "Le capital social est fixé à 30 000 euros. Il est libéré à hauteur de 50% au moment de la souscription, le solde étant libérable dans les cinq ans."
+}
+
+### 2.5 Valider le document juridique (EN_VALIDATION -> VALIDE)
+POST {{baseUrl}}/verification/documents/{{docId}}/accept
+
+### Alternative : Rejeter le document avec un motif obligatoire
+# POST {{baseUrl}}/verification/documents/{{docId}}/reject
+# Content-Type: {{contentType}}
+#
+# {
+#   "motif": "La répartition des actions n'est pas cohérente avec les apports déclarés."
+# }
+
+### ------------------------------------------------------------------------------
+### 3. SIGNATURE ÉLECTRONIQUE (WorkflowSignature)
+### ------------------------------------------------------------------------------
+
+### 3.1 Demander la signature électronique du document (uniquement si VALIDE)
+POST {{baseUrl}}/documents/{{docId}}/signatures
+Content-Type: {{contentType}}
+
+{
+  "signataires": [
+    "alice.durand@neuracloud.io",
+    "marc.vallet@neuracloud.io"
+  ]
+}
+
+### 3.2 Consulter le statut des signatures
+GET {{baseUrl}}/documents/{{docId}}/signatures/status
+
+### 3.3 Apposer la signature officielle (VALIDE -> SIGNE)
+POST {{baseUrl}}/verification/documents/{{docId}}/sign
+Content-Type: {{contentType}}
+
+{
+  "avocat": "Me Marc Dupont"
+}
+
+### 3.4 Re-vérifier le statut des signatures après signature
+GET {{baseUrl}}/documents/{{docId}}/signatures/status
+
+### ------------------------------------------------------------------------------
+### 4. ARCHIVAGE ET TEST DES RÈGLES DE CONFLIT (State Machine & Read-Only)
+### ------------------------------------------------------------------------------
+
+### 4.1 Archiver le document (lecture seule)
+POST {{baseUrl}}/documents/{{docId}}/archive
+
+### 4.2 Tester l'interdiction de modification sur document archivé (Doit renvoyer 409 Conflict)
+PATCH {{baseUrl}}/documents/{{docId}}
+Content-Type: {{contentType}}
+
+{
+  "titre": "Tentative de modification illégale sur document archivé"
+}

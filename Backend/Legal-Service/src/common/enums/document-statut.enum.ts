@@ -1,0 +1,7 @@
+export enum DocumentStatut {
+  BROUILLON = 'BROUILLON',
+  EN_VALIDATION = 'EN_VALIDATION',
+  VALIDE = 'VALIDE',
+  REFUSE = 'REFUSE',
+  SIGNE = 'SIGNE',
+}

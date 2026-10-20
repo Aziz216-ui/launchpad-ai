@@ -1,0 +1,45 @@
+services:
+  legal-postgres:
+    image: postgres:16-alpine
+    container_name: launchpad-legal-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: legal_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - legal_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d legal_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  legal-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: launchpad-legal-service
+    restart: unless-stopped
+    depends_on:
+      legal-postgres:
+        condition: service_healthy
+    environment:
+      PORT: 3003
+      NODE_ENV: production
+      GLOBAL_PREFIX: api/v1/juridique
+      DB_HOST: legal-postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgrespassword
+      DB_NAME: legal_db
+      DB_SYNCHRONIZE: "true"
+      DB_LOGGING: "false"
+    ports:
+      - "3003:3003"
+
+volumes:
+  legal_pgdata:
+    driver: local
