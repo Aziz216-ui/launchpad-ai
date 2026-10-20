@@ -1,7 +1,5 @@
 package com.launchpad.finance.domain;
 
-import com.launchpad.finance.domain.model.PrevisionFinanciere;
-
 import java.math.BigDecimal;
 import java.util.UUID;
 
