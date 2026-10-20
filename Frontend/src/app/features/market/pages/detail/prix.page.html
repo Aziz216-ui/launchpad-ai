@@ -1,0 +1,67 @@
+<div class="entete-section">
+  <div class="titre">
+    <h2>Comparaison des offres et des prix</h2>
+    <p>Situez votre offre par rapport aux {{ comparaison()?.nombre_concurrents ?? 0 }} offres concurrentes analysées.</p>
+  </div>
+</div>
+
+@if (comparaison(); as c) {
+  @if (c.nombre_concurrents === 0) {
+    <app-empty-state [compact]="true" titre="Aucun prix à comparer"
+      texte="Associez des concurrents à votre étude pour comparer votre prix à ceux du marché.">
+      <a class="btn-primaire" routerLink="../concurrents">Associer des concurrents</a>
+    </app-empty-state>
+  } @else {
+    <div class="grille-kpi">
+      <div class="kpi"><span class="libelle">Prix min du marché</span><span class="valeur">{{ c.prix_min | montant }}</span><span class="detail">{{ moinsCher() }}</span></div>
+      <div class="kpi"><span class="libelle">Prix moyen du marché</span><span class="valeur">{{ c.prix_moyen | montant }}</span><span class="detail">Moyenne des {{ c.nombre_concurrents }} concurrents</span></div>
+      <div class="kpi"><span class="libelle">Prix max du marché</span><span class="valeur">{{ c.prix_max | montant }}</span><span class="detail">{{ plusCher() }}</span></div>
+      <div class="kpi">
+        <span class="libelle">Écart avec la moyenne</span>
+        <span class="valeur ecart">{{ c.ecart_moyenne_pct | pourcentage: true }}</span>
+        <span class="detail">
+          @if (ecartAbsolu(); as ecart) { Mon offre : {{ ecart }} } @else { Aucun prix proposé }
+        </span>
+      </div>
+    </div>
+
+    <div class="colonnes">
+      <section class="principale carte graphique">
+        <div class="titre-graphique"><h3>Prix des offres</h3><span>{{ c.prix_moyen | montant }} en moyenne</span></div>
+        <div class="barres" role="img" [attr.aria-label]="descriptionAccessible()">
+          @if (c.prix_moyen !== null) {
+            <span class="moyenne" aria-hidden="true" [style.--position]="positionMoyenne()"></span>
+            <span class="libelle-moyenne" aria-hidden="true" [style.--position]="positionMoyenne()">Moyenne {{ c.prix_moyen | montant }}</span>
+          }
+          @for (b of barres(); track b.nom) {
+            <div class="ligne"><span class="nom">{{ b.nom }}</span><span class="piste"><span [style.width.%]="b.largeur"></span></span><span class="prix">{{ b.prix | montant }}</span></div>
+          }
+          @if (c.prix_propose !== null) {
+            <div class="ligne offre"><span class="nom">Mon offre</span><span class="piste"><span [style.width.%]="largeurOffre()"></span></span><span class="prix">{{ c.prix_propose | montant }}</span></div>
+          }
+        </div>
+        <div class="legende">
+          <span><i class="concurrent"></i>Concurrents</span>
+          <span><i class="mon-offre"></i>Mon offre</span>
+          <span><i class="tirets"></i>Moyenne du marché</span>
+        </div>
+      </section>
+
+      <div class="laterale">
+        <section class="carte offre-carte">
+          <span class="sur-titre">Mon offre · {{ store.etude()?.titre }}</span>
+          @if (c.prix_propose !== null) {
+            <span class="prix-offre">{{ c.prix_propose | montant }}</span>
+            <span class="badge positionnement">Positionnement {{ positionnements[c.positionnement] }}</span>
+          } @else {
+            <p>Aucun prix proposé pour le moment.</p>
+          }
+          @if (store.etude()?.description_offre) {
+            <p>{{ store.etude()?.description_offre }}</p>
+          }
+          <a class="lien-fleche" [routerLink]="['/etude-marche', store.id(), 'modifier']" [queryParams]="{ etape: 2 }">Modifier mon prix →</a>
+        </section>
+      </div>
+    </div>
+  }
+}

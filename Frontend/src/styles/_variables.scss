@@ -1,0 +1,50 @@
+// Palette et mesures reprises des maquettes LaunchPad AI (Documentation/Maquettes).
+
+// Couleurs principales
+$primaire: #2b7a86;
+$primaire-fonce: #1f6470;
+$primaire-tres-fonce: #174e57;
+$primaire-clair: #e3f0f1;
+
+$fond: #f4f6f7;
+$fond-carte: #ffffff;
+$fond-doux: #f8fafa;
+$fond-neutre: #f1f4f5;
+$fond-encadre: #f6f8f9;
+
+$texte: #1d2b2f;
+$texte-secondaire: #3d5257;
+$gris: #5a6a6f;
+
+$bordure: #e3e8ea;
+$bordure-champ: #cfd8db;
+$bordure-legere: #eef2f3;
+$bordure-tableau: #d5dde0;
+
+// Couleurs sémantiques
+$vert: #24704c;
+$vert-fonce: #1c5a3d;
+$vert-clair: #e8f5ee;
+$rouge: #b23a3a;
+$rouge-fonce: #8e2b2b;
+$rouge-clair: #fbeded;
+$orange: #9a5b07;
+$orange-fonce: #7a4805;
+$orange-moyen: #c47a0a;
+$orange-clair: #fdf0dc;
+$orange-tres-clair: #fdf3e3;
+
+// Graphiques
+$barre-concurrent: #a9c9ce;
+$neutre-graph: #a9b8bc;
+
+// Typographie
+$police: 'Poppins', system-ui, sans-serif;
+
+// Rayons
+$rayon-champ: 10px;
+$rayon-kpi: 12px;
+$rayon-carte: 14px;
+
+// Points de rupture
+$mobile: 800px;

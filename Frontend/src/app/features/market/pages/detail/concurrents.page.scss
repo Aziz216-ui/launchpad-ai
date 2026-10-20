@@ -1,0 +1,99 @@
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+table {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+thead tr {
+  background: $fond-doux;
+  border-bottom: 1px solid $bordure;
+}
+
+th {
+  text-align: left;
+  padding: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: $gris;
+
+  &:first-child {
+    padding-left: 16px;
+  }
+}
+
+tbody tr:not(:last-child) {
+  border-bottom: 1px solid $bordure-legere;
+}
+
+td {
+  padding: 14px 12px;
+  vertical-align: middle;
+
+  &:first-child {
+    padding-left: 16px;
+  }
+}
+
+.nom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  strong {
+    font-weight: 600;
+  }
+}
+
+.initiales {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: $fond-neutre;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.part {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 90px;
+}
+
+.jauge {
+  height: 4px;
+  border-radius: 2px;
+  background: $bordure-legere;
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: 2px;
+    background: $primaire;
+  }
+}
+
+.force {
+  color: $vert-fonce;
+}
+
+.faiblesse {
+  color: $rouge-fonce;
+}
+
+.actions-ligne {
+  padding-right: 16px;
+}

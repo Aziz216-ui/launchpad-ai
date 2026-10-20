@@ -1,0 +1,81 @@
+<div class="entete-section">
+  <div class="titre">
+    <h2>Opportunités, menaces et SWOT</h2>
+    <p>{{ resume() }}</p>
+  </div>
+  <div class="actions">
+    <button type="button" class="btn-secondaire" (click)="generer()" [disabled]="generationEnCours()">
+      <app-icon nom="etoile" [taille]="16" />{{ generationEnCours() ? 'Génération…' : 'Générer la SWOT' }}
+    </button>
+    <button type="button" class="btn-primaire" (click)="modal.set({ element: null, type: 'force' })">
+      <app-icon nom="plus" [taille]="16" />Ajouter un élément
+    </button>
+  </div>
+</div>
+
+<div class="compteurs">
+  @for (q of quadrants(); track q.type) {
+    <div class="compteur">
+      <span class="nombre" [style.color]="q.compteur">{{ q.elements.length }}</span>
+      <span class="textes"><span class="libelle">{{ q.libelle }}</span>
+        <span class="detail">{{ q.automatiques }} automatique{{ q.automatiques > 1 ? 's' : '' }}</span></span>
+    </div>
+  }
+</div>
+
+<div class="quadrants">
+  @for (q of quadrants(); track q.type) {
+    <section [style.background]="q.fond">
+      <div class="titre-quadrant">
+        <span class="lettre" aria-hidden="true" [style.background]="q.accent">{{ q.lettre }}</span>
+        <h3 [style.color]="q.titre">{{ q.libelle }}</h3>
+        <span class="nature">{{ q.nature }}</span>
+      </div>
+      @if (q.elements.length) {
+        <ul>
+          @for (e of q.elements; track e.id) {
+            <li>
+              <span class="contenu">
+                <span class="description">{{ e.description }}</span>
+                <span class="etiquettes">
+                  @if (e.genere_automatiquement) {
+                    <span class="etiquette auto">Généré automatiquement</span>
+                  } @else {
+                    <span class="etiquette main">Ajouté à la main</span>
+                  }
+                </span>
+              </span>
+              <app-menu-actions libelle="Actions pour cet élément">
+                <button type="button" role="menuitem" (click)="modal.set({ element: e, type: e.type })">Modifier</button>
+                <button type="button" role="menuitem" class="danger" (click)="aSupprimer.set(e)">Supprimer</button>
+              </app-menu-actions>
+            </li>
+          }
+        </ul>
+      } @else {
+        <button type="button" class="vide" (click)="modal.set({ element: null, type: q.type })">+ Ajouter une {{ q.libelle.toLowerCase().slice(0, -1) }}</button>
+      }
+    </section>
+  }
+</div>
+
+<p class="info">
+  <app-icon nom="info" [taille]="16" />
+  <span>« Générer la SWOT » recalcule uniquement les éléments automatiques, à partir de vos concurrents, tendances, prix et personas. Vos ajouts manuels sont toujours conservés.</span>
+</p>
+
+@if (modal(); as m) {
+  <app-swot-modal [etudeId]="store.id()!" [element]="m.element" [typeInitial]="m.type"
+    (fermer)="modal.set(null)" (enregistre)="apresEnregistrement()" />
+}
+
+@if (aSupprimer(); as e) {
+  <app-confirm-modal
+    titre="Supprimer cet élément ?"
+    avant="L'élément "
+    [nom]="e.description"
+    apres=" sera retiré de la SWOT."
+    [enCours]="suppressionEnCours()"
+    (confirmer)="supprimer()"
+    (annuler)="aSupprimer.set(null)" />
+}

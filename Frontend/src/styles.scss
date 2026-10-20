@@ -1,0 +1,40 @@
+// Styles globaux partagés par tous les modules : variables et reset uniquement.
+// Les styles d'un module restent dans les composants de ce module.
+@use 'variables' as *;
+
+// Couleurs et police de LaunchPad AI, utilisables dans n'importe quel module
+// (en SCSS via `@use 'variables' as *;`, en CSS via var(--lp-...)).
+:root {
+  --lp-primaire: #{$primaire};
+  --lp-primaire-fonce: #{$primaire-fonce};
+  --lp-primaire-clair: #{$primaire-clair};
+  --lp-fond: #{$fond};
+  --lp-texte: #{$texte};
+  --lp-gris: #{$gris};
+  --lp-bordure: #{$bordure};
+  --lp-vert: #{$vert};
+  --lp-rouge: #{$rouge};
+  --lp-orange: #{$orange};
+  --lp-police: #{$police};
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: $fond;
+  color: $texte;
+  font-family: $police;
+  font-size: 14px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}

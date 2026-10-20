@@ -1,0 +1,160 @@
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.compteurs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 12px;
+}
+
+.compteur {
+  background: #ffffff;
+  border: 1px solid $bordure;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .nombre {
+    font-size: 26px;
+    font-weight: 600;
+  }
+  .textes {
+    display: flex;
+    flex-direction: column;
+  }
+  .libelle {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .detail {
+    font-size: 12px;
+    color: $gris;
+  }
+}
+
+.quadrants {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 16px;
+
+  section {
+    border-radius: $rayon-carte;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 6px 10px 12px;
+    border-radius: 10px;
+    background: #ffffff;
+  }
+}
+
+.titre-quadrant {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .nature {
+    font-size: 12px;
+    color: $texte-secondaire;
+  }
+}
+
+.lettre {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.contenu {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.description {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.etiquettes {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.etiquette {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: $texte-secondaire;
+
+  &.auto {
+    font-weight: 500;
+    background: #eef1f2;
+  }
+  &.main {
+    border: 1px solid $bordure-tableau;
+  }
+}
+
+.vide {
+  min-height: 44px;
+  border: 1px dashed $neutre-graph;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  color: $texte-secondaire;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.info {
+  margin: 0;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid $bordure;
+  font-size: 12px;
+  line-height: 1.5;
+  color: $texte-secondaire;
+
+  app-icon {
+    color: $primaire-fonce;
+    margin-top: 1px;
+  }
+}

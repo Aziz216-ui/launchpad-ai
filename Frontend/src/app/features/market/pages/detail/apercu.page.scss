@@ -1,0 +1,99 @@
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.kpis {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+
+  .positif {
+    color: $vert;
+  }
+  .negatif {
+    color: $rouge;
+  }
+}
+
+.ligne {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.carte h2 {
+  font-size: 16px;
+}
+
+.potentiel {
+  flex: 999 1 460px;
+  min-width: 0;
+  gap: 12px;
+
+  .entete {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .contenu {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 24px;
+  }
+  .explication {
+    flex: 1 1 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    strong {
+      font-size: 15px;
+    }
+    ul {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: $texte-secondaire;
+    }
+  }
+}
+
+.regard {
+  flex: 1 1 280px;
+  gap: 10px;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  span {
+    font-size: 11px;
+    color: $gris;
+  }
+  strong {
+    font-size: 13px;
+    font-weight: 500;
+  }
+}
+
+.vert {
+  color: $vert-fonce;
+}
+
+.orange {
+  color: $orange-fonce;
+}
+
+.hypotheses {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: $texte-secondaire;
+}
