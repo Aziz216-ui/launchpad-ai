@@ -14,8 +14,8 @@ COPY . .
 
 RUN python manage.py collectstatic --noinput
 
-EXPOSE 8085
+EXPOSE 8006
 
 # --workers 1 : evite la multi-registration Eureka sous gunicorn multi-process.
 # Si tu veux plusieurs workers, utilise un proxy Eureka ou un singleton partagé.
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8085", "--workers", "1", "--timeout", "120"]
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8006", "--workers", "1", "--timeout", "120"]

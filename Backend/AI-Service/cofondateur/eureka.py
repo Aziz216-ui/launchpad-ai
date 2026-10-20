@@ -50,7 +50,7 @@ def register():
 
     eureka_server = os.getenv("EUREKA_SERVER", "http://localhost:8761/eureka/")
     app_name = os.getenv("APP_NAME", "ai-service").upper()   # Eureka enregistre en MAJUSCULES
-    app_port = int(os.getenv("APP_PORT", "8085"))
+    app_port = int(os.getenv("APP_PORT", "8006"))
     host_ip = _get_local_ip()
     health_url = f"http://{host_ip}:{app_port}/api/ai/health/"
 

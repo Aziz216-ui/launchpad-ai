@@ -41,7 +41,7 @@ services:
       # Dans Docker, utilise le nom du conteneur eureka-server (resolu par le reseau Docker)
       EUREKA_SERVER: "http://eureka-server:8761/eureka/"
       APP_NAME: "ai-service"
-      APP_PORT: "8085"
+      APP_PORT: "8006"
       # HOST_IP : IP de la machine hote, joignable depuis le gateway.
       # Sous Docker Desktop (Windows/Mac) : host.docker.internal
       # En prod Linux : mettre l'IP reelle de la machine.
@@ -57,11 +57,11 @@ services:
       LLM_MODEL: "gpt-4o-mini"
       LLM_BASE_URL: "https://api.openai.com/v1"
     ports:
-      - "8085:8085"
+      - "8006:8006"
     command: >
       sh -c "python manage.py migrate &&
              python manage.py seed_ia &&
-             gunicorn config.wsgi:application --bind 0.0.0.0:8085 --workers 1 --timeout 120"
+             gunicorn config.wsgi:application --bind 0.0.0.0:8006 --workers 1 --timeout 120"
     restart: unless-stopped
 
 volumes:

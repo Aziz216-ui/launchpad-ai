@@ -1,6 +1,6 @@
 """
 Parametres Django — Co-Fondateur IA (AI-Service).
-Projet : config | App : cofondateur | Port : 8085
+Projet : config | App : cofondateur | Port : 8006
 """
 import os
 from pathlib import Path
@@ -135,7 +135,7 @@ MARKET_SERVICE_URL = os.getenv("MARKET_SERVICE_URL", "http://localhost:8005")
 # ── Eureka ────────────────────────────────────────────────────────────────────
 EUREKA_SERVER = os.getenv("EUREKA_SERVER", "http://localhost:8761/eureka/")
 APP_NAME = os.getenv("APP_NAME", "ai-service")
-APP_PORT = int(os.getenv("APP_PORT", "8085"))
+APP_PORT = int(os.getenv("APP_PORT", "8006"))
 HOST_IP = os.getenv("HOST_IP", "")  # Si vide, detecte automatiquement dans eureka.py
 
 # ── LLM ───────────────────────────────────────────────────────────────────────
