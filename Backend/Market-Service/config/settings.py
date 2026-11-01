@@ -126,6 +126,15 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", False)
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:4200")
 
+# --- CSRF -----------------------------------------------------------------------
+# Avec une session active (connexion à l'admin), DRF vérifie le CSRF sur les POST/PUT/
+# PATCH/DELETE, dont l'en-tête Origin. Via l'API Gateway, l'Origin est
+# http://localhost:8090 alors que Django reçoit Host: localhost:8005 : l'origine doit
+# donc être déclarée ici (gateway, frontend Angular, accès direct).
+CSRF_TRUSTED_ORIGINS = env_list(
+    "CSRF_TRUSTED_ORIGINS", "http://localhost:8090,http://localhost:4200,http://localhost:8005"
+)
+
 # --- Eureka (découverte de services) -------------------------------------------
 # Désactivé par défaut : EUREKA_ENABLED=true enregistre le service au démarrage
 # du serveur (voir marche/eureka.py). Serveur Eureka du projet : Backend/Eureka.

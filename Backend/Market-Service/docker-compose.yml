@@ -29,6 +29,9 @@ services:
       # EUREKA_ENABLED reste lu dans .env.
       EUREKA_SERVER_URL: http://host.docker.internal:8761/eureka/
       EUREKA_INSTANCE_HOST: localhost
+      # Origines de confiance CSRF (gateway 8090, frontend 4200, accès direct 8005) ;
+      # surchargeable par CSRF_TRUSTED_ORIGINS dans .env
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:8090,http://localhost:4200,http://localhost:8005}
     extra_hosts:
       - "host.docker.internal:host-gateway"   # nécessaire sous Linux, sans effet sous Docker Desktop
     ports:
