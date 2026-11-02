@@ -20,7 +20,7 @@ Vue d'ensemble : [../README.md](../README.md).
 | Méthode | Chemin | Description |
 |---|---|---|
 | CRUD | `/api/market/swot/` | Éléments (`?etude=`, `?type=`, `?ids=`). Créés ici = saisie manuelle (`genere_automatiquement = false`) ; l'étude est vérifiée sur ETUDE-SERVICE (400 si absente, 503 si injoignable) |
-| DELETE | `/api/market/swot/etude/<etude_id>/` | Supprime la SWOT d'une étude (appelé par ETUDE-SERVICE quand l'étude est supprimée) |
+| DELETE | `/api/market/swot/etude/<etude_id>/` | Supprime la SWOT d'une étude (manuel ; à la suppression d'une étude, c'est l'événement `etude.supprimee` qui s'en charge) |
 | POST | `/api/market/etudes/<id>/generer-swot/` | Génère la SWOT : remplace les éléments automatiques, **conserve les éléments manuels** |
 | GET | `/api/market/etudes/<id>/generer-swot/` | Aperçu de la SWOT calculée, **sans enregistrement** (utilisé par le rapport quand l'étude n'a aucun élément) |
 
@@ -38,6 +38,18 @@ supprimé si un service manque) :
 
 Étude absente → 404 ; un service de la chaîne arrêté → 503 avec le nom du service en cause
 (ex. `{"service": "CONCURRENT-SERVICE", "message": "Service indisponible"}`).
+
+## Événements RabbitMQ consommés (conteneur `swot-consumer`)
+
+| Routing key | Queue | Action |
+|---|---|---|
+| `etude.finalisee` | `swot.etude-finalisee` | génère la SWOT (comme `POST /generer-swot/`, éléments manuels conservés) ; étude déjà supprimée → ignoré |
+| `etude.supprimee` | `swot.etude-supprimee` | supprime tous les éléments SWOT de l'étude ; rien à supprimer → pas une erreur |
+
+Ack manuel après traitement, `prefetch_count=1`, idempotence par `message_id`, 3 tentatives puis
+`market.dlq` (ex. ETUDE-SERVICE injoignable pendant la génération). Si `swot-consumer` est arrêté,
+les messages attendent dans leur queue et sont traités à son redémarrage. Handlers :
+`swot/handlers.py`. Détails : [../README.md](../README.md#communication-asynchrone-rabbitmq).
 
 ## Lancer en local (sans Docker)
 

@@ -26,15 +26,26 @@ Il fait partie des 4 services de l'étude de marché : voir [../README.md](../RE
 Le filtre `?ids=1,2,3` permet aux autres services de lire plusieurs secteurs ou tendances en
 un seul appel (`SecteurClient.list(ids=[...])`).
 
-**Suppression d'un secteur** : ses tendances sont supprimées (même base). Les concurrents et
-études des autres services qui le référencent sont **conservés** : ils affichent alors
-`secteur_nom = null` (pas de suppression en cascade entre services).
+**Suppression d'un secteur** : ses tendances sont supprimées (même base), puis l'événement
+RabbitMQ **`secteur.supprime`** `{secteur_id, nom}` est publié sur l'exchange `market.events`
+(après le commit). concurrent-service et etude-service mettent alors `secteur_id = null` pour
+les concurrents et études liés. Si RabbitMQ est arrêté, la suppression réussit quand même et
+l'événement est renvoyé plus tard depuis l'outbox (toutes les 10 s).
+
+## Événements RabbitMQ
+
+| Rôle | Routing key | Données |
+|---|---|---|
+| Producer | `secteur.supprime` | `secteur_id`, `nom` |
+
+Aucun événement consommé (pas de conteneur consumer). Détails : [../README.md](../README.md#communication-asynchrone-rabbitmq).
 
 ## Structure
 
 ```
 secteur-service/
 ├── config/                 # settings (port, nom Eureka, URL des services appelés), urls
+├── evenements/             # RabbitMQ : producer, outbox + relais, consumer, consume_events
 ├── clients/                # appels REST vers les autres services (équivalent OpenFeign)
 │   ├── base.py             # résolution Eureka, timeout 3 s, 1 nouvelle tentative, 404 / 503
 │   └── concurrent_client.py

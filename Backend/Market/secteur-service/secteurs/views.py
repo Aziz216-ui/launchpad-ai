@@ -7,6 +7,8 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from evenements.producteur import publier
+
 from . import services
 from .filtres import PARAMETRE_IDS, filtrer_par_ids
 from .models import Secteur, Tendance
@@ -26,9 +28,9 @@ class SecteurViewSet(viewsets.ModelViewSet):
     """
     Secteurs d'activité.
 
-    La suppression d'un secteur supprime ses tendances (même service). Les concurrents et
-    études des autres services qui le référencent sont conservés : ils affichent alors
-    secteur_nom = null.
+    La suppression d'un secteur supprime ses tendances (même service) et publie l'événement
+    secteur.supprime (RabbitMQ) : concurrent-service et etude-service mettent alors secteur_id
+    à null pour les concurrents et études liés.
     """
 
     serializer_class = SecteurSerializer
@@ -36,6 +38,11 @@ class SecteurViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return filtrer_par_ids(Secteur.objects.all(), self.request)
+
+    def perform_destroy(self, secteur):
+        secteur_id, nom = secteur.id, secteur.nom
+        secteur.delete()
+        publier("secteur.supprime", {"secteur_id": secteur_id, "nom": nom})  # après le commit
 
 
 @extend_schema(parameters=[

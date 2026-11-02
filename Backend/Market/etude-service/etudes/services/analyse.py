@@ -70,11 +70,12 @@ def analyser_projet(projet_id: int):
 
     Un projet sans étude n'est pas une erreur : on renvoie alors une
     structure vide avec le niveau de concurrence "inconnu" (aucun appel distant).
-    Un secteur supprimé dans SECTEUR-SERVICE est ignoré (nom de secteur null dans "etudes").
+    Un secteur supprimé dans SECTEUR-SERVICE (secteur_id null) est ignoré : nom de secteur
+    null dans "etudes".
     """
     etudes = list(EtudeMarche.objects.filter(projet_id=projet_id))
 
-    secteur_ids = {e.secteur_id for e in etudes}
+    secteur_ids = {e.secteur_id for e in etudes if e.secteur_id is not None}
     secteurs = SecteurClient().list(ids=secteur_ids) if secteur_ids else []  # triés par nom
     noms = {s["id"]: s["nom"] for s in secteurs}
 

@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "drf_spectacular",
+    # Communication asynchrone (RabbitMQ) : outbox, messages traités, consume_events
+    "evenements",
     # Application métier
     "swot",
 ]
@@ -161,6 +163,21 @@ SERVICES_URLS = {
 SERVICE_CLIENT_TIMEOUT = float(os.getenv("SERVICE_CLIENT_TIMEOUT", "3"))  # secondes
 SERVICE_CLIENT_RETRIES = 1  # une nouvelle tentative en cas d'erreur réseau
 
+# --- RabbitMQ (communication asynchrone, voir evenements/) ----------------------
+# Les producers publient sur l'exchange topic "market.events" ; les consumers tournent
+# dans un conteneur séparé (python manage.py consume_events).
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
+RABBITMQ_PORT = int(os.getenv("RABBITMQ_PORT", "5672"))
+RABBITMQ_USER = os.getenv("RABBITMQ_USER", "market")
+RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "market")
+# Événements publiés par ce service (routing keys) : active le relais de l'outbox
+EVENEMENTS_PUBLIES = []
+# Événements consommés : queue -> (routing key, handler)
+EVENEMENTS_CONSOMMES = {
+    "swot.etude-finalisee": ("etude.finalisee", "swot.handlers.etude_finalisee"),
+    "swot.etude-supprimee": ("etude.supprimee", "swot.handlers.etude_supprimee"),
+}
+
 # --- Logs -----------------------------------------------------------------------
 LOGGING = {
     "version": 1,
@@ -169,6 +186,7 @@ LOGGING = {
     "loggers": {
         "swot": {"handlers": ["console"], "level": "INFO"},
         "clients": {"handlers": ["console"], "level": "INFO"},
+        "evenements": {"handlers": ["console"], "level": "INFO"},
     },
 }
 

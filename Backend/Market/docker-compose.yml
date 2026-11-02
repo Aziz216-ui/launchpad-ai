@@ -8,6 +8,10 @@
 # Entre conteneurs, l'adresse lue dans Eureka "localhost:<port>" est réécrite en
 # host.docker.internal:<port> (EUREKA_LOCALHOST_ALIAS) ; en repli (Eureka arrêté),
 # les URL directes <NOM>_SERVICE_URL passent par le réseau Docker market-net.
+#
+# Communication asynchrone : RabbitMQ (exchange topic "market.events", interface web
+# http://localhost:15672) et un conteneur consumer par service qui reçoit des événements
+# (python manage.py consume_events) : concurrent-consumer, etude-consumer, swot-consumer.
 # =============================================================================
 
 x-service-commun: &service-commun
@@ -31,6 +35,21 @@ x-env-commun: &env-commun
   CONCURRENT_SERVICE_URL: http://concurrent-service:8011
   ETUDE_SERVICE_URL: http://etude-service:8012
   SWOT_SERVICE_URL: http://swot-service:8013
+  # RabbitMQ (nom du service dans le réseau Docker)
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USER: ${RABBITMQ_USER:-market}
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-market}
+
+# Consumer RabbitMQ : même image que le service, autre commande, pas de port publié.
+# Il attend que le service soit "healthy" (migrations appliquées) et que RabbitMQ réponde.
+x-consumer-commun: &consumer-commun
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  networks:
+    - market-net
+  restart: unless-stopped
+  command: ["python", "manage.py", "consume_events"]
 
 x-db-commune: &db-commune
   image: postgres:16
@@ -44,6 +63,28 @@ x-db-commune: &db-commune
     retries: 10
 
 services:
+  # --- Broker de messages ------------------------------------------------------
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: rabbitmq   # nom de nœud fixe : les messages persistants survivent à un redémarrage
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-market}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-market}
+    ports:
+      - "5672:5672"     # AMQP (producers et consumers)
+      - "15672:15672"   # interface web de management
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - market-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
   # --- Bases de données (une par service, ports hôtes 5440-5443) ---------------
   secteur-db:
     <<: *db-commune
@@ -108,9 +149,17 @@ services:
       DB_PASSWORD: secteur_password
     ports:
       - "8010:8010"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8010/api/market/secteurs/health/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     depends_on:
       secteur-db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_started   # le service fonctionne sans RabbitMQ (outbox)
 
   concurrent-service:
     <<: *service-commun
@@ -126,9 +175,17 @@ services:
       DB_PASSWORD: concurrent_password
     ports:
       - "8011:8011"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8011/api/market/concurrents/health/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     depends_on:
       concurrent-db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_started   # le service fonctionne sans RabbitMQ (outbox)
 
   etude-service:
     <<: *service-commun
@@ -144,9 +201,17 @@ services:
       DB_PASSWORD: etude_password
     ports:
       - "8012:8012"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8012/api/market/etudes/health/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     depends_on:
       etude-db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_started   # le service fonctionne sans RabbitMQ (outbox)
 
   swot-service:
     <<: *service-commun
@@ -162,8 +227,65 @@ services:
       DB_PASSWORD: swot_password
     ports:
       - "8013:8013"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8013/api/market/swot/health/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     depends_on:
       swot-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started   # le service fonctionne sans RabbitMQ (outbox)
+
+  # --- Consumers RabbitMQ (python manage.py consume_events) ----------------------
+  concurrent-consumer:
+    <<: *consumer-commun
+    build: ./concurrent-service
+    container_name: concurrent-consumer
+    environment:
+      <<: *env-commun
+      DB_HOST: concurrent-db
+      DB_NAME: concurrent_db
+      DB_USER: concurrent_user
+      DB_PASSWORD: concurrent_password
+    depends_on:
+      concurrent-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  etude-consumer:
+    <<: *consumer-commun
+    build: ./etude-service
+    container_name: etude-consumer
+    environment:
+      <<: *env-commun
+      DB_HOST: etude-db
+      DB_NAME: etude_db
+      DB_USER: etude_user
+      DB_PASSWORD: etude_password
+    depends_on:
+      etude-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  swot-consumer:
+    <<: *consumer-commun
+    build: ./swot-service
+    container_name: swot-consumer
+    environment:
+      <<: *env-commun
+      DB_HOST: swot-db
+      DB_NAME: swot_db
+      DB_USER: swot_user
+      DB_PASSWORD: swot_password
+    depends_on:
+      swot-service:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
 networks:
@@ -175,3 +297,4 @@ volumes:
   concurrent_db_data:
   etude_db_data:
   swot_db_data:
+  rabbitmq_data:

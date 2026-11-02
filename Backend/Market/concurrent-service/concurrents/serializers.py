@@ -31,7 +31,7 @@ class ConcurrentSerializer(serializers.ModelSerializer):
     secteur = serializers.IntegerField(source="secteur_id", min_value=1, required=False,
                                        help_text="Alias de secteur_id (format de l'ancien Market-Service).")
     secteur_nom = serializers.SerializerMethodField(
-        help_text="Nom lu sur SECTEUR-SERVICE ; null si le secteur a été supprimé.")
+        help_text="Nom lu sur SECTEUR-SERVICE ; null si le secteur a été supprimé (secteur_id = null).")
 
     class Meta:
         model = Concurrent

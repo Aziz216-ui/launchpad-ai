@@ -9,7 +9,8 @@
       2. crée un secteur, une tendance, un concurrent lié, une étude liée et un persona ;
       3. génère la SWOT, récupère le rapport JSON et PDF, les analyses secteur et projet ;
       4. teste un secteur inexistant (400) et un service arrêté (503, docker stop/start) ;
-      5. supprime tout ce qu'il a créé.
+      5. supprime tout ce qu'il a créé (la SWOT est supprimée de façon asynchrone par
+         swot-consumer, à la réception de l'événement RabbitMQ etude.supprimee).
     Code de sortie 0 si tout est vert, 1 sinon.
 
 .EXAMPLE
@@ -53,6 +54,16 @@ function Test-Etape([string]$Nom, [bool]$Condition, [string]$Detail = "") {
         $script:echecs++
         Write-Host "  [ECHEC] $Nom $Detail" -ForegroundColor Red
     }
+}
+
+function Attendre-Condition([scriptblock]$Condition, [int]$Secondes = 20) {
+    # Effets asynchrones (consumers RabbitMQ) : on réessaie jusqu'au délai
+    $fin = (Get-Date).AddSeconds($Secondes)
+    while ((Get-Date) -lt $fin) {
+        if (& $Condition) { return $true }
+        Start-Sleep -Seconds 1
+    }
+    return $false
 }
 
 function Attendre-Service([string]$Chemin, [int]$Secondes = 90) {
@@ -162,9 +173,9 @@ if (-not $SansArretDeService) {
 
 # --- 5. Nettoyage -------------------------------------------------------------------
 Write-Host "`n5. Nettoyage"
-Test-Etape "DELETE étude -> 204 (personas et SWOT supprimés)" ((Invoke-Api DELETE "/api/market/etudes/$etudeId/").Status -eq 204)
-$r = Invoke-Api GET "/api/market/swot/?etude=$etudeId"
-Test-Etape "SWOT de l'étude supprimée dans SWOT-SERVICE" ($r.Status -eq 200 -and @($r.Json).Count -eq 0) "($(@($r.Json).Count) restant(s))"
+Test-Etape "DELETE étude -> 204 (personas supprimés, événement etude.supprimee)" ((Invoke-Api DELETE "/api/market/etudes/$etudeId/").Status -eq 204)
+$swotVide = Attendre-Condition { $r = Invoke-Api GET "/api/market/swot/?etude=$etudeId"; $r.Status -eq 200 -and @($r.Json).Count -eq 0 }
+Test-Etape "SWOT de l'étude supprimée par swot-consumer (RabbitMQ)" $swotVide
 Test-Etape "DELETE concurrent -> 204" ((Invoke-Api DELETE "/api/market/concurrents/$concurrentId/").Status -eq 204)
 Test-Etape "DELETE secteur -> 204 (tendance supprimée)" ((Invoke-Api DELETE "/api/market/secteurs/$secteurId/").Status -eq 204)
 Test-Etape "tendance supprimée en cascade" ((Invoke-Api GET "/api/market/tendances/$tendanceId/").Status -eq 404)

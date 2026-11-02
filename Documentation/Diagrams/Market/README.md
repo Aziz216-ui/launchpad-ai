@@ -1,7 +1,8 @@
 # Diagrammes — Étude de marché en microservices
 
 Diagrammes des 4 microservices de `Backend/Market/` (découpage de l'ancien Market-Service,
-dont les diagrammes restent dans [../Market-Service/](../Market-Service/)).
+dont les diagrammes restent dans [../Market-Service/](../Market-Service/)) : communication
+synchrone (REST + Eureka) et asynchrone (RabbitMQ, exchange `market.events`).
 Chaque diagramme existe en source Mermaid (`.md`, affiché par GitHub et VS Code) et en PNG.
 
 | Diagramme | Source | Image |
@@ -12,6 +13,8 @@ Chaque diagramme existe en source Mermaid (`.md`, affiché par GitHub et VS Code
 | Classes — etude-service | [diagramme-classes-etude-service.md](diagramme-classes-etude-service.md) | [PNG](diagramme-classes-etude-service.png) |
 | Classes — swot-service | [diagramme-classes-swot-service.md](diagramme-classes-swot-service.md) | [PNG](diagramme-classes-swot-service.png) |
 | Séquence : création d'un concurrent avec vérification du secteur via Eureka | [diagramme-sequence-creation-concurrent.md](diagramme-sequence-creation-concurrent.md) | [PNG](diagramme-sequence-creation-concurrent.png) |
+| Flux RabbitMQ Producer → Exchange → Queue → Consumer (`etude.finalisee`) | [flux-rabbitmq-etude-finalisee.md](flux-rabbitmq-etude-finalisee.md) | [PNG](flux-rabbitmq-etude-finalisee.png) |
+| Séquence : suppression d'une étude avec swot-consumer arrêté | [diagramme-sequence-suppression-etude-consumer-arrete.md](diagramme-sequence-suppression-etude-consumer-arrete.md) | [PNG](diagramme-sequence-suppression-etude-consumer-arrete.png) |
 
 ## Régénérer les images
 

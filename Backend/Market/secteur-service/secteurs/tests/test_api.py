@@ -10,6 +10,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from clients import ServiceIndisponible
+from evenements.models import EvenementOutbox
 from secteurs.models import Secteur, Tendance
 from secteurs.services import calculer_niveau_concurrence
 
@@ -61,6 +62,29 @@ class SecteurCrudTests(APITestCase):
         Tendance.objects.create(titre="Mobile", secteur=self.fintech)
         self.client.delete(reverse("secteur-detail", args=[self.fintech.id]))
         self.assertFalse(Tendance.objects.exists())
+
+    @mock.patch("evenements.producteur.envoyer")
+    def test_suppression_publie_secteur_supprime(self, envoyer):
+        with self.assertLogs("evenements.producteur", "INFO"), self.captureOnCommitCallbacks(execute=True):
+            response = self.client.delete(reverse("secteur-detail", args=[self.fintech.id]))
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        message = envoyer.call_args.args[0]
+        self.assertEqual(message["event"], "secteur.supprime")
+        self.assertEqual(message["data"], {"secteur_id": self.fintech.id, "nom": "FinTech"})
+
+    @mock.patch("evenements.producteur.envoyer")
+    def test_creation_et_modification_ne_publient_rien(self, envoyer):
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.post(reverse("secteur-list"), {"nom": "AgriTech"}, format="json")
+            self.client.patch(reverse("secteur-detail", args=[self.edtech.id]), {"description": "X"}, format="json")
+        envoyer.assert_not_called()
+
+    @mock.patch("evenements.producteur.envoyer", side_effect=ConnectionError("RabbitMQ arrêté"))
+    def test_suppression_reussit_meme_si_rabbitmq_est_arrete(self, envoyer):
+        with self.assertLogs("evenements.producteur", "ERROR"), self.captureOnCommitCallbacks(execute=True):
+            response = self.client.delete(reverse("secteur-detail", args=[self.fintech.id]))
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(EvenementOutbox.objects.get().routing_key, "secteur.supprime")
 
 
 class TendanceCrudTests(APITestCase):

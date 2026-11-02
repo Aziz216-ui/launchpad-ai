@@ -3,7 +3,8 @@ Modèle du concurrent-service : Concurrent.
 
 Le secteur appartient à SECTEUR-SERVICE : on ne stocke que son identifiant
 (secteur_id), sans clé étrangère. Son existence est vérifiée par appel REST
-à la création et à la modification (voir serializers.py).
+à la création et à la modification (voir serializers.py). Quand le secteur est
+supprimé, l'événement secteur.supprime (RabbitMQ) remet secteur_id à null (handlers.py).
 """
 
 from decimal import Decimal
@@ -16,7 +17,8 @@ class Concurrent(models.Model):
     """Concurrent présent dans un secteur."""
 
     nom = models.CharField(max_length=150)
-    secteur_id = models.PositiveIntegerField(db_index=True)  # pas de FK : SECTEUR-SERVICE
+    # Pas de FK : SECTEUR-SERVICE. null : secteur supprimé (événement secteur.supprime)
+    secteur_id = models.PositiveIntegerField(null=True, blank=True, db_index=True)
     site_web = models.URLField(blank=True)
     description = models.TextField(blank=True)
     forces = models.TextField(blank=True)

@@ -3,7 +3,8 @@ Modèles de l'etude-service : EtudeMarche et Persona.
 
 Persona reste liée à EtudeMarche par une clé étrangère (même service, même base).
 Les secteurs, concurrents et tendances appartiennent à d'autres services : on ne stocke
-que leurs identifiants (secteur_id, concurrent_ids, tendance_ids), vérifiés par appel REST.
+que leurs identifiants (secteur_id, concurrent_ids, tendance_ids), vérifiés par appel REST
+et tenus à jour par les événements RabbitMQ secteur.supprime et concurrent.supprime (handlers.py).
 Les projets et utilisateurs sont gérés par d'autres microservices (projet_id, entrepreneur_id).
 """
 
@@ -24,7 +25,8 @@ class EtudeMarche(models.Model):
     # Entrepreneur (utilisateur du User-Service) : pas de FK, nullable pour les études existantes
     entrepreneur_id = models.PositiveIntegerField(null=True, blank=True, db_index=True)
     statut = models.CharField(max_length=10, choices=Statut.choices, default=Statut.BROUILLON)
-    secteur_id = models.PositiveIntegerField(db_index=True)  # pas de FK : SECTEUR-SERVICE
+    # Pas de FK : SECTEUR-SERVICE. null : secteur supprimé (événement secteur.supprime)
+    secteur_id = models.PositiveIntegerField(null=True, blank=True, db_index=True)
     titre = models.CharField(max_length=200)
     hypotheses = models.TextField(blank=True)
     # Offre de l'entrepreneur, comparée aux prix des concurrents

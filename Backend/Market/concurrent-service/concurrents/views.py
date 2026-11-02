@@ -6,6 +6,8 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from evenements.producteur import publier
+
 from .filtres import PARAMETRE_IDS, filtrer_par_ids
 from .models import Concurrent
 from .serializers import ConcurrentSerializer, HealthSerializer, ServiceIndisponibleSerializer
@@ -27,6 +29,8 @@ class ConcurrentViewSet(viewsets.ModelViewSet):
     """
     Concurrents. Le secteur (secteur_id) est vérifié auprès de SECTEUR-SERVICE :
     400 "Secteur introuvable" s'il n'existe pas, 503 si le service est injoignable.
+    La suppression publie concurrent.supprime (RabbitMQ) : etude-service retire alors
+    l'id du concurrent des études.
     """
 
     serializer_class = ConcurrentSerializer
@@ -42,6 +46,11 @@ class ConcurrentViewSet(viewsets.ModelViewSet):
         if pays:
             queryset = queryset.filter(pays__iexact=pays)
         return queryset
+
+    def perform_destroy(self, concurrent):
+        concurrent_id, secteur_id = concurrent.id, concurrent.secteur_id
+        concurrent.delete()
+        publier("concurrent.supprime", {"concurrent_id": concurrent_id, "secteur_id": secteur_id})
 
 
 class HealthView(APIView):

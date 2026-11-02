@@ -8,7 +8,7 @@ Il fait partie des 4 services de l'étude de marché : voir [../README.md](../RE
 | Nom Eureka | `CONCURRENT-SERVICE` |
 | Port | **8011** |
 | Base | PostgreSQL `concurrent_db` (conteneur `concurrent-db`, port hôte 5441) |
-| Entité | `Concurrent` (`secteur_id` : entier, **pas de clé étrangère**) |
+| Entité | `Concurrent` (`secteur_id` : entier nullable, **pas de clé étrangère**) |
 | Health check | `GET /api/market/concurrents/health/` |
 | Swagger UI | http://localhost:8011/api/market/concurrents/docs/ |
 | Schéma OpenAPI | http://localhost:8011/api/market/concurrents/schema/ |
@@ -32,6 +32,16 @@ Il fait partie des 4 services de l'étude de marché : voir [../README.md](../RE
 - **Lecture** : `secteur_nom` est lu en **un seul** appel `?ids=...` pour toute la liste.
   Secteur supprimé ou SECTEUR-SERVICE arrêté → `secteur_nom = null` (la liste reste consultable).
 
+## Événements RabbitMQ (exchange `market.events`)
+
+| Rôle | Routing key | Queue | Action |
+|---|---|---|---|
+| Producer | `concurrent.supprime` (`concurrent_id`, `secteur_id`) | — | publié après la suppression d'un concurrent |
+| Consumer | `secteur.supprime` | `concurrent.secteur-supprime` | `secteur_id = null` pour les concurrents du secteur supprimé |
+
+Le consumer tourne dans le conteneur **`concurrent-consumer`** (`python manage.py consume_events`) ;
+handler : `concurrents/handlers.py`. Détails : [../README.md](../README.md#communication-asynchrone-rabbitmq).
+
 Format JSON compatible avec l'ancien Market-Service : `secteur` (id) et `secteur_nom` sont
 conservés, `secteur_id` est ajouté ; en écriture, `secteur` ou `secteur_id` sont acceptés.
 
@@ -41,8 +51,10 @@ conservés, `secteur_id` est ajouté ; en écriture, `secteur` ou `secteur_id` s
 concurrent-service/
 ├── config/                 # settings (port, nom Eureka, SECTEUR_SERVICE_URL), urls
 ├── clients/                # base.py (Eureka, timeout, nouvelle tentative) + secteur_client.py
+├── evenements/             # RabbitMQ : producer, outbox + relais, consumer, consume_events
 ├── concurrents/
 │   ├── models.py · serializers.py (vérification du secteur) · views.py · urls.py · admin.py
+│   ├── handlers.py         # secteur.supprime
 │   ├── eureka.py · exceptions.py · filtres.py
 │   ├── management/commands/seed_concurrents.py   # --ids fichier.json (ids réels des secteurs)
 │   └── tests/              # API (SECTEUR-SERVICE mocké), clients, CSRF, Eureka

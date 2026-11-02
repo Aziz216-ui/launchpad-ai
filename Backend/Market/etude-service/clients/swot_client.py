@@ -14,7 +14,3 @@ class SwotClient(ServiceClient):
     def apercu(self, etude_id):
         """SWOT calculée à la volée, sans enregistrement : [{type, description}, ...]."""
         return self.requete(f"/api/market/etudes/{int(etude_id)}/generer-swot/")["elements"]
-
-    def supprimer_pour_etude(self, etude_id):
-        """Supprime la SWOT d'une étude supprimée (DELETE /api/market/swot/etude/<id>/)."""
-        self.requete(f"{self.ressource}etude/{int(etude_id)}/", methode="DELETE")

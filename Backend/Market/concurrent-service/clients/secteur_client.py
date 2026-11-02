@@ -18,6 +18,9 @@ class SecteurClient(ServiceClient):
         Utilisé pour l'affichage (secteur_nom) : si SECTEUR-SERVICE est indisponible,
         la liste des concurrents reste consultable avec secteur_nom = null.
         """
+        ids = {i for i in ids if i is not None}  # secteur_id null : secteur supprimé
+        if not ids:
+            return {}
         try:
             return {s["id"]: s["nom"] for s in self.list(ids=ids)}
         except ServiceIndisponible as exc:

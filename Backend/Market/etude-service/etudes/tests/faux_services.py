@@ -17,7 +17,6 @@ class FauxServices:
         self.tendances = {}    # id -> tendance (format SECTEUR-SERVICE)
         self.swot = []         # éléments enregistrés dans SWOT-SERVICE
         self.apercu = []       # SWOT calculée renvoyée par GET /etudes/<id>/generer-swot/
-        self.swot_supprimee = []
         self._id = 0
 
     def _nouvel_id(self):
@@ -73,9 +72,6 @@ class FauxServices:
     def _swot_apercu(self, client, etude_id):
         return self.apercu
 
-    def _swot_supprimer(self, client, etude_id):
-        self.swot_supprimee.append(etude_id)
-
     def demarrer(self, test):
         """Installe les mocks pour la durée du test ; renvoie {nom: mock}."""
         cibles = {
@@ -87,7 +83,6 @@ class FauxServices:
             "concurrent_list": ("clients.concurrent_client.ConcurrentClient.list", self._concurrent_list),
             "swot_de_l_etude": ("clients.swot_client.SwotClient.de_l_etude", self._swot_de_l_etude),
             "swot_apercu": ("clients.swot_client.SwotClient.apercu", self._swot_apercu),
-            "swot_supprimer": ("clients.swot_client.SwotClient.supprimer_pour_etude", self._swot_supprimer),
         }
         mocks = {}
         for nom, (cible, fonction) in cibles.items():

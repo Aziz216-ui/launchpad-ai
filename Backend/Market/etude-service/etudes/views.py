@@ -1,7 +1,5 @@
 """Vues de l'API de l'etude-service."""
 
-import logging
-
 from django.conf import settings
 from django.http import HttpResponse
 from drf_spectacular.types import OpenApiTypes
@@ -11,7 +9,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from clients import ServiceIndisponible, SwotClient
+from evenements.producteur import publier
 
 from . import services
 from .filtres import PARAMETRE_IDS, filtrer_par_ids
@@ -27,8 +25,6 @@ from .serializers import (
     RapportEtudeSerializer,
     ServiceIndisponibleSerializer,
 )
-
-logger = logging.getLogger(__name__)
 
 ERREURS = {503: ServiceIndisponibleSerializer}
 
@@ -55,6 +51,9 @@ class EtudeMarcheViewSet(viewsets.ModelViewSet):
     (CONCURRENT-SERVICE) et tendances (SECTEUR-SERVICE).
     Les actions /finaliser/, /comparaison-prix/, /opportunites-menaces/, /rapport/ et
     /rapport/pdf/ portent sur une étude ; /generer-swot/ est servie par SWOT-SERVICE.
+
+    Événements RabbitMQ publiés (après le commit) : etude.finalisee (SWOT-SERVICE génère la SWOT)
+    et etude.supprimee (SWOT-SERVICE supprime la SWOT de l'étude).
     """
 
     search_fields = ["titre"]
@@ -77,21 +76,23 @@ class EtudeMarcheViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, etude):
         # Les personas sont supprimés en cascade (même base). La SWOT est dans SWOT-SERVICE :
-        # suppression demandée au mieux, sans bloquer la suppression de l'étude.
-        try:
-            SwotClient().supprimer_pour_etude(etude.id)
-        except ServiceIndisponible as exc:
-            logger.warning("SWOT de l'étude %s non supprimée : %s", etude.id, exc)
+        # elle est supprimée par son consumer à la réception de etude.supprimee (asynchrone).
+        etude_id, projet_id = etude.id, etude.projet_id
         etude.delete()
+        publier("etude.supprimee", {"etude_id": etude_id, "projet_id": projet_id})
 
     @extend_schema(request=None, responses={200: EtudeMarcheDetailSerializer, **ERREURS},
-                   summary="Finaliser une étude (statut -> finalisee)")
+                   summary="Finaliser une étude (statut -> finalisee)",
+                   description="Publie etude.finalisee : SWOT-SERVICE génère alors la SWOT de l'étude "
+                               "(les éléments saisis à la main sont conservés).")
     @action(detail=True, methods=["post"])
     def finaliser(self, request, pk=None):
         etude = self.get_object()
         if etude.statut != EtudeMarche.Statut.FINALISEE:
             etude.statut = EtudeMarche.Statut.FINALISEE
             etude.save(update_fields=["statut", "date_mise_a_jour"])
+            # Seulement au passage à "finalisee" (finaliser deux fois ne republie pas)
+            publier("etude.finalisee", {"etude_id": etude.id, "projet_id": etude.projet_id})
         return Response(EtudeMarcheDetailSerializer(etude).data)
 
     @extend_schema(responses={200: ComparaisonPrixSerializer, **ERREURS},

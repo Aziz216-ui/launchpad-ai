@@ -7,6 +7,7 @@ import json
 import tempfile
 from decimal import Decimal
 from io import StringIO
+from unittest import mock
 
 from django.core.management import call_command
 from django.urls import reverse
@@ -15,6 +16,7 @@ from rest_framework.test import APITestCase
 
 from clients import ServiceIndisponible
 from etudes.models import EtudeMarche, Persona
+from evenements.models import EvenementOutbox
 
 from .faux_services import FauxServices
 
@@ -156,20 +158,27 @@ class EtudeCrudTests(EtudeBaseTestCase):
         self.assertEqual([e["titre"] for e in self.client.get(liste, {"ids": str(self.etude.id)}).data],
                          ["Paiement PME"])
 
-    def test_supprimer_brouillon_supprime_personas_et_swot(self):
+    @mock.patch("evenements.producteur.envoyer")
+    def test_supprimer_brouillon_supprime_personas_et_publie_etude_supprimee(self, envoyer):
         Persona.objects.create(etude=self.etude, nom="Sami")
-        response = self.client.delete(self.url("detail"))
+        with self.assertLogs("evenements.producteur", "INFO") as logs, self.captureOnCommitCallbacks(execute=True):
+            response = self.client.delete(self.url("detail"))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Persona.objects.count(), 0)
-        # La SWOT est supprimée dans SWOT-SERVICE
-        self.assertEqual(self.distant.swot_supprimee, [self.etude.id])
+        # La SWOT est supprimée par SWOT-SERVICE à la réception de l'événement (asynchrone)
+        message = envoyer.call_args.args[0]
+        self.assertEqual(message["event"], "etude.supprimee")
+        self.assertEqual(message["data"], {"etude_id": self.etude.id, "projet_id": 1})
+        self.assertIn(f"[PRODUCER] etude.supprimee etude_id={self.etude.id}", logs.output[0])
 
-    def test_supprimer_meme_si_swot_service_indisponible(self):
-        self.mocks["swot_supprimer"].side_effect = ServiceIndisponible("SWOT-SERVICE")
-        with self.assertLogs("etudes.views", "WARNING"):
+    @mock.patch("evenements.producteur.envoyer", side_effect=ConnectionError("RabbitMQ arrêté"))
+    def test_supprimer_meme_si_rabbitmq_est_arrete(self, envoyer):
+        with self.assertLogs("evenements.producteur", "ERROR"), self.captureOnCommitCallbacks(execute=True):
             response = self.client.delete(self.url("detail"))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(EtudeMarche.objects.exists())
+        # Renvoyé plus tard par le relais de l'outbox
+        self.assertEqual(EvenementOutbox.objects.get().routing_key, "etude.supprimee")
 
     def test_secteur_supprime_secteur_nom_null(self):
         del self.distant.secteurs[self.secteur]
@@ -179,14 +188,37 @@ class EtudeCrudTests(EtudeBaseTestCase):
         self.assertEqual(rapport.status_code, status.HTTP_200_OK)
         self.assertIsNone(rapport.json()["marche_cible"]["secteur"]["nom"])
 
-    def test_finaliser(self):
-        response = self.client.post(self.url("finaliser"))
+    @mock.patch("evenements.producteur.envoyer")
+    def test_finaliser(self, envoyer):
+        with self.assertLogs("evenements.producteur", "INFO"), self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(self.url("finaliser"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["statut"], "finalisee")
         self.etude.refresh_from_db()
         self.assertEqual(self.etude.statut, "finalisee")
-        # Idempotent
-        self.assertEqual(self.client.post(self.url("finaliser")).status_code, status.HTTP_200_OK)
+        # etude.finalisee publié : SWOT-SERVICE génère la SWOT
+        message = envoyer.call_args.args[0]
+        self.assertEqual((message["event"], message["data"]), ("etude.finalisee", {"etude_id": self.etude.id,
+                                                                                  "projet_id": 1}))
+        # Idempotent : une 2e finalisation ne republie pas
+        with self.captureOnCommitCallbacks(execute=True):
+            self.assertEqual(self.client.post(self.url("finaliser")).status_code, status.HTTP_200_OK)
+        envoyer.assert_called_once()
+
+    @mock.patch("evenements.producteur.envoyer")
+    def test_modification_ne_publie_rien(self, envoyer):
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.patch(self.url("detail"), {"cible": "PME"}, format="json")
+        envoyer.assert_not_called()
+
+    def test_etude_sans_secteur_lisible(self):
+        # secteur_id remis à null par l'événement secteur.supprime
+        self.etude.secteur_id = None
+        self.etude.save()
+        self.assertIsNone(self.client.get(reverse("etude-list")).json()[0]["secteur_nom"])
+        rapport = self.client.get(self.url("rapport"))
+        self.assertEqual(rapport.status_code, status.HTTP_200_OK)
+        self.assertEqual(rapport.json()["marche_cible"]["secteur"], {"id": None, "nom": None})
 
     def test_finaliser_etude_inexistante(self):
         response = self.client.post(reverse("etude-finaliser", args=[9999]))
