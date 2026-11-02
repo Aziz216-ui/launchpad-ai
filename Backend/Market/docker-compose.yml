@@ -1,0 +1,177 @@
+# =============================================================================
+# Étude de marché LaunchPad AI : 4 microservices Django + 4 bases PostgreSQL.
+# Lancement (depuis Backend/Market) : docker compose up --build -d
+#
+# Chaque service a SA base (aucune base partagée) et s'enregistre dans Eureka
+# (Backend/Eureka, lancé sur la machine hôte, port 8761) sous localhost:<port>,
+# pour que l'API Gateway (hôte, port 8090) puisse le joindre.
+# Entre conteneurs, l'adresse lue dans Eureka "localhost:<port>" est réécrite en
+# host.docker.internal:<port> (EUREKA_LOCALHOST_ALIAS) ; en repli (Eureka arrêté),
+# les URL directes <NOM>_SERVICE_URL passent par le réseau Docker market-net.
+# =============================================================================
+
+x-service-commun: &service-commun
+  extra_hosts:
+    - "host.docker.internal:host-gateway"   # nécessaire sous Linux, sans effet sous Docker Desktop
+  networks:
+    - market-net
+  restart: unless-stopped
+
+x-env-commun: &env-commun
+  DEBUG: ${DEBUG:-False}
+  SECRET_KEY: ${SECRET_KEY:-changez-moi-en-production}
+  DB_PORT: "5432"
+  EUREKA_ENABLED: ${EUREKA_ENABLED:-true}
+  EUREKA_SERVER_URL: http://host.docker.internal:8761/eureka/
+  EUREKA_INSTANCE_HOST: localhost
+  EUREKA_LOCALHOST_ALIAS: host.docker.internal
+  CORS_ALLOWED_ORIGINS: http://localhost:4200
+  # Appels directs (repli sans Eureka) : nom du service dans le réseau Docker
+  SECTEUR_SERVICE_URL: http://secteur-service:8010
+  CONCURRENT_SERVICE_URL: http://concurrent-service:8011
+  ETUDE_SERVICE_URL: http://etude-service:8012
+  SWOT_SERVICE_URL: http://swot-service:8013
+
+x-db-commune: &db-commune
+  image: postgres:16
+  networks:
+    - market-net
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+    interval: 5s
+    timeout: 5s
+    retries: 10
+
+services:
+  # --- Bases de données (une par service, ports hôtes 5440-5443) ---------------
+  secteur-db:
+    <<: *db-commune
+    container_name: secteur-db
+    environment:
+      POSTGRES_DB: secteur_db
+      POSTGRES_USER: secteur_user
+      POSTGRES_PASSWORD: secteur_password
+    ports:
+      - "5440:5432"
+    volumes:
+      - secteur_db_data:/var/lib/postgresql/data
+
+  concurrent-db:
+    <<: *db-commune
+    container_name: concurrent-db
+    environment:
+      POSTGRES_DB: concurrent_db
+      POSTGRES_USER: concurrent_user
+      POSTGRES_PASSWORD: concurrent_password
+    ports:
+      - "5441:5432"
+    volumes:
+      - concurrent_db_data:/var/lib/postgresql/data
+
+  etude-db:
+    <<: *db-commune
+    container_name: etude-db
+    environment:
+      POSTGRES_DB: etude_db
+      POSTGRES_USER: etude_user
+      POSTGRES_PASSWORD: etude_password
+    ports:
+      - "5442:5432"
+    volumes:
+      - etude_db_data:/var/lib/postgresql/data
+
+  swot-db:
+    <<: *db-commune
+    container_name: swot-db
+    environment:
+      POSTGRES_DB: swot_db
+      POSTGRES_USER: swot_user
+      POSTGRES_PASSWORD: swot_password
+    ports:
+      - "5443:5432"
+    volumes:
+      - swot_db_data:/var/lib/postgresql/data
+
+  # --- Microservices (ports 8010-8013) -----------------------------------------
+  secteur-service:
+    <<: *service-commun
+    build: ./secteur-service
+    container_name: secteur-service
+    environment:
+      <<: *env-commun
+      ALLOWED_HOSTS: localhost,127.0.0.1,host.docker.internal,secteur-service
+      CSRF_TRUSTED_ORIGINS: http://localhost:8090,http://localhost:4200,http://localhost:8010
+      DB_HOST: secteur-db
+      DB_NAME: secteur_db
+      DB_USER: secteur_user
+      DB_PASSWORD: secteur_password
+    ports:
+      - "8010:8010"
+    depends_on:
+      secteur-db:
+        condition: service_healthy
+
+  concurrent-service:
+    <<: *service-commun
+    build: ./concurrent-service
+    container_name: concurrent-service
+    environment:
+      <<: *env-commun
+      ALLOWED_HOSTS: localhost,127.0.0.1,host.docker.internal,concurrent-service
+      CSRF_TRUSTED_ORIGINS: http://localhost:8090,http://localhost:4200,http://localhost:8011
+      DB_HOST: concurrent-db
+      DB_NAME: concurrent_db
+      DB_USER: concurrent_user
+      DB_PASSWORD: concurrent_password
+    ports:
+      - "8011:8011"
+    depends_on:
+      concurrent-db:
+        condition: service_healthy
+
+  etude-service:
+    <<: *service-commun
+    build: ./etude-service
+    container_name: etude-service
+    environment:
+      <<: *env-commun
+      ALLOWED_HOSTS: localhost,127.0.0.1,host.docker.internal,etude-service
+      CSRF_TRUSTED_ORIGINS: http://localhost:8090,http://localhost:4200,http://localhost:8012
+      DB_HOST: etude-db
+      DB_NAME: etude_db
+      DB_USER: etude_user
+      DB_PASSWORD: etude_password
+    ports:
+      - "8012:8012"
+    depends_on:
+      etude-db:
+        condition: service_healthy
+
+  swot-service:
+    <<: *service-commun
+    build: ./swot-service
+    container_name: swot-service
+    environment:
+      <<: *env-commun
+      ALLOWED_HOSTS: localhost,127.0.0.1,host.docker.internal,swot-service
+      CSRF_TRUSTED_ORIGINS: http://localhost:8090,http://localhost:4200,http://localhost:8013
+      DB_HOST: swot-db
+      DB_NAME: swot_db
+      DB_USER: swot_user
+      DB_PASSWORD: swot_password
+    ports:
+      - "8013:8013"
+    depends_on:
+      swot-db:
+        condition: service_healthy
+
+networks:
+  market-net:
+    name: market-net
+
+volumes:
+  secteur_db_data:
+  concurrent_db_data:
+  etude_db_data:
+  swot_db_data:

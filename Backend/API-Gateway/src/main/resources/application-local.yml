@@ -13,8 +13,14 @@ eureka:
 
 launchpad:
   services:
-    market:
-      uri: ${MARKET_SERVICE_URI:http://localhost:8005}
+    secteur:
+      uri: ${SECTEUR_SERVICE_URI:http://localhost:8010}
+    concurrent:
+      uri: ${CONCURRENT_SERVICE_URI:http://localhost:8011}
+    etude:
+      uri: ${ETUDE_SERVICE_URI:http://localhost:8012}
+    swot:
+      uri: ${SWOT_SERVICE_URI:http://localhost:8013}
     accounting:
       uri: ${ACCOUNTING_SERVICE_URI:http://localhost:8085}
     lawyer:

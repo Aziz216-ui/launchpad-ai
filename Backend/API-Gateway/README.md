@@ -28,21 +28,22 @@ OAuth2 Resource Server (JWT Keycloak).
                        ┌──────────────────────────── API Gateway :8090 ────────────────────────────┐
  Frontend Angular      │ CORS (http://localhost:4200) · JWT Keycloak (si JWT_ENABLED=true)           │
  http://localhost:4200 │ logs + X-Request-Id · 503 JSON si service absent                            │
-        │              │ routage par préfixe : /api/market/** → lb://MARKET-SERVICE …                │
+        │              │ routage par préfixe : /api/market/secteurs/** → lb://SECTEUR-SERVICE …      │
         └─────────────►└───────────────┬─────────────────────────────────────────────┬──────────────┘
-                                       │ 1. « où est MARKET-SERVICE ? »               │ 2. requête relayée
+                                       │ 1. « où est SECTEUR-SERVICE ? »              │ 2. requête relayée
                                        ▼                                             ▼   (chemin inchangé)
                           ┌────────────────────────┐          ┌──────────────────────────────────────┐
-                          │ Eureka :8761           │◄─────────│ Market-Service :8005 (MARKET-SERVICE) │
+                          │ Eureka :8761           │◄─────────│ Market : 4 services :8010-8013        │
                           │ registre des services  │ enregis- │ Professional-Service :8085            │
                           └────────────────────────┘ trement  │ lawyer-space :8082 · Legal :3003 …    │
                                                               └──────────────────────────────────────┘
 ```
 
-1. Chaque service s'enregistre dans Eureka sous son nom (ex. `MARKET-SERVICE`).
-2. La gateway choisit la route d'après le préfixe (`/api/market/**`), demande à Eureka où se
-   trouve le service (`lb://MARKET-SERVICE`) et lui relaie la requête **sans changer le chemin**.
-3. Si le service n'est pas enregistré ou ne répond pas : `503 {"service": "MARKET-SERVICE", "message": "Service indisponible"}`.
+1. Chaque service s'enregistre dans Eureka sous son nom (ex. `SECTEUR-SERVICE`).
+2. La gateway choisit la route d'après le préfixe (`/api/market/secteurs/**`), demande à Eureka où se
+   trouve le service (`lb://SECTEUR-SERVICE`) et lui relaie la requête **sans changer le chemin**.
+3. Si le service n'est pas enregistré, ne répond pas ou coupe la connexion avant de répondre :
+   `503 {"service": "SECTEUR-SERVICE", "message": "Service indisponible"}`.
 
 Fonctionnalités transverses (aucun service n'a à les refaire) :
 - **CORS** : uniquement ici (origine `http://localhost:4200`, configurable par `CORS_ALLOWED_ORIGINS`) ;
@@ -60,13 +61,21 @@ Fonctionnalités transverses (aucun service n'a à les refaire) :
 
 | Service | Nom Eureka | Port | Préfixe (route) | Route id | Variable de surcharge | Docs (côté service) |
 |---|---|---|---|---|---|---|
-| Market (étude de marché) | `MARKET-SERVICE` | 8005 | `/api/market/**` | `market-service` | `MARKET_SERVICE_URI` | `/api/market/docs/`, `/api/market/schema/` |
+| Market : secteurs, tendances | `SECTEUR-SERVICE` | 8010 | `/api/market/secteurs/**`, `/api/market/tendances/**`, `/api/market/analyse/secteur/**` | `market-secteur-service` | `SECTEUR_SERVICE_URI` | `/api/market/secteurs/docs/`, `/api/market/secteurs/schema/` |
+| Market : concurrents | `CONCURRENT-SERVICE` | 8011 | `/api/market/concurrents/**` | `market-concurrent-service` | `CONCURRENT_SERVICE_URI` | `/api/market/concurrents/docs/`, `/api/market/concurrents/schema/` |
+| Market : SWOT | `SWOT-SERVICE` | 8013 | `/api/market/etudes/*/generer-swot/**`, `/api/market/swot/**` | `market-swot-service` | `SWOT_SERVICE_URI` | `/api/market/swot/docs/`, `/api/market/swot/schema/` |
+| Market : études, personas | `ETUDE-SERVICE` | 8012 | `/api/market/etudes/**`, `/api/market/personas/**`, `/api/market/analyse/projet/**` | `market-etude-service` | `ETUDE_SERVICE_URI` | `/api/market/etudes/docs/`, `/api/market/etudes/schema/` |
 | Comptable | `PROFESSIONAL-SERVICE` | 8085 | `/api/comptable/**` | `accounting-service` | `ACCOUNTING_SERVICE_URI` | `/api/comptable/docs`, `/api/comptable/docs.json` |
 | Avocat | `lawyer-space` (minuscules) | 8082 | `/api/lawyer/**` | `lawyer-service` | `LAWYER_SERVICE_URI` | `/swagger-ui/**`, `/v3/api-docs/**` (hors préfixe) |
 | Juridique | `LEGAL-SERVICE` | 3003 | `/api/legal/**` | `legal-service` | `LEGAL_SERVICE_URI` | `/api/docs`, `/api/docs-json` (hors préfixe) |
 | IA | ⚠️ `AI-SERVICE` **à confirmer** | ⚠️ **à confirmer** | `/api/ai/**` | `ai-service` | `AI_SERVICE_URI` | ⚠️ **à confirmer** |
 | Finance | ⚠️ `FINANCE-SERVICE` **à confirmer** | ⚠️ **à confirmer** | `/api/finance/**` | `finance-service` | `FINANCE_SERVICE_URI` | ⚠️ **à confirmer** |
 | Utilisateurs | ⚠️ `USER-SERVICE` **à confirmer** | ⚠️ **à confirmer** | `/api/auth/**`, `/api/users/**` | `user-service` | `USER_SERVICE_URI` | ⚠️ **à confirmer** |
+
+Les 4 routes Market sont déclarées **dans cet ordre** : la SWOT passe avant les études, sinon
+`/api/market/etudes/5/generer-swot/` partirait vers ETUDE-SERVICE. Chaque service Market a aussi
+une route de docs explicite (`market-secteur-docs`, `market-concurrent-docs`, `market-swot-docs`,
+`market-etude-docs`), placée en tête. Détails : [Backend/Market/README.md](../Market/README.md).
 
 Routes de documentation supplémentaires (réécriture, pour les docs servies hors préfixe) :
 
@@ -84,7 +93,10 @@ Les routes juridiques `/docs/legal…` sont à supprimer si le Legal-Service pas
 
 | Service | Swagger UI | Définition OpenAPI |
 |---|---|---|
-| Market | http://localhost:8090/api/market/docs/ | http://localhost:8090/api/market/schema/ |
+| Market : secteurs, tendances | http://localhost:8090/api/market/secteurs/docs/ | http://localhost:8090/api/market/secteurs/schema/ |
+| Market : concurrents | http://localhost:8090/api/market/concurrents/docs/ | http://localhost:8090/api/market/concurrents/schema/ |
+| Market : études, personas | http://localhost:8090/api/market/etudes/docs/ | http://localhost:8090/api/market/etudes/schema/ |
+| Market : SWOT | http://localhost:8090/api/market/swot/docs/ | http://localhost:8090/api/market/swot/schema/ |
 | Comptable | http://localhost:8090/api/comptable/docs | http://localhost:8090/api/comptable/docs.json |
 | Avocat | http://localhost:8090/docs/lawyer/swagger-ui/index.html | http://localhost:8090/docs/lawyer/v3/api-docs |
 | Juridique | http://localhost:8090/docs/legal | http://localhost:8090/docs/legal-json |
@@ -123,7 +135,7 @@ Tout est dans `src/main/resources/` :
 
 - **eureka** (par défaut) : la gateway s'enregistre dans Eureka et route en `lb://<NOM-EUREKA>`.
   Le registre est relu toutes les 5 s : un service qui démarre est joignable quelques secondes après.
-- **local** : sans Eureka, URL directes `http://localhost:<port>` pour Market (8005),
+- **local** : sans Eureka, URL directes `http://localhost:<port>` pour Market (8010 à 8013),
   Comptable (8085), Avocat (8082) et Juridique (3003). IA, Finance et Utilisateurs n'ont pas
   encore de port confirmé : ils répondent 503 tant que `AI_SERVICE_URI`, `FINANCE_SERVICE_URI`
   ou `USER_SERVICE_URI` n'est pas défini.
@@ -169,11 +181,12 @@ docker compose logs -f api-gateway
 Eureka et les services tournent sur la machine hôte : le `docker-compose.yml` utilise
 `EUREKA_SERVER_URL=http://host.docker.internal:8761/eureka/`. Un service enregistré dans Eureka
 sous `localhost` n'est pas joignable depuis le conteneur (`localhost` y désigne le conteneur) :
-d'où `MARKET_SERVICE_URI=http://host.docker.internal:8005` dans le compose (même chose pour
-les autres services, lignes commentées). Sans Docker, ce problème n'existe pas.
+d'où `SECTEUR_SERVICE_URI=http://host.docker.internal:8010` (et 8011-8013) dans le compose (même
+chose pour les autres services, lignes commentées). Sans Docker, ce problème n'existe pas.
 
-⚠️ Le service reçoit alors `Host: host.docker.internal:8005` : le Market-Service (Django) répond
-**400 DisallowedHost** tant que `host.docker.internal` n'est pas dans son `ALLOWED_HOSTS`.
+⚠️ Le service reçoit alors `Host: host.docker.internal:<port>` : un service Django répond
+**400 DisallowedHost** si `host.docker.internal` n'est pas dans son `ALLOWED_HOSTS` (c'est le cas
+par défaut pour les 4 services Market dans `Backend/Market/docker-compose.yml`).
 En développement, le plus simple est de lancer la gateway **hors Docker** (`.\mvnw spring-boot:run`).
 
 ### Activer le JWT (Keycloak)
@@ -186,9 +199,9 @@ $env:JWT_ENABLED="true"
 
 Les tokens Keycloak (RS256) sont vérifiés avec les clés publiques du realm (JWKS).
 
-Routes **publiques** (sans token) : `/api/auth/**`, toutes les docs (`/api/market/docs/**`,
-`/api/market/schema/**`, `/api/comptable/docs`, `/api/comptable/docs.json`, `/docs/**`), les
-health checks (`/api/market/health/`, `/api/comptable/health`, `/actuator/health`) et toutes les
+Routes **publiques** (sans token) : `/api/auth/**`, toutes les docs (`/api/market/*/docs/**`,
+`/api/market/*/schema/**`, `/api/comptable/docs`, `/api/comptable/docs.json`, `/docs/**`), les
+health checks (`/api/market/*/health/`, `/api/comptable/health`, `/actuator/health`) et toutes les
 requêtes `OPTIONS` (préflight CORS). Sur ces routes, un token invalide est ignoré.
 
 Tout le reste exige un JWT valide, sinon :
@@ -209,7 +222,7 @@ Avec `JWT_ENABLED=false` (défaut), tout est ouvert : pratique pour tester sans 
 2. **Nom Eureka** : enregistrez votre service dans Eureka (`http://localhost:8761/eureka/`)
    sous **exactement** le nom du tableau (`PROFESSIONAL-SERVICE`, `lawyer-space`, `LEGAL-SERVICE`…).
    Spring Boot : `spring.application.name` + `spring-cloud-starter-netflix-eureka-client` ;
-   Node.js : `eureka-js-client` ; Python : `py-eureka-client` (voir Market-Service).
+   Node.js : `eureka-js-client` ; Python : `py-eureka-client` (voir Backend/Market).
 3. **Port** : gardez le port du tableau ; s'il change, prévenez pour mettre à jour le profil local.
 4. **CORS désactivé dans votre service** : c'est la gateway qui gère le CORS. Si votre service
    ajoute lui aussi des en-têtes `Access-Control-*`, le navigateur peut refuser la réponse
@@ -234,12 +247,13 @@ connu, dans `application-local.yml`.
 curl http://localhost:8090/actuator/health
 curl http://localhost:8090/actuator/gateway/routes
 
-# Market-Service via la gateway (même réponse qu'en direct sur le port 8005)
-curl http://localhost:8090/api/market/health/
+# Services Market via la gateway (même réponse qu'en direct sur les ports 8010-8013)
+curl http://localhost:8090/api/market/secteurs/health/
 curl http://localhost:8090/api/market/etudes/
+curl -X POST http://localhost:8090/api/market/etudes/1/generer-swot/   # -> SWOT-SERVICE
 
 # Identifiant de requête renvoyé par la gateway
-curl -i -H "X-Request-Id: test-123" http://localhost:8090/api/market/health/
+curl -i -H "X-Request-Id: test-123" http://localhost:8090/api/market/etudes/health/
 
 # Service absent d'Eureka -> 503 {"service":"PROFESSIONAL-SERVICE","message":"Service indisponible"}
 curl -i http://localhost:8090/api/comptable/factures
@@ -253,7 +267,7 @@ curl -i -X OPTIONS http://localhost:8090/api/market/etudes/ \
 # Avec JWT_ENABLED=true
 curl -i http://localhost:8090/api/market/etudes/                      # 401 {"message":"Token manquant ou invalide"}
 curl -i -H "Authorization: Bearer <token>" http://localhost:8090/api/market/etudes/
-curl -i http://localhost:8090/api/market/docs/                        # public
+curl -i http://localhost:8090/api/market/etudes/docs/                 # public
 ```
 
 Sous PowerShell, utiliser `curl.exe` (et non l'alias `curl`).
@@ -270,9 +284,10 @@ Tests d'intégration (`@SpringBootTest` sur un port aléatoire, faux services Mo
 
 | Classe | Vérifie |
 |---|---|
-| `RoutesTest` | profil eureka par défaut, les 10 routes chargées en `lb://`, `/actuator/gateway/routes`, `/actuator/health` |
-| `ProxyTest` | relais vers un faux Market-Service (profil local) : chemin et query inchangés, `Authorization` transmis, `X-Request-Id`, CORS (en-tête unique, préflight, origine refusée) |
-| `ServiceUnavailableTest` | 503 JSON pour un service éteint (URL directe) et pour un `lb://` sans instance, CORS sur le 503 |
+| `RoutesTest` | profil eureka par défaut, les 17 routes chargées en `lb://`, `/actuator/gateway/routes`, `/actuator/health` |
+| `MarketRoutesTest` | chaque chemin `/api/market/...` arrive au bon des 4 services Market (dont `/etudes/<id>/generer-swot/` → SWOT-SERVICE), docs comprises ; l'ancienne route unique n'existe plus |
+| `ProxyTest` | relais vers un faux etude-service (profil local) : chemin et query inchangés, `Authorization` transmis, `X-Request-Id`, CORS (en-tête unique, préflight, origine refusée) |
+| `ServiceUnavailableTest` | 503 JSON pour un service éteint (URL directe), un `lb://` sans instance et une connexion coupée avant réponse (conteneur Docker en cours d'arrêt), CORS sur le 503 |
 | `DocsRewriteTest` | réécriture des docs avocat (`/docs/lawyer/…`) et juridique (`/docs/legal…`) |
 | `JwtSecurityTest` | `JWT_ENABLED=true` avec un faux Keycloak (JWKS) et de vrais JWT RS256 : 401 sans token / token invalide / expiré, accès avec un token valide (transmis tel quel), routes publiques, préflight |
 

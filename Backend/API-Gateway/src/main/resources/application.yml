@@ -7,7 +7,7 @@
 #                         (voir application-eureka.yml et application-local.yml)
 #
 # Chaque route lit son URI dans launchpad.services.<service>.uri, surchargeable
-# par la variable d'environnement <NOM>_SERVICE_URI (ex. MARKET_SERVICE_URI).
+# par la variable d'environnement <NOM>_SERVICE_URI (ex. SECTEUR_SERVICE_URI).
 # =============================================================================
 
 server:
@@ -52,18 +52,72 @@ spring:
 
           # ----------------------------------------------------------------------
           # Routes. Les routes métier ne réécrivent PAS le chemin : chaque service
-          # garde son préfixe (/api/market/** arrive tel quel au Market-Service).
+          # garde son préfixe (/api/market/secteurs/** arrive tel quel au secteur-service).
           # metadata.service = nom affiché dans le 503 "Service indisponible".
           # ----------------------------------------------------------------------
           routes:
-            # --- Market-Service (étude de marché) : Django, port 8005 -------------
-            # Docs : /api/market/docs/ et /api/market/schema/ (dans le préfixe)
-            - id: market-service
-              uri: ${launchpad.services.market.uri}
+            # --- Étude de marché : 4 microservices Django (Backend/Market) --------
+            # Ordre important : les chemins les plus précis d'abord
+            # (/api/market/etudes/*/generer-swot/** va à SWOT-SERVICE, pas à ETUDE-SERVICE).
+            # Docs de chaque service : /api/market/<ressource>/docs/ et /schema/.
+
+            # Docs (Swagger UI + schéma OpenAPI) : routes explicites, une par service
+            - id: market-secteur-docs
+              uri: ${launchpad.services.secteur.uri}
               predicates:
-                - Path=/api/market/**
+                - Path=/api/market/secteurs/docs/**, /api/market/secteurs/schema/**
               metadata:
-                service: MARKET-SERVICE
+                service: SECTEUR-SERVICE
+            - id: market-concurrent-docs
+              uri: ${launchpad.services.concurrent.uri}
+              predicates:
+                - Path=/api/market/concurrents/docs/**, /api/market/concurrents/schema/**
+              metadata:
+                service: CONCURRENT-SERVICE
+            - id: market-swot-docs
+              uri: ${launchpad.services.swot.uri}
+              predicates:
+                - Path=/api/market/swot/docs/**, /api/market/swot/schema/**
+              metadata:
+                service: SWOT-SERVICE
+            - id: market-etude-docs
+              uri: ${launchpad.services.etude.uri}
+              predicates:
+                - Path=/api/market/etudes/docs/**, /api/market/etudes/schema/**
+              metadata:
+                service: ETUDE-SERVICE
+
+            # secteur-service, port 8010 : secteurs, tendances, analyse d'un secteur
+            - id: market-secteur-service
+              uri: ${launchpad.services.secteur.uri}
+              predicates:
+                - Path=/api/market/secteurs/**, /api/market/tendances/**, /api/market/analyse/secteur/**
+              metadata:
+                service: SECTEUR-SERVICE
+
+            # concurrent-service, port 8011
+            - id: market-concurrent-service
+              uri: ${launchpad.services.concurrent.uri}
+              predicates:
+                - Path=/api/market/concurrents/**
+              metadata:
+                service: CONCURRENT-SERVICE
+
+            # swot-service, port 8013 : AVANT etude-service (génération de la SWOT d'une étude)
+            - id: market-swot-service
+              uri: ${launchpad.services.swot.uri}
+              predicates:
+                - Path=/api/market/etudes/*/generer-swot/**, /api/market/swot/**
+              metadata:
+                service: SWOT-SERVICE
+
+            # etude-service, port 8012 : études, personas, analyse d'un projet (AI-Service)
+            - id: market-etude-service
+              uri: ${launchpad.services.etude.uri}
+              predicates:
+                - Path=/api/market/etudes/**, /api/market/personas/**, /api/market/analyse/projet/**
+              metadata:
+                service: ETUDE-SERVICE
 
             # --- Comptable : Professional-Service, port 8085 --------------------
             # Docs : /api/comptable/docs et /api/comptable/docs.json (dans le préfixe)
@@ -162,8 +216,14 @@ launchpad:
   # URI de chaque service (profil eureka : lb://<NOM-EUREKA>).
   # Le profil local remplace ces valeurs par des URL directes.
   services:
-    market:
-      uri: ${MARKET_SERVICE_URI:lb://MARKET-SERVICE}
+    secteur:
+      uri: ${SECTEUR_SERVICE_URI:lb://SECTEUR-SERVICE}
+    concurrent:
+      uri: ${CONCURRENT_SERVICE_URI:lb://CONCURRENT-SERVICE}
+    etude:
+      uri: ${ETUDE_SERVICE_URI:lb://ETUDE-SERVICE}
+    swot:
+      uri: ${SWOT_SERVICE_URI:lb://SWOT-SERVICE}
     accounting:
       uri: ${ACCOUNTING_SERVICE_URI:lb://PROFESSIONAL-SERVICE}
     lawyer:

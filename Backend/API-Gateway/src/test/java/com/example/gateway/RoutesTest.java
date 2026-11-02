@@ -43,17 +43,24 @@ class RoutesTest extends GatewayTestSupport {
         Map<String, String> uris = routes().stream()
                 .collect(Collectors.toMap(Route::getId, r -> r.getUri().toString()));
 
-        assertThat(uris).containsExactlyInAnyOrderEntriesOf(Map.of(
-                "market-service", "lb://MARKET-SERVICE",
-                "accounting-service", "lb://PROFESSIONAL-SERVICE",
-                "lawyer-service", "lb://lawyer-space",
-                "lawyer-docs", "lb://lawyer-space",
-                "legal-service", "lb://LEGAL-SERVICE",
-                "legal-docs", "lb://LEGAL-SERVICE",
-                "legal-docs-json", "lb://LEGAL-SERVICE",
-                "ai-service", "lb://AI-SERVICE",
-                "finance-service", "lb://FINANCE-SERVICE",
-                "user-service", "lb://USER-SERVICE"));
+        assertThat(uris).containsExactlyInAnyOrderEntriesOf(Map.ofEntries(
+                Map.entry("market-secteur-docs", "lb://SECTEUR-SERVICE"),
+                Map.entry("market-concurrent-docs", "lb://CONCURRENT-SERVICE"),
+                Map.entry("market-swot-docs", "lb://SWOT-SERVICE"),
+                Map.entry("market-etude-docs", "lb://ETUDE-SERVICE"),
+                Map.entry("market-secteur-service", "lb://SECTEUR-SERVICE"),
+                Map.entry("market-concurrent-service", "lb://CONCURRENT-SERVICE"),
+                Map.entry("market-swot-service", "lb://SWOT-SERVICE"),
+                Map.entry("market-etude-service", "lb://ETUDE-SERVICE"),
+                Map.entry("accounting-service", "lb://PROFESSIONAL-SERVICE"),
+                Map.entry("lawyer-service", "lb://lawyer-space"),
+                Map.entry("lawyer-docs", "lb://lawyer-space"),
+                Map.entry("legal-service", "lb://LEGAL-SERVICE"),
+                Map.entry("legal-docs", "lb://LEGAL-SERVICE"),
+                Map.entry("legal-docs-json", "lb://LEGAL-SERVICE"),
+                Map.entry("ai-service", "lb://AI-SERVICE"),
+                Map.entry("finance-service", "lb://FINANCE-SERVICE"),
+                Map.entry("user-service", "lb://USER-SERVICE")));
     }
 
     @Test
@@ -61,6 +68,8 @@ class RoutesTest extends GatewayTestSupport {
         Map<String, Object> services = routes().stream()
                 .collect(Collectors.toMap(Route::getId, r -> r.getMetadata().get("service")));
         assertThat(services).containsEntry("accounting-service", "PROFESSIONAL-SERVICE")
+                .containsEntry("market-swot-service", "SWOT-SERVICE")
+                .containsEntry("market-etude-docs", "ETUDE-SERVICE")
                 .containsEntry("lawyer-docs", "lawyer-space")
                 .containsEntry("user-service", "USER-SERVICE");
     }
@@ -70,7 +79,7 @@ class RoutesTest extends GatewayTestSupport {
         client.get().uri("/actuator/gateway/routes").exchange()
                 .expectStatus().isOk()
                 .expectBody()
-                .jsonPath("$.length()").isEqualTo(10)
+                .jsonPath("$.length()").isEqualTo(17)
                 .jsonPath("$[?(@.route_id == 'accounting-service')].uri").isEqualTo("lb://PROFESSIONAL-SERVICE")
                 .jsonPath("$[?(@.route_id == 'lawyer-service')].uri").isEqualTo("lb://lawyer-space");
     }
