@@ -69,7 +69,7 @@ Health checks : `/api/market/secteurs/health/`, `/api/market/concurrents/health/
 
 Chaque service qui en appelle d'autres a un package `clients/` avec une classe par service appelé
 (`SecteurClient`, `ConcurrentClient`, `EtudeClient`, `SwotClient`), qui hérite de
-`clients/base.py::ServiceClient` :
+`market_commun.clients.ServiceClient` (bibliothèque partagée, voir plus bas) :
 
 1. **Résolution par nom** : `py_eureka_client.eureka_basic.get_application(EUREKA_SERVER_URL, "SECTEUR-SERVICE")`
    → une instance `UP` au hasard → `http://hote:port` (mise en cache 15 s).
@@ -94,8 +94,20 @@ if not SecteurClient().exists(secteur_id):
 l'hôte) les joigne. Dans un conteneur, `localhost` désigne le conteneur lui-même : l'adresse lue
 dans Eureka est réécrite avec `EUREKA_LOCALHOST_ALIAS=host.docker.internal`.
 
-Aucun code n'est partagé entre les 4 projets : `clients/base.py`, `eureka.py`, `exceptions.py`
-et `filtres.py` sont dupliqués volontairement pour que chaque service reste indépendant.
+### Bibliothèque partagée `market-commun`
+
+Le code **technique** identique entre services est dans la bibliothèque Python
+[`market-commun/`](market-commun/) (package `market_commun`, `pyproject.toml`), installée dans
+chaque image (`pip install ./market-commun`) : enregistrement Eureka, client REST de base,
+gestionnaire d'erreurs DRF (503), filtre `?ids=`, health check, routes communes, réglages Django
+communs (sécurité, CSRF, CORS, DRF, logs, Eureka, RabbitMQ), producer / consumer / outbox RabbitMQ.
+Chaque service garde son code **métier** (modèles, serializers, vues, clients spécifiques, handlers),
+sa base, son port, son nom Eureka et son conteneur. Tests de la bibliothèque :
+`cd market-commun; python runtests.py`.
+
+**Secrets** : `SECRET_KEY` et les mots de passe PostgreSQL / RabbitMQ ne sont jamais écrits dans le
+code ; ils viennent de l'environnement. Sans eux, un service refuse de démarrer quand `DEBUG=False`.
+Le docker-compose lit `Backend/Market/.env` (non commité) : `copy .env.example .env`.
 
 ### Choix de conception
 
@@ -148,7 +160,7 @@ deux consumers indépendants.
 - **Publication après le commit** (`transaction.on_commit`) : jamais d'événement pour une écriture annulée.
 - **Outbox** : si RabbitMQ est indisponible, l'action HTTP réussit quand même, l'erreur est logguée
   et l'événement est rangé dans la table `evenements_evenementoutbox`. Un thread du service
-  (`evenements/relais.py`) le renvoie automatiquement toutes les 10 s, avec le même `message_id`.
+  (`market_commun/evenements/relais.py`) le renvoie automatiquement toutes les 10 s, avec le même `message_id`.
 - **Consumers** (`python manage.py consume_events`, un conteneur par service : `concurrent-consumer`,
   `etude-consumer`, `swot-consumer`) : queues durables, `prefetch_count=1`, **ack manuel après**
   le traitement réussi, reconnexion automatique (toutes les 5 s) si RabbitMQ redémarre.
@@ -161,9 +173,9 @@ deux consumers indépendants.
   `[CONSUMER] swot.etude-finalisee etude_id=4 projet_id=1 -> OK (6 élément(s) généré(s))` côté consumer
   (`docker logs -f swot-consumer`).
 
-Le code est dans le package `evenements/` de chaque service (dupliqué, comme `clients/`) ; les
-handlers sont dans `<app>/handlers.py` et les abonnements dans `config/settings.py`
-(`EVENEMENTS_PUBLIES`, `EVENEMENTS_CONSOMMES`).
+Le code commun est dans `market_commun/evenements/` ; les handlers de chaque service sont dans
+`<app>/handlers.py` et ses abonnements dans `config/settings.py` (`evenements_publies`,
+`evenements_consommes`).
 
 ### Interface RabbitMQ
 
@@ -198,6 +210,7 @@ $env:JAVA_HOME="C:\Program Files\Java\jdk-17"; .\mvnw spring-boot:run
 
 # 2. Les 4 services + 4 bases + RabbitMQ + 3 consumers (autre terminal)
 cd Backend\Market
+copy .env.example .env             # une seule fois : secrets de développement (non commité)
 docker compose up -d --build
 docker compose ps                  # 12 conteneurs, services et bases "healthy"
 
@@ -242,7 +255,8 @@ sans créer de doublons.
 
 | Niveau | Commande | Contenu |
 |---|---|---|
-| Unitaires (par service) | `docker exec <service> python manage.py test` ou `$env:DB_ENGINE="sqlite"; python manage.py test` | API avec les clients REST **mockés** (ressource existante, absente → 400, service indisponible → 503), client générique (Eureka, repli, nouvelle tentative), CSRF, Eureka, seed ; RabbitMQ : publication **mockée** (bon événement, bonnes données, après le commit, outbox), handlers appelés directement (cas normal, message en double, ressource absente), 3 tentatives puis DLQ |
+| Bibliothèque partagée | `cd market-commun; python runtests.py` | client REST (Eureka, repli, nouvelle tentative, 404/503), Eureka, producer/consumer/outbox RabbitMQ (3 tentatives puis DLQ, doublons), réglages (secrets obligatoires en production), health, 503 |
+| Unitaires (par service) | `docker exec <service> python manage.py test` ou `$env:DB_ENGINE="sqlite"; $env:DEBUG="True"; python manage.py test` (market-commun installé) | API avec les clients REST **mockés** (ressource existante, absente → 400, service indisponible → 503), client générique (Eureka, repli, nouvelle tentative), CSRF, Eureka, seed ; RabbitMQ : publication **mockée** (bon événement, bonnes données, après le commit, outbox), handlers appelés directement (cas normal, message en double, ressource absente), 3 tentatives puis DLQ |
 | Gateway | `cd ..\API-Gateway; .\mvnw clean verify` | `MarketRoutesTest` : chaque chemin arrive au bon service |
 | Bout en bout | `.\test_e2e.ps1` | via la gateway : création liée, SWOT, rapport JSON/PDF, 400, 503 (`docker stop secteur-service`), nettoyage (SWOT supprimée par swot-consumer) |
 | Démo asynchrone | `.\demo_rabbitmq.ps1` | finalisation → SWOT, message en attente consumer arrêté, queue vidée au redémarrage, secteur supprimé → `secteur_id = null` |
@@ -252,10 +266,12 @@ sans créer de doublons.
 ```
 Market/
 ├── docker-compose.yml          # 4 services + 4 PostgreSQL + RabbitMQ + 3 consumers, réseau market-net
+├── .env.example                # secrets de développement du compose (copier en .env, non commité)
+├── market-commun/              # bibliothèque partagée (package market_commun, pyproject.toml, tests/)
 ├── seed_all.ps1                # seed dans l'ordre avec les ids réels
 ├── test_e2e.ps1                # test de bout en bout via la gateway
 ├── demo_rabbitmq.ps1           # démonstration de la communication asynchrone
-├── secteur-service/            # projet Django complet (config/, clients/, evenements/, secteurs/, Dockerfile…)
+├── secteur-service/            # projet Django (config/, clients/, secteurs/, Dockerfile…)
 ├── concurrent-service/
 ├── etude-service/
 └── swot-service/

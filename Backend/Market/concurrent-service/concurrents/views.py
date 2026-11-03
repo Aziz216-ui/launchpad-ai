@@ -1,16 +1,14 @@
 """Vues de l'API du concurrent-service."""
 
-from django.conf import settings
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import viewsets
-from rest_framework.response import Response
-from rest_framework.views import APIView
 
-from evenements.producteur import publier
+from market_commun.evenements.producteur import publier
+from market_commun.filtres import PARAMETRE_IDS, filtrer_par_ids
+from market_commun.vues import ServiceIndisponibleSerializer
 
-from .filtres import PARAMETRE_IDS, filtrer_par_ids
 from .models import Concurrent
-from .serializers import ConcurrentSerializer, HealthSerializer, ServiceIndisponibleSerializer
+from .serializers import ConcurrentSerializer
 
 ERREURS_ECRITURE = {503: ServiceIndisponibleSerializer}
 
@@ -52,10 +50,3 @@ class ConcurrentViewSet(viewsets.ModelViewSet):
         concurrent.delete()
         publier("concurrent.supprime", {"concurrent_id": concurrent_id, "secteur_id": secteur_id})
 
-
-class HealthView(APIView):
-    """Vérification de l'état du service (Docker, Eureka, gateway)."""
-
-    @extend_schema(responses={200: HealthSerializer}, summary="Health check")
-    def get(self, request):
-        return Response({"status": "UP", "service": settings.SERVICE_NAME})

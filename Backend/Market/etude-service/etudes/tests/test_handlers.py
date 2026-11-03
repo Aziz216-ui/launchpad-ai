@@ -7,7 +7,7 @@ from django.test import TestCase
 
 from etudes.handlers import concurrent_supprime, secteur_supprime
 from etudes.models import EtudeMarche
-from evenements import consommateur, producteur
+from market_commun.evenements import consommateur, producteur
 
 
 class SecteurSupprimeTests(TestCase):
@@ -31,7 +31,7 @@ class SecteurSupprimeTests(TestCase):
         message = producteur.construire_message("secteur.supprime", {"secteur_id": 1})
         canal = mock.Mock()
         handler = mock.Mock(wraps=secteur_supprime)
-        with self.assertLogs("evenements.consommateur", "INFO"):
+        with self.assertLogs("market_commun.evenements.consommateur", "INFO"):
             for tag in (1, 2):
                 consommateur.traiter("etude.secteur-supprime", handler, canal, mock.Mock(delivery_tag=tag), None,
                                      json.dumps(message).encode(), attente=0)

@@ -11,6 +11,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from clients import ConcurrentClient, SecteurClient, SwotClient
+from market_commun.validation import verifier_liste, verifier_reference
 
 from . import services
 from .models import EtudeMarche, Persona
@@ -21,10 +22,6 @@ SECTEUR_INTROUVABLE = "Secteur introuvable"
 def _ids(help_text, source=None):
     return serializers.ListField(child=serializers.IntegerField(min_value=1), required=False,
                                  source=source, help_text=help_text)
-
-
-def _sans_doublon(ids):
-    return list(dict.fromkeys(ids))
 
 
 class PersonaSerializer(serializers.ModelSerializer):
@@ -84,30 +81,12 @@ class EtudeMarcheSerializer(serializers.ModelSerializer):
         return noms.get(etude.secteur_id)
 
     def validate(self, attrs):
-        instance = self.instance
-        secteur_id = attrs.get("secteur_id")
-        if instance is None and secteur_id is None:
-            raise serializers.ValidationError({"secteur_id": "Ce champ est obligatoire."})
         # Chaque référence n'est vérifiée que si elle est nouvelle ou modifiée
-        if secteur_id is not None and (instance is None or secteur_id != instance.secteur_id):
-            if not SecteurClient().exists(secteur_id):
-                raise serializers.ValidationError({"secteur_id": SECTEUR_INTROUVABLE})
-
-        if "concurrent_ids" in attrs:
-            ids = attrs["concurrent_ids"] = _sans_doublon(attrs["concurrent_ids"])
-            nouveaux = set(ids) - set(instance.concurrent_ids if instance else [])
-            trouves = {c["id"] for c in ConcurrentClient().list(ids=nouveaux)}
-            if nouveaux - trouves:
-                raise serializers.ValidationError({"concurrent_ids": "Concurrent(s) introuvable(s) : "
-                                                   + ", ".join(map(str, sorted(nouveaux - trouves)))})
-
-        if "tendance_ids" in attrs:
-            ids = attrs["tendance_ids"] = _sans_doublon(attrs["tendance_ids"])
-            nouveaux = set(ids) - set(instance.tendance_ids if instance else [])
-            trouves = {t["id"] for t in SecteurClient().tendances(ids=nouveaux)}
-            if nouveaux - trouves:
-                raise serializers.ValidationError({"tendance_ids": "Tendance(s) introuvable(s) : "
-                                                   + ", ".join(map(str, sorted(nouveaux - trouves)))})
+        verifier_reference(attrs, self.instance, "secteur_id", SecteurClient().exists, SECTEUR_INTROUVABLE)
+        verifier_liste(attrs, self.instance, "concurrent_ids",
+                       lambda ids: ConcurrentClient().list(ids=ids), "Concurrent(s) introuvable(s)")
+        verifier_liste(attrs, self.instance, "tendance_ids",
+                       lambda ids: SecteurClient().tendances(ids=ids), "Tendance(s) introuvable(s)")
         return attrs
 
 
@@ -376,12 +355,3 @@ class RapportEtudeSerializer(serializers.Serializer):
     niveau_concurrence = serializers.ChoiceField(choices=NIVEAUX_CONCURRENCE)
     potentiel_commercial = PotentielCommercialSerializer()
 
-
-class HealthSerializer(serializers.Serializer):
-    status = serializers.CharField()
-    service = serializers.CharField()
-
-
-class ServiceIndisponibleSerializer(serializers.Serializer):
-    service = serializers.CharField()
-    message = serializers.CharField()

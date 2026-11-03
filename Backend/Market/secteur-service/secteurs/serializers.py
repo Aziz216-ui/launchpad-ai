@@ -54,12 +54,3 @@ class AnalyseSecteurSerializer(serializers.Serializer):
     tendances_negatives = serializers.IntegerField()
     niveau_concurrence = serializers.ChoiceField(choices=NIVEAUX_CONCURRENCE)
 
-
-class HealthSerializer(serializers.Serializer):
-    status = serializers.CharField()
-    service = serializers.CharField()
-
-
-class ServiceIndisponibleSerializer(serializers.Serializer):
-    service = serializers.CharField()
-    message = serializers.CharField()

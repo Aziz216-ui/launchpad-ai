@@ -1,6 +1,6 @@
 """Client de SWOT-SERVICE (éléments SWOT d'une étude)."""
 
-from .base import ServiceClient
+from market_commun.clients import ServiceClient
 
 
 class SwotClient(ServiceClient):

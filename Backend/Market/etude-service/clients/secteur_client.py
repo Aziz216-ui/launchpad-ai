@@ -1,10 +1,6 @@
 """Client de SECTEUR-SERVICE (secteurs et tendances : même service, deux ressources)."""
 
-import logging
-
-from .base import RessourceIntrouvable, ServiceClient, ServiceIndisponible
-
-logger = logging.getLogger(__name__)
+from market_commun.clients import RessourceIntrouvable, ServiceClient
 
 
 class _TendanceRessource(ServiceClient):
@@ -13,6 +9,8 @@ class _TendanceRessource(ServiceClient):
 
 
 class SecteurClient(ServiceClient):
+    """Secteurs : get, exists, list et noms (hérités) ; nom d'un secteur ; tendances."""
+
     service = "SECTEUR-SERVICE"
     ressource = "/api/market/secteurs/"
 
@@ -24,22 +22,6 @@ class SecteurClient(ServiceClient):
             return self.get(id)["nom"]
         except RessourceIntrouvable:
             return None
-
-    def noms(self, ids):
-        """
-        {id: nom} des secteurs demandés, en un appel ?ids=...
-
-        Utilisé pour l'affichage (secteur_nom) : si SECTEUR-SERVICE est indisponible,
-        la liste des études reste consultable avec secteur_nom = null.
-        """
-        ids = {i for i in ids if i is not None}  # secteur_id null : secteur supprimé
-        if not ids:
-            return {}
-        try:
-            return {s["id"]: s["nom"] for s in self.list(ids=ids)}
-        except ServiceIndisponible as exc:
-            logger.warning("Noms des secteurs indisponibles : %s", exc)
-            return {}
 
     def tendances(self, ids=None, **filtres):
         """GET /api/market/tendances/?ids=...&secteur=..."""

@@ -10,7 +10,5 @@ router.include_root_view = False  # /api/market/ est partagé entre les 4 servic
 router.register("concurrents", views.ConcurrentViewSet, basename="concurrent")
 
 urlpatterns = [
-    # Avant le routeur : "health" ne doit pas être pris pour un id de concurrent
-    path("concurrents/health/", views.HealthView.as_view(), name="health"),
     path("", include(router.urls)),
 ]

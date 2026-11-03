@@ -51,7 +51,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         etudes = ids_etudes(options["ids"])
-        manquantes = [f"{p}|{t}" for p, t in SWOT_MANUEL if (p, t) not in etudes]
+        manquantes = ["|".join(map(str, cle)) for cle in SWOT_MANUEL if cle not in etudes]
         if manquantes:
             raise CommandError(f"Études introuvables : {', '.join(manquantes)}. Lancer d'abord seed_etudes.")
 

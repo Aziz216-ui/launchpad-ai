@@ -16,7 +16,7 @@ from rest_framework.test import APITestCase
 
 from clients import ServiceIndisponible
 from etudes.models import EtudeMarche, Persona
-from evenements.models import EvenementOutbox
+from market_commun.evenements.models import EvenementOutbox
 
 from .faux_services import FauxServices
 
@@ -158,10 +158,10 @@ class EtudeCrudTests(EtudeBaseTestCase):
         self.assertEqual([e["titre"] for e in self.client.get(liste, {"ids": str(self.etude.id)}).data],
                          ["Paiement PME"])
 
-    @mock.patch("evenements.producteur.envoyer")
+    @mock.patch("market_commun.evenements.producteur.envoyer")
     def test_supprimer_brouillon_supprime_personas_et_publie_etude_supprimee(self, envoyer):
         Persona.objects.create(etude=self.etude, nom="Sami")
-        with self.assertLogs("evenements.producteur", "INFO") as logs, self.captureOnCommitCallbacks(execute=True):
+        with self.assertLogs("market_commun.evenements.producteur", "INFO") as logs, self.captureOnCommitCallbacks(execute=True):
             response = self.client.delete(self.url("detail"))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Persona.objects.count(), 0)
@@ -171,9 +171,9 @@ class EtudeCrudTests(EtudeBaseTestCase):
         self.assertEqual(message["data"], {"etude_id": self.etude.id, "projet_id": 1})
         self.assertIn(f"[PRODUCER] etude.supprimee etude_id={self.etude.id}", logs.output[0])
 
-    @mock.patch("evenements.producteur.envoyer", side_effect=ConnectionError("RabbitMQ arrêté"))
+    @mock.patch("market_commun.evenements.producteur.envoyer", side_effect=ConnectionError("RabbitMQ arrêté"))
     def test_supprimer_meme_si_rabbitmq_est_arrete(self, envoyer):
-        with self.assertLogs("evenements.producteur", "ERROR"), self.captureOnCommitCallbacks(execute=True):
+        with self.assertLogs("market_commun.evenements.producteur", "ERROR"), self.captureOnCommitCallbacks(execute=True):
             response = self.client.delete(self.url("detail"))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(EtudeMarche.objects.exists())
@@ -188,9 +188,9 @@ class EtudeCrudTests(EtudeBaseTestCase):
         self.assertEqual(rapport.status_code, status.HTTP_200_OK)
         self.assertIsNone(rapport.json()["marche_cible"]["secteur"]["nom"])
 
-    @mock.patch("evenements.producteur.envoyer")
+    @mock.patch("market_commun.evenements.producteur.envoyer")
     def test_finaliser(self, envoyer):
-        with self.assertLogs("evenements.producteur", "INFO"), self.captureOnCommitCallbacks(execute=True):
+        with self.assertLogs("market_commun.evenements.producteur", "INFO"), self.captureOnCommitCallbacks(execute=True):
             response = self.client.post(self.url("finaliser"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["statut"], "finalisee")
@@ -205,7 +205,7 @@ class EtudeCrudTests(EtudeBaseTestCase):
             self.assertEqual(self.client.post(self.url("finaliser")).status_code, status.HTTP_200_OK)
         envoyer.assert_called_once()
 
-    @mock.patch("evenements.producteur.envoyer")
+    @mock.patch("market_commun.evenements.producteur.envoyer")
     def test_modification_ne_publie_rien(self, envoyer):
         with self.captureOnCommitCallbacks(execute=True):
             self.client.patch(self.url("detail"), {"cible": "PME"}, format="json")
