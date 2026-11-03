@@ -1,0 +1,119 @@
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  li {
+    background: #ffffff;
+    border: 1px solid $bordure;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+}
+
+.icone {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.positif {
+    background: $vert-clair;
+    color: $vert;
+  }
+  &.negatif {
+    background: $rouge-clair;
+    color: $rouge;
+  }
+  &.neutre {
+    background: $fond-neutre;
+    color: $texte-secondaire;
+  }
+}
+
+.contenu {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ligne {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+
+  strong {
+    font-size: 14px;
+  }
+}
+
+.description {
+  font-size: 13px;
+  line-height: 1.5;
+  color: $texte-secondaire;
+}
+
+.balance {
+  padding: 18px;
+  gap: 12px;
+
+  h3 {
+    font-size: 14px;
+  }
+  .barre {
+    display: flex;
+    height: 10px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: $bordure-legere;
+  }
+  .legende {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+
+    div {
+      display: flex;
+      justify-content: space-between;
+    }
+    span {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    i {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+  }
+  .positif {
+    background: $vert;
+  }
+  .negatif {
+    background: $rouge;
+  }
+  .neutre {
+    background: $neutre-graph;
+  }
+}

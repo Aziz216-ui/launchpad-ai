@@ -1,0 +1,394 @@
+// Styles communs aux écrans du module « Étude de marché ».
+// Ce composant n'est pas encapsulé : toutes les règles sont limitées au conteneur
+// .market, elles ne s'appliquent donc à aucun autre module.
+@use 'variables' as *;
+
+.market {
+  display: block;
+
+  a {
+    color: $primaire-fonce;
+  }
+  a:hover {
+    color: $primaire-tres-fonce;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  // --- Mise en page des pages -------------------------------------------------
+
+  .page {
+    padding: 24px 32px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 1240px;
+    width: 100%;
+
+    @media (max-width: $mobile) {
+      padding: 20px 16px 40px;
+    }
+  }
+
+  .fil-ariane {
+    font-size: 12px;
+    color: $gris;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    a {
+      color: $gris;
+      text-decoration: none;
+    }
+    .courant {
+      color: $texte;
+    }
+  }
+
+  .entete-page {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+
+    h1 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 600;
+    }
+    p {
+      margin: 0;
+      font-size: 13px;
+      color: $gris;
+    }
+    .titre {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .titre-ligne {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+  }
+
+  .entete-section {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+
+    .titre {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    p {
+      margin: 0;
+      font-size: 13px;
+      color: $gris;
+    }
+  }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .colonnes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 16px;
+
+    > .principale {
+      flex: 999 1 520px;
+      min-width: 0;
+    }
+    > .laterale {
+      flex: 1 1 280px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+  }
+
+  .grille-kpi {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+    gap: 12px;
+  }
+
+  .grille-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+    gap: 16px;
+  }
+
+  // --- Cartes -----------------------------------------------------------------
+
+  .carte {
+    background: $fond-carte;
+    border: 1px solid $bordure;
+    border-radius: $rayon-carte;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    h2,
+    h3 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.6;
+      color: $texte-secondaire;
+    }
+  }
+
+  .carte-conseil {
+    background: $primaire-clair;
+    border-radius: $rayon-carte;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: $primaire-tres-fonce;
+    }
+    p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.6;
+      color: $texte-secondaire;
+    }
+  }
+
+  .kpi {
+    background: $fond-carte;
+    border: 1px solid $bordure;
+    border-radius: $rayon-kpi;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .libelle {
+      font-size: 12px;
+      color: $gris;
+    }
+    .valeur {
+      font-size: 26px;
+      font-weight: 600;
+    }
+    .detail {
+      font-size: 11px;
+      color: $gris;
+    }
+  }
+
+  .note {
+    margin: 0;
+    font-size: 11px;
+    color: $gris;
+  }
+
+  // --- Boutons et liens -------------------------------------------------------
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 16px;
+    min-height: 44px;
+    border-radius: $rayon-champ;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:disabled,
+    &[aria-disabled='true'] {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .btn-primaire {
+    @extend .btn;
+    border: 0;
+    background: $primaire;
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      background: $primaire-fonce;
+      color: #ffffff;
+    }
+  }
+
+  .btn-secondaire {
+    @extend .btn;
+    border: 1px solid $bordure-champ;
+    background: #ffffff;
+    color: $texte;
+
+    &:hover:not(:disabled) {
+      background: $fond-doux;
+      color: $texte;
+    }
+  }
+
+  .btn-texte {
+    min-height: 44px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: $primaire-fonce;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &.danger {
+      color: $rouge;
+    }
+    &:hover {
+      background: $fond-neutre;
+    }
+  }
+
+  .btn-icone {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: $gris;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      background: $fond-neutre;
+    }
+  }
+
+  .lien-fleche {
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  // --- Badges et puces --------------------------------------------------------
+
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .puce {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: $fond-neutre;
+    color: $texte-secondaire;
+  }
+
+  // --- Formulaires ------------------------------------------------------------
+
+  .champ {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+
+    input,
+    select,
+    textarea {
+      min-height: 44px;
+      padding: 0 12px;
+      border: 1px solid $bordure-champ;
+      border-radius: $rayon-champ;
+      font-size: 13px;
+      color: $texte;
+      background: #ffffff;
+      font-weight: 400;
+    }
+    select {
+      padding: 0 10px;
+    }
+    textarea {
+      padding: 10px 12px;
+      line-height: 1.5;
+      resize: vertical;
+    }
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: 2px solid rgba($primaire, 0.35);
+      border-color: $primaire;
+    }
+    &.en-erreur input,
+    &.en-erreur select,
+    &.en-erreur textarea {
+      border-color: $rouge;
+    }
+    .aide {
+      font-size: 11px;
+      font-weight: 400;
+      color: $gris;
+    }
+  }
+
+  .grille-champs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    gap: 16px;
+  }
+
+  // --- Tableaux ---------------------------------------------------------------
+
+  .tableau-conteneur {
+    // Contient les éléments positionnés (libellés masqués) dans la zone qui défile
+    position: relative;
+    background: #ffffff;
+    border: 1px solid $bordure;
+    border-radius: $rayon-carte;
+    overflow-x: auto;
+  }
+}

@@ -1,0 +1,68 @@
+<app-modal [titre]="titre()" (fermer)="fermer.emit()">
+  @if (mode() === 'associer') {
+    @if (chargement()) {
+      <app-loader texte="Chargement des concurrents…" />
+    } @else {
+      @if (disponibles().length) {
+        <p class="vide">Concurrents du secteur {{ etude().secteur_nom }} pas encore associés à cette étude :</p>
+        <ul class="liste">
+          @for (c of disponibles(); track c.id) {
+            <li>
+              <label>
+                <input type="checkbox" [checked]="selection().has(c.id)" (change)="basculer(c.id)" />
+                <span class="nom"><strong>{{ c.nom }}</strong><small>{{ c.pays || 'Pays non précisé' }}</small></span>
+                <span>{{ c.prix_moyen | montant }} · {{ c.part_de_marche | pourcentage }}</span>
+              </label>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="vide">Tous les concurrents du secteur {{ etude().secteur_nom }} sont déjà associés à l'étude.</p>
+      }
+      <button type="button" class="lien" (click)="mode.set('creer')">+ Créer un nouveau concurrent</button>
+    }
+  } @else {
+    <form class="formulaire" [formGroup]="formulaire" (ngSubmit)="valider()" novalidate>
+      <label class="champ large" [class.en-erreur]="formulaire.controls.nom.touched && formulaire.controls.nom.invalid">
+        Nom du concurrent *
+        <input type="text" formControlName="nom" placeholder="Ex. NutriDesk" />
+        <app-field-error [controle]="formulaire.controls.nom" />
+      </label>
+      <label class="champ" [class.en-erreur]="formulaire.controls.pays.touched && formulaire.controls.pays.invalid">
+        Pays
+        <input type="text" formControlName="pays" placeholder="Ex. France" />
+        <app-field-error [controle]="formulaire.controls.pays" />
+      </label>
+      <label class="champ" [class.en-erreur]="formulaire.controls.site_web.touched && formulaire.controls.site_web.invalid">
+        Site web
+        <input type="url" formControlName="site_web" placeholder="https://" />
+        <app-field-error [controle]="formulaire.controls.site_web" />
+      </label>
+      <label class="champ" [class.en-erreur]="formulaire.controls.prix_moyen.touched && formulaire.controls.prix_moyen.invalid">
+        Prix moyen (€) *
+        <input type="text" inputmode="decimal" formControlName="prix_moyen" placeholder="Ex. 19" />
+        <app-field-error [controle]="formulaire.controls.prix_moyen" />
+      </label>
+      <label class="champ" [class.en-erreur]="formulaire.controls.part_de_marche.touched && formulaire.controls.part_de_marche.invalid">
+        Part de marché (%) *
+        <input type="text" inputmode="decimal" formControlName="part_de_marche" placeholder="Entre 0 et 100" />
+        <app-field-error [controle]="formulaire.controls.part_de_marche" />
+      </label>
+      <label class="champ large">
+        Forces
+        <textarea rows="2" formControlName="forces" placeholder="Ex. Prix accessible"></textarea>
+      </label>
+      <label class="champ large">
+        Faiblesses
+        <textarea rows="2" formControlName="faiblesses" placeholder="Ex. Suivi patient limité"></textarea>
+      </label>
+    </form>
+  }
+
+  <ng-container pied>
+    <button type="button" class="btn-secondaire" (click)="fermer.emit()" [disabled]="enCours()">Annuler</button>
+    <button type="button" class="btn-primaire" (click)="valider()" [disabled]="enCours()">
+      {{ enCours() ? 'Enregistrement…' : mode() === 'associer' ? 'Associer' : 'Enregistrer le concurrent' }}
+    </button>
+  </ng-container>
+</app-modal>

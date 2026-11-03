@@ -1,0 +1,347 @@
+@use 'variables' as *;
+
+.disposition {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.document {
+  flex: 999 1 560px;
+  min-width: 0;
+  max-width: 860px;
+  background: #ffffff;
+  border: 1px solid $bordure;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(20, 40, 45, 0.06);
+  padding: clamp(24px, 5vw, 56px);
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  font-size: 13px;
+  line-height: 1.6;
+
+  > header {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid $primaire;
+  }
+  section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-margin-top: 16px;
+  }
+  h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+
+    small {
+      font-size: 12px;
+      font-weight: 400;
+      color: $gris;
+    }
+  }
+  p {
+    margin: 0;
+  }
+  ol,
+  section > ul {
+    margin: 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  footer {
+    padding-top: 16px;
+    border-top: 1px solid $bordure-legere;
+    font-size: 11px;
+    color: $gris;
+  }
+}
+
+.sur-titre {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: $primaire-fonce;
+}
+
+h2 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.sous-titre {
+  font-size: 14px;
+  color: $texte-secondaire;
+}
+
+.meta {
+  font-size: 12px;
+  color: $gris;
+}
+
+.potentiel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+  padding: 16px;
+  border-radius: 10px;
+  background: $vert-clair;
+  color: $vert-fonce;
+  --piste: #c9e6d6;
+  --remplissage: #{$vert};
+
+  &.moyen {
+    background: $orange-clair;
+    color: $orange-fonce;
+    --piste: #f3dcb5;
+    --remplissage: #{$orange-moyen};
+  }
+  &.faible {
+    background: $rouge-clair;
+    color: $rouge-fonce;
+    --piste: #f0cccc;
+    --remplissage: #{$rouge};
+  }
+  .valeur {
+    display: flex;
+    flex-direction: column;
+
+    span {
+      font-size: 12px;
+    }
+    strong {
+      font-size: 22px;
+      font-weight: 600;
+    }
+  }
+  .barre {
+    flex: 1 1 200px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--piste);
+
+    div {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--remplissage);
+    }
+  }
+}
+
+.cle-valeur {
+  width: 100%;
+  border-collapse: collapse;
+
+  tr:not(:last-child) {
+    border-bottom: 1px solid $bordure-legere;
+  }
+  th {
+    width: 40%;
+    text-align: left;
+    padding: 8px 12px 8px 0;
+    font-weight: 500;
+    color: $gris;
+  }
+  td {
+    padding: 8px 0;
+  }
+}
+
+.defilement {
+  overflow-x: auto;
+}
+
+.tableau {
+  width: 100%;
+  min-width: 480px;
+  border-collapse: collapse;
+
+  thead tr {
+    border-bottom: 1px solid $bordure-tableau;
+  }
+  tbody tr:not(:last-child) {
+    border-bottom: 1px solid $bordure-legere;
+  }
+  th {
+    text-align: left;
+    padding: 8px;
+    font-weight: 600;
+    font-size: 12px;
+    color: $gris;
+  }
+  td {
+    padding: 8px;
+  }
+  th:first-child,
+  td:first-child {
+    padding-left: 0;
+  }
+  th:last-child,
+  td:last-child {
+    padding-right: 0;
+  }
+  .droite {
+    text-align: right;
+  }
+  .gras {
+    font-weight: 500;
+  }
+}
+
+.barres {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .ligne {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+  }
+  .nom {
+    width: 96px;
+    flex-shrink: 0;
+  }
+  .piste {
+    flex: 1;
+    height: 14px;
+    border-radius: 4px;
+    background: $fond-neutre;
+
+    div {
+      height: 100%;
+      border-radius: 4px;
+      background: $barre-concurrent;
+    }
+  }
+  .prix {
+    width: 56px;
+    text-align: right;
+  }
+  .offre {
+    .nom,
+    .prix {
+      font-weight: 600;
+      color: $primaire-fonce;
+    }
+    .piste div {
+      background: $primaire;
+    }
+  }
+}
+
+.swot {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 10px;
+
+  > div {
+    padding: 12px 14px;
+    border-radius: 8px;
+  }
+  h4 {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 12px;
+  }
+  .aucun {
+    list-style: none;
+    margin-left: -18px;
+  }
+  .forces {
+    background: $vert-clair;
+    h4 {
+      color: $vert-fonce;
+    }
+  }
+  .faiblesses {
+    background: $rouge-clair;
+    h4 {
+      color: $rouge-fonce;
+    }
+  }
+  .opportunites {
+    background: $primaire-clair;
+    h4 {
+      color: $primaire-tres-fonce;
+    }
+  }
+  .menaces {
+    background: $orange-tres-clair;
+    h4 {
+      color: $orange-fonce;
+    }
+  }
+}
+
+.cote {
+  flex: 1 1 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 16px;
+}
+
+.telechargement {
+  padding: 18px;
+  gap: 10px;
+
+  p {
+    font-size: 12px;
+    line-height: 1.5;
+    color: $gris;
+  }
+}
+
+.sommaire {
+  padding: 18px;
+  gap: 2px;
+
+  h3 {
+    margin: 0 0 8px;
+    font-size: 14px;
+  }
+  button {
+    padding: 8px 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    font-size: 13px;
+    color: $primaire-fonce;
+    cursor: pointer;
+
+    &:hover {
+      color: $primaire-tres-fonce;
+      text-decoration: underline;
+    }
+  }
+}
+
+.avertissement {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: $orange-clair;
+  color: $orange-fonce;
+  font-size: 12px;
+  line-height: 1.5;
+}

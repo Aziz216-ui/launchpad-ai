@@ -1,0 +1,64 @@
+<div class="entete-section">
+  <div class="titre">
+    <h2>Les mouvements qui façonnent votre marché</h2>
+    <p>{{ tendances().length }} tendance(s) à suivre pour anticiper les opportunités et les risques.</p>
+  </div>
+  <button type="button" class="btn-primaire" (click)="modalOuverte.set(true)">
+    <app-icon nom="plus" [taille]="16" />Associer une tendance
+  </button>
+</div>
+
+@if (tendances().length) {
+  <div class="colonnes">
+    <ul class="principale liste">
+      @for (t of tendances(); track t.id) {
+        <li>
+          <span class="icone" [class]="t.impact" aria-hidden="true">
+            <app-icon [nom]="t.impact === 'positif' ? 'hausse' : t.impact === 'negatif' ? 'baisse' : 'fleche'" />
+          </span>
+          <span class="contenu">
+            <span class="ligne">
+              <strong>{{ t.titre }}</strong>
+              <app-badge [petit]="true" [variante]="impacts[t.impact].variante">{{ impacts[t.impact].libelle }}</app-badge>
+            </span>
+            @if (t.description) {
+              <span class="description">{{ t.description }}</span>
+            }
+          </span>
+          <app-menu-actions [libelle]="'Actions pour ' + t.titre">
+            <button type="button" role="menuitem" (click)="retirer(t)">Retirer de l'étude</button>
+          </app-menu-actions>
+        </li>
+      }
+    </ul>
+
+    <div class="laterale">
+      <section class="carte balance">
+        <h3>Balance des impacts</h3>
+        <div class="barre" role="img"
+          [attr.aria-label]="balance().positives + ' tendances positives, ' + balance().negatives + ' négatives, ' + balance().neutres + ' neutres'">
+          <span [style.flex]="balance().positives" class="positif"></span>
+          <span [style.flex]="balance().negatives" class="negatif"></span>
+          <span [style.flex]="balance().neutres" class="neutre"></span>
+        </div>
+        <div class="legende">
+          <div><span><i class="positif"></i>Opportunités</span><strong>{{ balance().positives }}</strong></div>
+          <div><span><i class="negatif"></i>Points de vigilance</span><strong>{{ balance().negatives }}</strong></div>
+          <div><span><i class="neutre"></i>Tendance neutre</span><strong>{{ balance().neutres }}</strong></div>
+        </div>
+        <a class="lien-fleche" routerLink="../swot">Voir l'impact dans la SWOT →</a>
+      </section>
+    </div>
+  </div>
+} @else {
+  <app-empty-state [compact]="true" titre="Aucune tendance associée"
+    texte="Associez les tendances de votre secteur : elles alimentent vos opportunités, vos menaces et votre SWOT.">
+    <button type="button" class="btn-primaire" (click)="modalOuverte.set(true)">
+      <app-icon nom="plus" [taille]="16" />Associer une tendance
+    </button>
+  </app-empty-state>
+}
+
+@if (modalOuverte()) {
+  <app-tendance-modal [etude]="store.etude()!" (fermer)="modalOuverte.set(false)" (enregistre)="apresEnregistrement()" />
+}

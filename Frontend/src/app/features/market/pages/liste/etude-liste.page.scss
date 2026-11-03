@@ -1,0 +1,269 @@
+@use 'variables' as *;
+
+.cta {
+  min-height: 48px;
+  padding: 0 20px;
+  font-size: 14px;
+}
+
+.lien-aide {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.etapes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 12px;
+
+  div {
+    padding: 16px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid $bordure;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  span {
+    font-size: 12px;
+    font-weight: 600;
+    color: $primaire-fonce;
+  }
+  strong {
+    font-size: 14px;
+  }
+  small {
+    font-size: 12px;
+    color: $gris;
+  }
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 12px;
+}
+
+.stat {
+  background: #ffffff;
+  border: 1px solid $bordure;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .icone {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &.info {
+      background: $primaire-clair;
+      color: $primaire-fonce;
+    }
+    &.succes {
+      background: $vert-clair;
+      color: $vert;
+    }
+    &.attention {
+      background: $orange-clair;
+      color: $orange;
+    }
+  }
+  .nombre {
+    font-size: 26px;
+    font-weight: 600;
+  }
+  .libelle {
+    font-size: 13px;
+    color: $gris;
+  }
+}
+
+.barre-outils {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.filtres {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid $bordure;
+
+  button {
+    min-height: 40px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    background: transparent;
+    color: $texte-secondaire;
+
+    &.actif {
+      background: $primaire;
+      color: #ffffff;
+      font-weight: 600;
+    }
+  }
+}
+
+.tri {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: $gris;
+
+  select {
+    min-height: 40px;
+    padding: 0 10px;
+    border: 1px solid $bordure;
+    border-radius: 8px;
+    background: #ffffff;
+    font-size: 13px;
+    color: $texte;
+  }
+}
+
+.recherche {
+  margin: 0;
+  font-size: 13px;
+  color: $gris;
+}
+
+.cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
+}
+
+.carte-etude {
+  background: #ffffff;
+  border: 1px solid $bordure;
+  border-radius: $rayon-carte;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .haut {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .initiale {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: $primaire-clair;
+    color: $primaire-fonce;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .textes {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    p {
+      margin: 0;
+      font-size: 13px;
+      color: $texte-secondaire;
+    }
+    span {
+      font-size: 12px;
+      color: $gris;
+    }
+  }
+  .niveau {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: $fond-encadre;
+    font-size: 12px;
+
+    .libelle {
+      color: $gris;
+    }
+    .valeur {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+    .barres {
+      display: flex;
+      gap: 2px;
+      align-items: flex-end;
+
+      span {
+        width: 4px;
+        border-radius: 2px;
+      }
+    }
+  }
+  .date {
+    font-size: 12px;
+    color: $gris;
+  }
+  .liens {
+    display: flex;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px solid $bordure-legere;
+
+    a,
+    button {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      font-size: 13px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .voir {
+      padding: 0 12px;
+      font-weight: 600;
+    }
+    .modifier {
+      color: $texte-secondaire;
+    }
+    .supprimer {
+      color: $rouge;
+    }
+    .espaceur {
+      flex-grow: 1;
+    }
+  }
+}
+
+.compteur {
+  margin: 0;
+  font-size: 12px;
+  color: $gris;
+}

@@ -1,0 +1,172 @@
+<div class="page">
+  <nav class="fil-ariane" aria-label="Fil d'Ariane">
+    <a routerLink="/etude-marche">Mon espace</a><span aria-hidden="true">›</span>
+    <a routerLink="/etude-marche">Étude de marché</a><span aria-hidden="true">›</span>
+    @if (id()) {
+      <a [routerLink]="['/etude-marche', id(), 'apercu']">{{ titreInitial() || 'Étude' }}</a><span aria-hidden="true">›</span>
+      <span class="courant">Modifier</span>
+    } @else {
+      <span class="courant">Créer une étude</span>
+    }
+  </nav>
+
+  <div class="entete-page">
+    <div class="titre">
+      <div class="titre-ligne">
+        <h1>{{ id() ? "Modifier l'étude" : 'Créer une étude' }}</h1>
+        <app-badge [variante]="statuts[statut()].variante">{{ statuts[statut()].libelle }}</app-badge>
+      </div>
+      <p>Posez les bases de votre marché, puis affinez votre positionnement.</p>
+    </div>
+  </div>
+
+  @if (chargement()) {
+    <app-loader texte="Chargement de l'étude…" />
+  } @else if (erreurChargement()) {
+    <p class="bandeau-erreur" role="alert">{{ erreurChargement() }} <a routerLink="/etude-marche">Retour à la liste</a></p>
+  } @else {
+    <ol class="etapes" aria-label="Étapes">
+      @for (libelle of etapes; track libelle; let i = $index) {
+        <li>
+          <button type="button" (click)="allerA(i + 1)" [attr.aria-current]="etapeCourante() === i + 1 ? 'step' : null">
+            <span class="pastille" [class.active]="i + 1 <= etapeCourante()">{{ i + 1 }}</span>
+            <span class="textes">
+              <span class="numero">Étape {{ i + 1 }}</span>
+              <span class="libelle" [class.active]="etapeCourante() === i + 1">{{ libelle }}</span>
+            </span>
+          </button>
+        </li>
+      }
+    </ol>
+
+    <div class="colonnes">
+      <form class="principale formulaire" [formGroup]="formulaire" (ngSubmit)="etapeCourante() < 3 ? suivant() : terminer()" novalidate>
+        @switch (etapeCourante()) {
+          @case (1) {
+            <div class="bloc">
+              <div class="intro"><h2>Marché cible</h2><p>À qui s'adresse votre projet ? Délimitez le terrain de votre étude.</p></div>
+              <div class="grille-champs">
+                <label class="champ" [class.en-erreur]="formulaire.controls.titre.touched && formulaire.controls.titre.invalid">
+                  Titre de l'étude *
+                  <input type="text" formControlName="titre" />
+                  <app-field-error [controle]="formulaire.controls.titre" />
+                </label>
+                <label class="champ" [class.en-erreur]="formulaire.controls.secteur.touched && formulaire.controls.secteur.invalid">
+                  Secteur *
+                  <select formControlName="secteur">
+                    <option [ngValue]="null" disabled>Choisir un secteur</option>
+                    @for (s of secteurs(); track s.id) {
+                      <option [ngValue]="s.id">{{ s.nom }}</option>
+                    }
+                  </select>
+                  <app-field-error [controle]="formulaire.controls.secteur" />
+                </label>
+                <label class="champ" [class.en-erreur]="formulaire.controls.cible.touched && formulaire.controls.cible.invalid">
+                  Cible *
+                  <input type="text" formControlName="cible" />
+                  <app-field-error [controle]="formulaire.controls.cible" />
+                </label>
+                <label class="champ" [class.en-erreur]="formulaire.controls.zone_geographique.touched && formulaire.controls.zone_geographique.invalid">
+                  Zone géographique *
+                  <select formControlName="zone_geographique">
+                    <option value="" disabled>Choisir une zone</option>
+                    @for (z of zones(); track z) {
+                      <option [value]="z">{{ z }}</option>
+                    }
+                  </select>
+                  <app-field-error [controle]="formulaire.controls.zone_geographique" />
+                </label>
+                <label class="champ" [class.en-erreur]="formulaire.controls.taille_marche.touched && formulaire.controls.taille_marche.invalid">
+                  Taille du marché (€ / an) *
+                  <input type="text" inputmode="numeric" formControlName="taille_marche" />
+                  <span class="aide">Montant annuel estimé du marché</span>
+                  <app-field-error [controle]="formulaire.controls.taille_marche" />
+                </label>
+                <label class="champ" [class.en-erreur]="formulaire.controls.taux_croissance.touched && formulaire.controls.taux_croissance.invalid">
+                  Taux de croissance (% / an) *
+                  <input type="text" inputmode="decimal" formControlName="taux_croissance" />
+                  <span class="aide">Croissance annuelle estimée du marché</span>
+                  <app-field-error [controle]="formulaire.controls.taux_croissance" />
+                </label>
+              </div>
+            </div>
+          }
+          @case (2) {
+            <div class="bloc">
+              <div class="intro"><h2>Mon offre</h2><p>Décrivez la valeur que vous apportez et votre premier niveau de prix.</p></div>
+              <label class="champ" [class.en-erreur]="formulaire.controls.description_offre.touched && formulaire.controls.description_offre.invalid">
+                Description de l'offre *
+                <textarea rows="4" formControlName="description_offre"></textarea>
+                <app-field-error [controle]="formulaire.controls.description_offre" />
+              </label>
+              <label class="champ prix" [class.en-erreur]="formulaire.controls.prix_propose.touched && formulaire.controls.prix_propose.invalid">
+                Prix proposé (€) *
+                <input type="text" inputmode="decimal" formControlName="prix_propose" />
+                <span class="aide">Comparé au prix moyen des concurrents de l'étude</span>
+                <app-field-error [controle]="formulaire.controls.prix_propose" />
+              </label>
+              @if (encadrePrix(); as encadre) {
+                <p class="encadre-prix"><strong>{{ encadre.titre }}</strong> {{ encadre.texte }}</p>
+              }
+            </div>
+          }
+          @case (3) {
+            <div class="bloc">
+              <div class="intro"><h2>Hypothèses</h2><p>Rendez vos intuitions explicites pour mieux les confronter au marché.</p></div>
+              <label class="champ" [class.en-erreur]="formulaire.controls.hypotheses.touched && formulaire.controls.hypotheses.invalid">
+                Vos hypothèses de marché *
+                <textarea rows="7" formControlName="hypotheses"></textarea>
+                <span class="aide">Décrivez les besoins, les freins ou la disposition à payer que vous souhaitez vérifier. Une hypothèse par ligne.</span>
+                <app-field-error [controle]="formulaire.controls.hypotheses" />
+              </label>
+            </div>
+          }
+        }
+
+        <div class="pied">
+          @if (etapeCourante() > 1) {
+            <button type="button" class="btn-secondaire" (click)="precedent()">← Précédent</button>
+          }
+          <span class="mention">
+            * Champs obligatoires
+            @if (derniereSauvegarde()) {
+              · Dernier enregistrement du brouillon à {{ derniereSauvegarde() | date: 'HH:mm' }}
+            }
+          </span>
+          <button type="button" class="btn-secondaire" (click)="enregistrerBrouillon()" [disabled]="enregistrement()">
+            Enregistrer le brouillon
+          </button>
+          @if (etapeCourante() < 3) {
+            <button type="submit" class="btn-primaire" [disabled]="enregistrement()">
+              {{ enregistrement() ? 'Enregistrement…' : 'Suivant →' }}
+            </button>
+          } @else {
+            <button type="submit" class="btn-primaire" [disabled]="enregistrement()">
+              {{ enregistrement() ? 'Enregistrement…' : id() ? 'Enregistrer et voir l’étude' : "Créer l'étude" }}
+            </button>
+          }
+        </div>
+      </form>
+
+      <div class="laterale">
+        <div class="carte-conseil">
+          <h3>Le conseil LaunchPad</h3>
+          <p>{{ conseil() }}</p>
+          <a class="lien-fleche" routerLink="/co-fondateur-ia">Demander à mon Co-Fondateur IA →</a>
+        </div>
+        <div class="bref">
+          <strong>Votre étude en bref</strong>
+          <dl>
+            <div><dt>Titre</dt><dd>{{ resume().titre }}</dd></div>
+            <div><dt>Secteur</dt><dd>{{ resume().secteur }}</dd></div>
+            <div><dt>Zone</dt><dd>{{ resume().zone }}</dd></div>
+            <div><dt>Taille du marché</dt><dd>{{ resume().taille }}</dd></div>
+            <div><dt>Croissance</dt><dd>{{ resume().croissance }}</dd></div>
+            <div><dt>Prix proposé</dt><dd>{{ resume().prix }}</dd></div>
+          </dl>
+        </div>
+        <p class="confidentialite">Vos données restent privées. Vous décidez quand partager votre étude.</p>
+      </div>
+    </div>
+  }
+</div>

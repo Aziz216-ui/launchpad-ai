@@ -1,0 +1,97 @@
+@if (store.etude(); as etude) {
+  <div class="grille-kpi kpis">
+    <div class="kpi">
+      <span class="libelle">Taille du marché</span>
+      <span class="valeur">{{ etude.taille_marche | montant: true }}</span>
+      <span class="detail">Marché annuel · {{ etude.zone_geographique || 'zone non précisée' }}</span>
+    </div>
+    <div class="kpi">
+      <span class="libelle">Croissance</span>
+      <span class="valeur">{{ etude.taux_croissance | pourcentage: true }}</span>
+      <span class="detail" [class.positif]="etude.taux_croissance > 0" [class.negatif]="etude.taux_croissance < 0">Évolution annuelle estimée</span>
+    </div>
+    <div class="kpi">
+      <span class="libelle">Nombre de concurrents</span>
+      <span class="valeur">{{ etude.concurrents.length }}</span>
+      <span class="detail">Acteurs associés à l'étude</span>
+    </div>
+    <div class="kpi">
+      <span class="libelle">Niveau de concurrence</span>
+      <span class="valeur" [style.color]="niveau() === 'moyen' ? '#9A5B07' : niveaux[niveau()].couleur">{{ niveaux[niveau()].libelle }}</span>
+      @if (niveau() === 'inconnu') {
+        <span class="detail">Associez des concurrents pour l'évaluer</span>
+      }
+    </div>
+  </div>
+
+  <div class="ligne">
+    <section class="carte potentiel">
+      <div class="entete">
+        <h2>Potentiel commercial</h2>
+        @if (rapport(); as r) {
+          <app-badge [variante]="potentiels[r.potentiel_commercial.niveau].variante">{{ potentiels[r.potentiel_commercial.niveau].libelle }}</app-badge>
+        }
+      </div>
+      @if (chargementRapport()) {
+        <app-loader texte="Calcul du potentiel…" />
+      } @else if (rapport(); as r) {
+        <div class="contenu">
+          <svg width="200" height="120" viewBox="0 0 180 104" role="img"
+            [attr.aria-label]="'Score de potentiel : ' + r.potentiel_commercial.score + ' sur ' + r.potentiel_commercial.score_max">
+            <path d="M20 90 A70 70 0 0 1 160 90" fill="none" stroke="#EEF2F3" stroke-width="16" stroke-linecap="round"></path>
+            @if (arc() > 0) {
+              <path d="M20 90 A70 70 0 0 1 160 90" fill="none" [attr.stroke]="r.potentiel_commercial.niveau === 'fort' ? '#24704C' : r.potentiel_commercial.niveau === 'moyen' ? '#C47A0A' : '#B23A3A'"
+                stroke-width="16" stroke-linecap="round" [attr.stroke-dasharray]="arc() + ' ' + longueurArc"></path>
+            }
+            <text x="90" y="80" text-anchor="middle" font-family="Poppins, sans-serif" font-size="30" font-weight="600" fill="#1D2B2F">{{ r.potentiel_commercial.score }}</text>
+            <text x="90" y="98" text-anchor="middle" font-family="Poppins, sans-serif" font-size="11" fill="#5A6A6F">sur {{ r.potentiel_commercial.score_max }}</text>
+          </svg>
+          <div class="explication">
+            <strong>{{ r.potentiel_commercial.conclusion }}</strong>
+            <ul>
+              @for (ligne of r.potentiel_commercial.justification; track ligne) {
+                <li>{{ ligne }}</li>
+              }
+            </ul>
+            <span class="note">Score calculé à partir de la croissance, de la concurrence, du prix, des tendances et de vos personas.</span>
+          </div>
+        </div>
+      } @else {
+        <p>Le potentiel commercial n'a pas pu être calculé.</p>
+      }
+    </section>
+
+    <section class="carte regard">
+      <h2>Votre marché en un regard</h2>
+      <div><span>Secteur</span><strong>{{ etude.secteur_nom }}</strong></div>
+      <div><span>Cible</span><strong>{{ etude.cible || '—' }}</strong></div>
+      <div><span>Zone géographique</span><strong>{{ etude.zone_geographique || '—' }}</strong></div>
+      <div><span>Mon offre</span><strong>{{ etude.prix_propose | montant }}</strong></div>
+    </section>
+  </div>
+
+  <div class="grille-2">
+    @if (opportunite(); as texte) {
+      <section class="carte">
+        <h2 class="vert">Votre opportunité</h2>
+        <p>{{ texte }}</p>
+        <a class="lien-fleche" routerLink="../prix">Comparer les offres et les prix →</a>
+      </section>
+    }
+    <section class="carte">
+      <h2 class="orange">À valider avant de vous lancer</h2>
+      @if (etude.hypotheses | lignes; as hypotheses) {
+        @if (hypotheses.length) {
+          <ul class="hypotheses">
+            @for (h of hypotheses; track $index) {
+              <li>{{ h }}</li>
+            }
+          </ul>
+        } @else {
+          <p>Aucune hypothèse saisie pour le moment.</p>
+        }
+      }
+      <a class="lien-fleche" [routerLink]="['/etude-marche', etude.id, 'modifier']" [queryParams]="{ etape: 3 }">Revoir mes hypothèses →</a>
+    </section>
+  </div>
+}

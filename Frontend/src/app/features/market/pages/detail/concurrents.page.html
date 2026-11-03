@@ -1,0 +1,98 @@
+<div class="entete-section">
+  <div class="titre">
+    <h2>Votre paysage concurrentiel</h2>
+    <p>{{ concurrents().length }} concurrent(s) associé(s) à votre étude · secteur {{ store.etude()?.secteur_nom }}.</p>
+  </div>
+  <button type="button" class="btn-primaire" (click)="modal.set({ mode: 'associer', concurrent: null })">
+    <app-icon nom="plus" [taille]="16" />Associer un concurrent
+  </button>
+</div>
+
+@if (concurrents().length) {
+  <div class="tableau-conteneur">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Nom</th>
+          <th scope="col">Pays</th>
+          <th scope="col">Prix moyen</th>
+          <th scope="col">Part de marché</th>
+          <th scope="col">Forces</th>
+          <th scope="col">Faiblesses</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of concurrents(); track c.id) {
+          <tr>
+            <td>
+              <span class="nom">
+                <span class="initiales" aria-hidden="true">{{ c.nom | initiales: 'concurrent' }}</span>
+                <strong>{{ c.nom }}</strong>
+              </span>
+            </td>
+            <td>{{ c.pays || '—' }}</td>
+            <td>{{ c.prix_moyen | montant }}</td>
+            <td>
+              <span class="part">
+                <span>{{ c.part_de_marche | pourcentage }}</span>
+                <span class="jauge"><span [style.width.%]="c.part_de_marche"></span></span>
+              </span>
+            </td>
+            <td class="force">
+              @if (c.forces) {✓ {{ c.forces }}} @else {—}
+            </td>
+            <td class="faiblesse">
+              @if (c.faiblesses) {✕ {{ c.faiblesses }}} @else {—}
+            </td>
+            <td class="actions-ligne">
+              <app-menu-actions [libelle]="'Actions pour ' + c.nom">
+                <button type="button" role="menuitem" (click)="modal.set({ mode: 'modifier', concurrent: c })">Modifier la fiche</button>
+                <button type="button" role="menuitem" (click)="retirer(c)">Retirer de l'étude</button>
+                <button type="button" role="menuitem" class="danger" (click)="aSupprimer.set(c)">Supprimer définitivement</button>
+              </app-menu-actions>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="note">{{ notePartsDeMarche() }}</p>
+
+  @if (positionnement(); as p) {
+    <div class="grille-2">
+      <section class="carte">
+        <h3>{{ p.titre }}</h3>
+        <p>{{ p.texte }}</p>
+        <a class="lien-fleche" routerLink="../prix">Voir la comparaison des offres et des prix →</a>
+      </section>
+    </div>
+  }
+} @else {
+  <app-empty-state [compact]="true" titre="Aucun concurrent associé"
+    texte="Associez les concurrents de votre secteur pour évaluer le niveau de concurrence et comparer vos prix.">
+    <button type="button" class="btn-primaire" (click)="modal.set({ mode: 'associer', concurrent: null })">
+      <app-icon nom="plus" [taille]="16" />Associer un concurrent
+    </button>
+  </app-empty-state>
+}
+
+@if (modal(); as m) {
+  <app-concurrent-modal
+    [etude]="store.etude()!"
+    [modeInitial]="m.mode"
+    [concurrent]="m.concurrent"
+    (fermer)="modal.set(null)"
+    (enregistre)="apresEnregistrement()" />
+}
+
+@if (aSupprimer(); as c) {
+  <app-confirm-modal
+    titre="Supprimer ce concurrent ?"
+    avant="Le concurrent "
+    [nom]="c.nom"
+    apres=" sera supprimé de la base et retiré de toutes les études qui l'utilisent. Pour le retirer seulement de cette étude, utilisez « Retirer de l'étude »."
+    [enCours]="suppressionEnCours()"
+    (confirmer)="supprimer()"
+    (annuler)="aSupprimer.set(null)" />
+}
