@@ -9,16 +9,16 @@ from rest_framework.test import APITestCase
 
 from concurrents.handlers import secteur_supprime
 from concurrents.models import Concurrent
-from evenements import consommateur, producteur
+from market_commun.evenements import consommateur, producteur
 
 from .test_api import FINTECH, EDTECH, SecteurServiceMockeMixin
 
 
 class PublicationTests(SecteurServiceMockeMixin, APITestCase):
-    @mock.patch("evenements.producteur.envoyer")
+    @mock.patch("market_commun.evenements.producteur.envoyer")
     def test_suppression_publie_concurrent_supprime(self, envoyer):
         concurrent = Concurrent.objects.create(nom="Flouci", secteur_id=FINTECH)
-        with self.assertLogs("evenements.producteur", "INFO") as logs, self.captureOnCommitCallbacks(execute=True):
+        with self.assertLogs("market_commun.evenements.producteur", "INFO") as logs, self.captureOnCommitCallbacks(execute=True):
             response = self.client.delete(reverse("concurrent-detail", args=[concurrent.id]))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         message = envoyer.call_args.args[0]
@@ -26,7 +26,7 @@ class PublicationTests(SecteurServiceMockeMixin, APITestCase):
         self.assertEqual(message["data"], {"concurrent_id": concurrent.id, "secteur_id": FINTECH})
         self.assertIn(f"[PRODUCER] concurrent.supprime concurrent_id={concurrent.id}", logs.output[0])
 
-    @mock.patch("evenements.producteur.envoyer")
+    @mock.patch("market_commun.evenements.producteur.envoyer")
     def test_creation_ne_publie_rien(self, envoyer):
         with self.captureOnCommitCallbacks(execute=True):
             self.client.post(reverse("concurrent-list"), {"nom": "X", "secteur_id": FINTECH}, format="json")
@@ -63,7 +63,7 @@ class SecteurSupprimeTests(APITestCase):
         message = producteur.construire_message("secteur.supprime", {"secteur_id": FINTECH})
         canal = mock.Mock()
         with mock.patch("concurrents.handlers.Concurrent.objects.filter", wraps=Concurrent.objects.filter) as filtre, \
-                self.assertLogs("evenements.consommateur", "INFO") as logs:
+                self.assertLogs("market_commun.evenements.consommateur", "INFO") as logs:
             for tag in (1, 2):
                 consommateur.traiter(self.QUEUE, secteur_supprime, canal, mock.Mock(delivery_tag=tag), None,
                                      json.dumps(message).encode(), attente=0)

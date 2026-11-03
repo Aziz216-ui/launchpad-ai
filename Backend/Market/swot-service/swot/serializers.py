@@ -9,6 +9,7 @@ auprès d'ETUDE-SERVICE : introuvable -> 400, service injoignable -> 503.
 from rest_framework import serializers
 
 from clients import EtudeClient
+from market_commun.validation import verifier_reference
 
 from .models import ElementSWOT
 
@@ -28,12 +29,7 @@ class ElementSWOTSerializer(serializers.ModelSerializer):
         read_only_fields = ["genere_automatiquement"]
 
     def validate(self, attrs):
-        etude_id = attrs.get("etude_id")
-        if self.instance is None and etude_id is None:
-            raise serializers.ValidationError({"etude_id": "Ce champ est obligatoire."})
-        if etude_id is not None and (self.instance is None or etude_id != self.instance.etude_id):
-            if not EtudeClient().exists(etude_id):
-                raise serializers.ValidationError({"etude_id": ETUDE_INTROUVABLE})
+        verifier_reference(attrs, self.instance, "etude_id", EtudeClient().exists, ETUDE_INTROUVABLE)
         return attrs
 
 
@@ -54,12 +50,3 @@ class ApercuSwotSerializer(serializers.Serializer):
     etude_id = serializers.IntegerField()
     elements = ElementCalculeSerializer(many=True)
 
-
-class HealthSerializer(serializers.Serializer):
-    status = serializers.CharField()
-    service = serializers.CharField()
-
-
-class ServiceIndisponibleSerializer(serializers.Serializer):
-    service = serializers.CharField()
-    message = serializers.CharField()

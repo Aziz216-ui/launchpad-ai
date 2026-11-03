@@ -9,6 +9,9 @@
 # host.docker.internal:<port> (EUREKA_LOCALHOST_ALIAS) ; en repli (Eureka arrêté),
 # les URL directes <NOM>_SERVICE_URL passent par le réseau Docker market-net.
 #
+# Secrets (SECRET_KEY, mots de passe PostgreSQL et RabbitMQ) : lus dans le fichier .env de
+# ce dossier (non commité), à créer depuis .env.example. Sans eux, docker compose s'arrête.
+#
 # Communication asynchrone : RabbitMQ (exchange topic "market.events", interface web
 # http://localhost:15672) et un conteneur consumer par service qui reçoit des événements
 # (python manage.py consume_events) : concurrent-consumer, etude-consumer, swot-consumer.
@@ -22,8 +25,8 @@ x-service-commun: &service-commun
   restart: unless-stopped
 
 x-env-commun: &env-commun
-  DEBUG: ${DEBUG:-False}
-  SECRET_KEY: ${SECRET_KEY:-changez-moi-en-production}
+  DEBUG: ${DEBUG:-False}   # False : les secrets ci-dessous sont obligatoires
+  SECRET_KEY: ${SECRET_KEY:?SECRET_KEY manquant, copier .env.example en .env}
   DB_PORT: "5432"
   EUREKA_ENABLED: ${EUREKA_ENABLED:-true}
   EUREKA_SERVER_URL: http://host.docker.internal:8761/eureka/
@@ -38,8 +41,8 @@ x-env-commun: &env-commun
   # RabbitMQ (nom du service dans le réseau Docker)
   RABBITMQ_HOST: rabbitmq
   RABBITMQ_PORT: "5672"
-  RABBITMQ_USER: ${RABBITMQ_USER:-market}
-  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-market}
+  RABBITMQ_USER: ${RABBITMQ_USER:?RABBITMQ_USER manquant dans .env}
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD manquant dans .env}
 
 # Consumer RabbitMQ : même image que le service, autre commande, pas de port publié.
 # Il attend que le service soit "healthy" (migrations appliquées) et que RabbitMQ réponde.
@@ -69,8 +72,8 @@ services:
     container_name: rabbitmq
     hostname: rabbitmq   # nom de nœud fixe : les messages persistants survivent à un redémarrage
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-market}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-market}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?RABBITMQ_USER manquant dans .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD manquant dans .env}
     ports:
       - "5672:5672"     # AMQP (producers et consumers)
       - "15672:15672"   # interface web de management
@@ -92,7 +95,7 @@ services:
     environment:
       POSTGRES_DB: secteur_db
       POSTGRES_USER: secteur_user
-      POSTGRES_PASSWORD: secteur_password
+      POSTGRES_PASSWORD: ${SECTEUR_DB_PASSWORD:?SECTEUR_DB_PASSWORD manquant dans .env}
     ports:
       - "5440:5432"
     volumes:
@@ -104,7 +107,7 @@ services:
     environment:
       POSTGRES_DB: concurrent_db
       POSTGRES_USER: concurrent_user
-      POSTGRES_PASSWORD: concurrent_password
+      POSTGRES_PASSWORD: ${CONCURRENT_DB_PASSWORD:?CONCURRENT_DB_PASSWORD manquant dans .env}
     ports:
       - "5441:5432"
     volumes:
@@ -116,7 +119,7 @@ services:
     environment:
       POSTGRES_DB: etude_db
       POSTGRES_USER: etude_user
-      POSTGRES_PASSWORD: etude_password
+      POSTGRES_PASSWORD: ${ETUDE_DB_PASSWORD:?ETUDE_DB_PASSWORD manquant dans .env}
     ports:
       - "5442:5432"
     volumes:
@@ -128,7 +131,7 @@ services:
     environment:
       POSTGRES_DB: swot_db
       POSTGRES_USER: swot_user
-      POSTGRES_PASSWORD: swot_password
+      POSTGRES_PASSWORD: ${SWOT_DB_PASSWORD:?SWOT_DB_PASSWORD manquant dans .env}
     ports:
       - "5443:5432"
     volumes:
@@ -137,7 +140,9 @@ services:
   # --- Microservices (ports 8010-8013) -----------------------------------------
   secteur-service:
     <<: *service-commun
-    build: ./secteur-service
+    build:
+      context: .
+      dockerfile: secteur-service/Dockerfile
     container_name: secteur-service
     environment:
       <<: *env-commun
@@ -146,7 +151,7 @@ services:
       DB_HOST: secteur-db
       DB_NAME: secteur_db
       DB_USER: secteur_user
-      DB_PASSWORD: secteur_password
+      DB_PASSWORD: ${SECTEUR_DB_PASSWORD:?SECTEUR_DB_PASSWORD manquant dans .env}
     ports:
       - "8010:8010"
     healthcheck:
@@ -163,7 +168,9 @@ services:
 
   concurrent-service:
     <<: *service-commun
-    build: ./concurrent-service
+    build:
+      context: .
+      dockerfile: concurrent-service/Dockerfile
     container_name: concurrent-service
     environment:
       <<: *env-commun
@@ -172,7 +179,7 @@ services:
       DB_HOST: concurrent-db
       DB_NAME: concurrent_db
       DB_USER: concurrent_user
-      DB_PASSWORD: concurrent_password
+      DB_PASSWORD: ${CONCURRENT_DB_PASSWORD:?CONCURRENT_DB_PASSWORD manquant dans .env}
     ports:
       - "8011:8011"
     healthcheck:
@@ -189,7 +196,9 @@ services:
 
   etude-service:
     <<: *service-commun
-    build: ./etude-service
+    build:
+      context: .
+      dockerfile: etude-service/Dockerfile
     container_name: etude-service
     environment:
       <<: *env-commun
@@ -198,7 +207,7 @@ services:
       DB_HOST: etude-db
       DB_NAME: etude_db
       DB_USER: etude_user
-      DB_PASSWORD: etude_password
+      DB_PASSWORD: ${ETUDE_DB_PASSWORD:?ETUDE_DB_PASSWORD manquant dans .env}
     ports:
       - "8012:8012"
     healthcheck:
@@ -215,7 +224,9 @@ services:
 
   swot-service:
     <<: *service-commun
-    build: ./swot-service
+    build:
+      context: .
+      dockerfile: swot-service/Dockerfile
     container_name: swot-service
     environment:
       <<: *env-commun
@@ -224,7 +235,7 @@ services:
       DB_HOST: swot-db
       DB_NAME: swot_db
       DB_USER: swot_user
-      DB_PASSWORD: swot_password
+      DB_PASSWORD: ${SWOT_DB_PASSWORD:?SWOT_DB_PASSWORD manquant dans .env}
     ports:
       - "8013:8013"
     healthcheck:
@@ -242,14 +253,16 @@ services:
   # --- Consumers RabbitMQ (python manage.py consume_events) ----------------------
   concurrent-consumer:
     <<: *consumer-commun
-    build: ./concurrent-service
+    build:
+      context: .
+      dockerfile: concurrent-service/Dockerfile
     container_name: concurrent-consumer
     environment:
       <<: *env-commun
       DB_HOST: concurrent-db
       DB_NAME: concurrent_db
       DB_USER: concurrent_user
-      DB_PASSWORD: concurrent_password
+      DB_PASSWORD: ${CONCURRENT_DB_PASSWORD:?CONCURRENT_DB_PASSWORD manquant dans .env}
     depends_on:
       concurrent-service:
         condition: service_healthy
@@ -258,14 +271,16 @@ services:
 
   etude-consumer:
     <<: *consumer-commun
-    build: ./etude-service
+    build:
+      context: .
+      dockerfile: etude-service/Dockerfile
     container_name: etude-consumer
     environment:
       <<: *env-commun
       DB_HOST: etude-db
       DB_NAME: etude_db
       DB_USER: etude_user
-      DB_PASSWORD: etude_password
+      DB_PASSWORD: ${ETUDE_DB_PASSWORD:?ETUDE_DB_PASSWORD manquant dans .env}
     depends_on:
       etude-service:
         condition: service_healthy
@@ -274,14 +289,16 @@ services:
 
   swot-consumer:
     <<: *consumer-commun
-    build: ./swot-service
+    build:
+      context: .
+      dockerfile: swot-service/Dockerfile
     container_name: swot-consumer
     environment:
       <<: *env-commun
       DB_HOST: swot-db
       DB_NAME: swot_db
       DB_USER: swot_user
-      DB_PASSWORD: swot_password
+      DB_PASSWORD: ${SWOT_DB_PASSWORD:?SWOT_DB_PASSWORD manquant dans .env}
     depends_on:
       swot-service:
         condition: service_healthy

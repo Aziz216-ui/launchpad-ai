@@ -1,6 +1,5 @@
 """Vues de l'API de l'etude-service."""
 
-from django.conf import settings
 from django.http import HttpResponse
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
@@ -9,21 +8,20 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from evenements.producteur import publier
+from market_commun.evenements.producteur import publier
+from market_commun.filtres import PARAMETRE_IDS, filtrer_par_ids
+from market_commun.vues import ServiceIndisponibleSerializer
 
 from . import services
-from .filtres import PARAMETRE_IDS, filtrer_par_ids
 from .models import EtudeMarche, Persona
 from .serializers import (
     AnalyseProjetSerializer,
     ComparaisonPrixSerializer,
     EtudeMarcheDetailSerializer,
     EtudeMarcheSerializer,
-    HealthSerializer,
     OpportunitesMenacesSerializer,
     PersonaSerializer,
     RapportEtudeSerializer,
-    ServiceIndisponibleSerializer,
 )
 
 ERREURS = {503: ServiceIndisponibleSerializer}
@@ -159,10 +157,3 @@ class AnalyseProjetView(APIView):
     def get(self, request, projet_id):
         return Response(services.analyser_projet(projet_id))
 
-
-class HealthView(APIView):
-    """Vérification de l'état du service (Docker, Eureka, gateway)."""
-
-    @extend_schema(responses={200: HealthSerializer}, summary="Health check")
-    def get(self, request):
-        return Response({"status": "UP", "service": settings.SERVICE_NAME})

@@ -1,16 +1,5 @@
-"""
-WSGI config for config project.
+"""Point d'entrée WSGI du swot-service (gunicorn config.wsgi:application)."""
 
-It exposes the WSGI callable as a module-level variable named ``application``.
+from market_commun.gestion import application_wsgi
 
-For more information on this file, see
-https://docs.djangoproject.com/en/5.2/howto/deployment/wsgi/
-"""
-
-import os
-
-from django.core.wsgi import get_wsgi_application
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
-
-application = get_wsgi_application()
+application = application_wsgi()

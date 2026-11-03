@@ -1,6 +1,6 @@
 """Client d'ETUDE-SERVICE (données d'une étude pour les règles de la SWOT)."""
 
-from .base import ServiceClient
+from market_commun.clients import ServiceClient
 
 
 class EtudeClient(ServiceClient):

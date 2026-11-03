@@ -69,7 +69,8 @@ function Attendre-Condition([scriptblock]$Condition, [int]$Secondes = 20) {
 function Attendre-Service([string]$Chemin, [int]$Secondes = 90) {
     $fin = (Get-Date).AddSeconds($Secondes)
     while ((Get-Date) -lt $fin) {
-        try { if ((Invoke-Api GET $Chemin).Status -eq 200) { return $true } } catch { }
+        try { if ((Invoke-Api GET $Chemin).Status -eq 200) { return $true } }
+        catch { Write-Verbose "Service pas encore joignable ($Chemin) : $($_.Exception.Message)" }
         Start-Sleep -Seconds 2
     }
     return $false

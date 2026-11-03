@@ -10,6 +10,7 @@ introuvable -> 400 "Secteur introuvable", service injoignable -> 503.
 from rest_framework import serializers
 
 from clients import SecteurClient
+from market_commun.validation import verifier_reference
 
 from .models import Concurrent
 
@@ -48,21 +49,7 @@ class ConcurrentSerializer(serializers.ModelSerializer):
         return noms.get(concurrent.secteur_id)
 
     def validate(self, attrs):
-        secteur_id = attrs.get("secteur_id")
-        if self.instance is None and secteur_id is None:
-            raise serializers.ValidationError({"secteur_id": "Ce champ est obligatoire."})
         # Vérifié à la création, et à la modification seulement si le secteur change
-        if secteur_id is not None and (self.instance is None or secteur_id != self.instance.secteur_id):
-            if not SecteurClient().exists(secteur_id):
-                raise serializers.ValidationError({"secteur_id": SECTEUR_INTROUVABLE})
+        verifier_reference(attrs, self.instance, "secteur_id", SecteurClient().exists, SECTEUR_INTROUVABLE)
         return attrs
 
-
-class HealthSerializer(serializers.Serializer):
-    status = serializers.CharField()
-    service = serializers.CharField()
-
-
-class ServiceIndisponibleSerializer(serializers.Serializer):
-    service = serializers.CharField()
-    message = serializers.CharField()

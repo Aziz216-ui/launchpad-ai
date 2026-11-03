@@ -6,8 +6,8 @@ from unittest import mock
 from rest_framework.test import APITestCase
 
 from clients import ServiceIndisponible
-from evenements import consommateur, producteur
-from evenements.models import MessageTraite
+from market_commun.evenements import consommateur, producteur
+from market_commun.evenements.models import MessageTraite
 from swot.handlers import etude_finalisee, etude_supprimee
 from swot.models import ElementSWOT
 
@@ -32,7 +32,7 @@ class EtudeFinaliseeTests(EtudeServiceMockeMixin, APITestCase):
     def test_message_en_double_ne_regenere_pas(self):
         message = producteur.construire_message("etude.finalisee", {"etude_id": ETUDE})
         canal = mock.Mock()
-        with self.assertLogs("evenements.consommateur", "INFO") as logs:
+        with self.assertLogs("market_commun.evenements.consommateur", "INFO") as logs:
             for tag in (1, 2):
                 consommateur.traiter("swot.etude-finalisee", etude_finalisee, canal, mock.Mock(delivery_tag=tag),
                                      None, json.dumps(message).encode(), attente=0)
@@ -45,7 +45,7 @@ class EtudeFinaliseeTests(EtudeServiceMockeMixin, APITestCase):
         self.get.side_effect = ServiceIndisponible("ETUDE-SERVICE")
         message = producteur.construire_message("etude.finalisee", {"etude_id": ETUDE})
         canal = mock.Mock()
-        with self.assertLogs("evenements.consommateur", "WARNING"):
+        with self.assertLogs("market_commun.evenements.consommateur", "WARNING"):
             consommateur.traiter("swot.etude-finalisee", etude_finalisee, canal, mock.Mock(delivery_tag=1),
                                  None, json.dumps(message).encode(), attente=0)
         self.assertEqual(self.get.call_count, 3)
@@ -72,7 +72,7 @@ class EtudeSupprimeeTests(APITestCase):
     def test_message_en_double(self):
         message = producteur.construire_message("etude.supprimee", {"etude_id": ETUDE})
         canal = mock.Mock()
-        with self.assertLogs("evenements.consommateur", "INFO") as logs:
+        with self.assertLogs("market_commun.evenements.consommateur", "INFO") as logs:
             for tag in (1, 2):
                 consommateur.traiter("swot.etude-supprimee", etude_supprimee, canal, mock.Mock(delivery_tag=tag),
                                      None, json.dumps(message).encode(), attente=0)

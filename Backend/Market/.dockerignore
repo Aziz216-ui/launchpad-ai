@@ -1,0 +1,12 @@
+# Contexte de build Docker = Backend/Market (les images installent market-commun)
+**/venv/
+**/.venv/
+**/__pycache__/
+**/*.py[cod]
+**/.env
+**/db.sqlite3
+**/staticfiles/
+**/*.egg-info/
+**/build/
+**/*.log
+*.ps1

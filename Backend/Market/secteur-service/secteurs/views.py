@@ -1,22 +1,20 @@
 """Vues de l'API du secteur-service."""
 
-from django.conf import settings
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from evenements.producteur import publier
+from market_commun.evenements.producteur import publier
+from market_commun.filtres import PARAMETRE_IDS, filtrer_par_ids
+from market_commun.vues import ServiceIndisponibleSerializer
 
 from . import services
-from .filtres import PARAMETRE_IDS, filtrer_par_ids
 from .models import Secteur, Tendance
 from .serializers import (
     AnalyseSecteurSerializer,
-    HealthSerializer,
     SecteurSerializer,
-    ServiceIndisponibleSerializer,
     TendanceSerializer,
 )
 
@@ -76,10 +74,3 @@ class AnalyseSecteurView(APIView):
         secteur = get_object_or_404(Secteur, pk=secteur_id)
         return Response(services.analyser_secteur(secteur))
 
-
-class HealthView(APIView):
-    """Vérification de l'état du service (Docker, Eureka, gateway)."""
-
-    @extend_schema(responses={200: HealthSerializer}, summary="Health check")
-    def get(self, request):
-        return Response({"status": "UP", "service": settings.SERVICE_NAME})

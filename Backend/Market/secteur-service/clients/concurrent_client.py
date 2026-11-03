@@ -1,6 +1,6 @@
 """Client de CONCURRENT-SERVICE (concurrents d'un secteur pour l'analyse)."""
 
-from .base import ServiceClient
+from market_commun.clients import ServiceClient
 
 
 class ConcurrentClient(ServiceClient):

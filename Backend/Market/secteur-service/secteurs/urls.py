@@ -11,8 +11,6 @@ router.register("secteurs", views.SecteurViewSet, basename="secteur")
 router.register("tendances", views.TendanceViewSet, basename="tendance")
 
 urlpatterns = [
-    # Avant le routeur : "health" ne doit pas être pris pour un id de secteur
-    path("secteurs/health/", views.HealthView.as_view(), name="health"),
     path("analyse/secteur/<int:secteur_id>/", views.AnalyseSecteurView.as_view(), name="analyse-secteur"),
     path("", include(router.urls)),
 ]

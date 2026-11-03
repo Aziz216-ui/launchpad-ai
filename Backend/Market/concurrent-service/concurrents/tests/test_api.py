@@ -147,7 +147,7 @@ class ConcurrentCrudTests(SecteurServiceMockeMixin, APITestCase):
 
     def test_lecture_si_secteur_service_indisponible(self):
         self.list.side_effect = ServiceIndisponible("SECTEUR-SERVICE")
-        with self.assertLogs("clients.secteur_client", "WARNING"):
+        with self.assertLogs("market_commun.clients", "WARNING"):
             response = self.client.get(self.liste_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual([c["secteur_nom"] for c in response.data], [None, None])
