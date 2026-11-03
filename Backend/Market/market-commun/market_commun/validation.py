@@ -27,8 +27,8 @@ def verifier_liste(attrs, instance, champ, lister, message):
     """
     if champ not in attrs:
         return
-    ids = attrs[champ] = list(dict.fromkeys(attrs[champ]))
-    nouveaux = set(ids) - set(getattr(instance, champ) if instance else [])
+    ids = attrs[champ] = [*dict.fromkeys(attrs[champ])]  # ordre conservé, doublons retirés
+    nouveaux = set(ids).difference(getattr(instance, champ) if instance else ())
     manquants = nouveaux - {objet["id"] for objet in lister(nouveaux)}
     if manquants:
         raise ValidationError({champ: f"{message} : " + ", ".join(map(str, sorted(manquants)))})

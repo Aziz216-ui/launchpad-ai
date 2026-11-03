@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=70"]
+requires = ["setuptools==80.9.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,16 +7,9 @@ name = "market-commun"
 version = "1.0.0"
 description = "Code technique partagé par les microservices de l'étude de marché LaunchPad AI (Eureka, client REST, RabbitMQ, réglages Django)."
 requires-python = ">=3.11"
-# Versions exactes dans le requirements.txt de chaque service (installé avec --no-deps)
-dependencies = [
-    "Django>=5.2,<6.0",
-    "djangorestframework",
-    "drf-spectacular",
-    "python-dotenv",
-    "requests",
-    "pika",
-    "py-eureka-client",
-]
+# Aucune dépendance déclarée ici : Django, DRF, drf-spectacular, python-dotenv, requests, pika et
+# py-eureka-client sont installés par le requirements.txt de chaque service (versions + hashes).
+dependencies = []
 
 [tool.setuptools.packages.find]
 include = ["market_commun*"]
