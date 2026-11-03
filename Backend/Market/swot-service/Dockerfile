@@ -1,17 +1,11 @@
 # Image du swot-service (LaunchPad AI, étude de marché).
-# Contexte de build : Backend/Market (docker-compose.yml), pour installer market-commun.
+# Contexte de build : Backend/Market (docker-compose.yml), pour copier market-commun.
 
-# --- Étape 1 : construction de la wheel de la bibliothèque partagée market-commun -------
-FROM python:3.12-slim AS builder
-COPY market-commun/pyproject.toml /src/market-commun/pyproject.toml
-COPY market-commun/market_commun /src/market-commun/market_commun
-RUN pip wheel --no-cache-dir --no-deps /src/market-commun -w /wheels
-
-# --- Étape 2 : image du service ----------------------------------------------------------
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
 
 # Utilisateur sans privilèges pour exécuter le service
 RUN groupadd --system app \
@@ -23,10 +17,9 @@ WORKDIR /app
 COPY swot-service/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --require-hashes --only-binary :all: -r requirements.txt
 
-# market-commun : wheel construite à l'étape 1, installée hors ligne et sans ses dépendances
-COPY --from=builder /wheels /wheels
-RUN pip install --no-cache-dir --no-index --no-deps --only-binary :all: --find-links /wheels market-commun \
-    && rm -rf /wheels
+# Bibliothèque partagée market-commun : package source copié dans /app (PYTHONPATH),
+# ses dépendances sont déjà installées par requirements.txt (hashes)
+COPY market-commun/market_commun ./market_commun
 
 # Code du service : uniquement les dossiers nécessaires
 COPY swot-service/manage.py ./
@@ -49,5 +42,4 @@ EXPOSE 8013
 # l'enregistrement Eureka (sinon chacun des 3 workers s'enregistrerait).
 # exec : gunicorn remplace sh et reçoit le SIGTERM de "docker stop" (arrêt propre,
 # désenregistrement Eureka).
-CMD ["sh", "-c", "python manage.py migrate --noinput \
-    && exec gunicorn config.wsgi:application --bind 0.0.0.0:8013 --workers 3 --preload"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && exec gunicorn config.wsgi:application --bind 0.0.0.0:8013 --workers 3 --preload"]
