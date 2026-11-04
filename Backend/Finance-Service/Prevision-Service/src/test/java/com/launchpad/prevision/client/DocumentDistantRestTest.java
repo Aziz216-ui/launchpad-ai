@@ -121,6 +121,8 @@ class DocumentDistantRestTest {
         assertThatThrownBy(() -> client("http://localhost:" + portLibre)
                 .genererDocument(PROJET_ID, TypeDocument.BUSINESS_PLAN))
                 .isInstanceOf(ServiceIndisponible.class)
-                .hasMessageContaining("indisponible");
+                .hasMessageContaining("indisponible")
+                // Le message est renvoyé au modèle et au client : aucune adresse ni détail technique interne.
+                .hasMessageNotContaining("localhost");
     }
 }

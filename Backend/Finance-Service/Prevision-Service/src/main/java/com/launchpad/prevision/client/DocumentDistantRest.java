@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.launchpad.prevision.domain.TypeDocument;
 import com.launchpad.prevision.exception.ServiceIndisponible;
 import com.launchpad.prevision.service.DocumentDistant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -21,6 +23,8 @@ import java.util.UUID;
  */
 @Component
 public class DocumentDistantRest implements DocumentDistant {
+
+    private static final Logger LOG = LoggerFactory.getLogger(DocumentDistantRest.class);
 
     private final ResolveurService resolveur;
     private final String nomService;
@@ -54,7 +58,9 @@ public class DocumentDistantRest implements DocumentDistant {
             }
             return UUID.fromString(reponse.get("documentId").asText());
         } catch (RestClientException e) {
-            throw new ServiceIndisponible("Document-Service indisponible : " + e.getMessage());
+            // Le détail (adresse, exception) reste dans les journaux : il n'est pas renvoyé au modèle ni au client.
+            LOG.warn("Document-Service injoignable (génération d'un document {} pour le projet {})", type, projetId, e);
+            throw new ServiceIndisponible("Le service des documents est momentanément indisponible");
         }
     }
 }

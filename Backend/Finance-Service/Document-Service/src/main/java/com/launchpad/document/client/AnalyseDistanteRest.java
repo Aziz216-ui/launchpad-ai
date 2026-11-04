@@ -5,6 +5,8 @@ import com.launchpad.document.domain.ContenuDocument;
 import com.launchpad.document.exception.IaIndisponible;
 import com.launchpad.document.exception.ServiceIndisponible;
 import com.launchpad.document.service.AnalyseDistante;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -25,6 +27,8 @@ import java.util.List;
  */
 @Component
 public class AnalyseDistanteRest implements AnalyseDistante {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AnalyseDistanteRest.class);
 
     private final ResolveurService resolveur;
     private final String nomService;
@@ -66,7 +70,9 @@ public class AnalyseDistanteRest implements AnalyseDistante {
             }
             throw new ServiceIndisponible("Prevision-Service a répondu " + e.getStatusCode());
         } catch (RestClientException e) {
-            throw new ServiceIndisponible("Prevision-Service indisponible : " + e.getMessage());
+            // Le détail (adresse, exception) reste dans les journaux : il n'est pas renvoyé au client.
+            LOG.warn("Prevision-Service injoignable (analyse IA d'un document)", e);
+            throw new ServiceIndisponible("Le service des prévisions est momentanément indisponible");
         }
     }
 }

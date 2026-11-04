@@ -5,6 +5,8 @@ import com.launchpad.document.domain.SynthesePrevision;
 import com.launchpad.document.exception.PrevisionIntrouvable;
 import com.launchpad.document.exception.ServiceIndisponible;
 import com.launchpad.document.service.PrevisionDistante;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -24,6 +26,8 @@ import java.util.UUID;
  */
 @Component
 public class PrevisionDistanteRest implements PrevisionDistante {
+
+    private static final Logger LOG = LoggerFactory.getLogger(PrevisionDistanteRest.class);
 
     private final ResolveurService resolveur;
     private final String nomService;
@@ -61,7 +65,9 @@ public class PrevisionDistanteRest implements PrevisionDistante {
             }
             throw new ServiceIndisponible("Prevision-Service a refusé la requête : " + e.getStatusCode());
         } catch (RestClientException e) {
-            throw new ServiceIndisponible("Prevision-Service indisponible : " + e.getMessage());
+            // Le détail (adresse, exception) reste dans les journaux : il n'est pas renvoyé au client.
+            LOG.warn("Prevision-Service injoignable (synthèse du projet {})", projetId, e);
+            throw new ServiceIndisponible("Le service des prévisions est momentanément indisponible");
         }
     }
 

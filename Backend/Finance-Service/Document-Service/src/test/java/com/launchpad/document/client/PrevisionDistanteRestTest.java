@@ -142,7 +142,10 @@ class PrevisionDistanteRestTest {
     void service_eteint_ne_plante_pas_et_devient_service_indisponible() throws IOException {
         assertThatThrownBy(() -> previsions("http://localhost:" + portLibre()).derniereSynthese(PROJET_ID))
                 .isInstanceOf(ServiceIndisponible.class)
-                .hasMessageContaining("indisponible");
+                .hasMessageContaining("indisponible")
+                // Le message part tel quel au client (ProblemDetail) : aucune adresse ni détail technique interne.
+                .hasMessageNotContaining("localhost")
+                .hasMessageNotContaining("http");
     }
 
     @Test
@@ -174,6 +177,7 @@ class PrevisionDistanteRestTest {
     @Test
     void analyse_avec_prevision_service_eteint_devient_service_indisponible() throws IOException {
         assertThatThrownBy(() -> analyse("http://localhost:" + portLibre()).analyser(new ContenuDocument("t", List.of())))
-                .isInstanceOf(ServiceIndisponible.class);
+                .isInstanceOf(ServiceIndisponible.class)
+                .hasMessageNotContaining("localhost");
     }
 }
