@@ -13,7 +13,6 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 import { environment } from '../../../../../environments/environment';
-import { EmptyStateComponent } from '../../../../shared/components/empty-state.component';
 import { IconComponent } from '../../../../shared/components/icon.component';
 import { LoaderComponent } from '../../../../shared/components/loader.component';
 import { NotificationService } from '../../../../core/notifications/notification.service';
@@ -26,7 +25,7 @@ import { Conversation, ConversationDetail, Message } from '../../models/ai.model
  */
 @Component({
   selector: 'app-chat',
-  imports: [DatePipe, RouterLink, FormsModule, EmptyStateComponent, IconComponent, LoaderComponent],
+  imports: [DatePipe, RouterLink, FormsModule, IconComponent, LoaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './chat.page.html',
   styleUrl: './chat.page.scss',

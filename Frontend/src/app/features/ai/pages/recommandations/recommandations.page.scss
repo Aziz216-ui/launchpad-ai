@@ -1,4 +1,4 @@
-@use '../../../../../styles/variables' as *;
+@use 'variables' as *;
 
 .page {
   padding: 24px 32px 48px;
@@ -262,7 +262,7 @@
   color: $vert-fonce;
   border-color: $vert;
 
-  &:hover:not(:disabled) { background: darken(#e8f5ee, 5%); }
+  &:hover:not(:disabled) { background: #daf0e3; }
 }
 
 .btn-ignorer {

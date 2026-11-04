@@ -106,3 +106,4 @@ src/environments/environment.development.ts → idem
 - N'importer que depuis `core/`, `shared/` et ce dossier.
 - Les styles restent dans les composants du module. `src/styles.scss` = variables + reset uniquement.
 - Variables SCSS : `@use '../../../../../styles/variables' as *;`
+
