@@ -1,0 +1,448 @@
+@use '../../../../../styles/variables' as *;
+
+.page {
+  padding: 24px 32px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1240px;
+}
+
+// ─── Fil d'Ariane ─────────────────────────────────────────────────────────────
+.fil-ariane {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: $gris;
+
+  a {
+    color: $gris;
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
+  }
+
+  .courant { color: $texte; }
+}
+
+// ─── En-tête ─────────────────────────────────────────────────────────────────
+.en-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    color: $texte;
+  }
+}
+
+.sous-nav {
+  display: flex;
+  gap: 4px;
+  background: $fond-neutre;
+  border-radius: $rayon-champ;
+  padding: 4px;
+
+  a {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: $texte-secondaire;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover { background: $fond-carte; color: $texte; }
+    &.actif { background: $fond-carte; color: $primaire; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  }
+}
+
+// ─── Contenu ─────────────────────────────────────────────────────────────────
+.contenu {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+// ─── Carte générique ─────────────────────────────────────────────────────────
+.carte {
+  background: $fond-carte;
+  border: 1px solid $bordure;
+  border-radius: $rayon-carte;
+  padding: 24px;
+}
+
+// ─── Carte projet ────────────────────────────────────────────────────────────
+.carte-projet {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.carte-entete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.carte-titre-groupe {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: $texte;
+  }
+}
+
+.idee-texte {
+  margin: 0;
+  font-size: 14px;
+  color: $texte-secondaire;
+  line-height: 1.6;
+}
+
+.meta-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px 24px;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.meta-libelle {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: $gris;
+}
+
+.meta-valeur {
+  font-size: 14px;
+  font-weight: 500;
+  color: $texte;
+}
+
+// ─── Actions ─────────────────────────────────────────────────────────────────
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px solid $bordure-legere;
+}
+
+// ─── Boutons ─────────────────────────────────────────────────────────────────
+.btn-primaire {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: $primaire;
+  color: #fff;
+  border: none;
+  border-radius: $rayon-champ;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover:not(:disabled) { background: $primaire-fonce; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+.btn-analyse {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #6366f1, #2b7a86);
+  color: #fff;
+  border: none;
+  border-radius: $rayon-champ;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+
+  &:hover:not(:disabled) { opacity: 0.9; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+.btn-secondaire {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: transparent;
+  color: $texte;
+  border: 1px solid $bordure-champ;
+  border-radius: $rayon-champ;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover { background: $fond-neutre; }
+}
+
+.btn-icone {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+// ─── Spinner ─────────────────────────────────────────────────────────────────
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(43, 122, 134, 0.3);
+  border-top-color: $primaire;
+  border-radius: 50%;
+  animation: tourner 0.7s linear infinite;
+}
+
+.spinner-clair {
+  border-color: rgba(255,255,255,0.4);
+  border-top-color: #fff;
+}
+
+@keyframes tourner { to { transform: rotate(360deg); } }
+
+// ─── Diagnostic ──────────────────────────────────────────────────────────────
+.diagnostic {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.diagnostic-entete {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: $texte;
+  }
+}
+
+.diagnostic-date {
+  font-size: 12px;
+  color: $gris;
+}
+
+.diagnostic-grille {
+  display: grid;
+  grid-template-columns: 220px 1fr 1fr;
+  gap: 16px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ─── Score ───────────────────────────────────────────────────────────────────
+.score-carte {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+
+  h3 { margin: 0; font-size: 15px; font-weight: 600; }
+}
+
+.score-visuel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.score-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.resume-texte {
+  margin: 0;
+  font-size: 12px;
+  color: $texte-secondaire;
+  line-height: 1.6;
+  text-align: left;
+}
+
+// ─── Forces / Faiblesses ─────────────────────────────────────────────────────
+.carte h3 {
+  margin: 0 0 16px;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.forces-titre { color: $vert; }
+.faiblesses-titre { color: $rouge; }
+
+.liste-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.item-force,
+.item-faiblesse {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: $texte;
+}
+
+.item-force app-icon { color: $vert; flex-shrink: 0; margin-top: 2px; }
+.item-faiblesse app-icon { color: $rouge; flex-shrink: 0; margin-top: 2px; }
+
+.vide-texte { font-size: 13px; color: $gris; }
+
+// ─── Sans analyse ─────────────────────────────────────────────────────────────
+.sans-analyse {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 48px 24px;
+  color: $gris;
+
+  h3 { margin: 0; font-size: 17px; font-weight: 600; color: $texte; }
+  p { margin: 0; font-size: 13px; max-width: 400px; line-height: 1.6; }
+}
+
+// ─── Modale ──────────────────────────────────────────────────────────────────
+.fond-modale {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modale {
+  background: $fond-carte;
+  border-radius: $rayon-carte;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.modale-entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid $bordure;
+
+  h2 { margin: 0; font-size: 17px; font-weight: 700; }
+}
+
+.btn-fermer {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: $gris;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background 0.15s;
+  &:hover { background: $fond-neutre; }
+}
+
+.modale-corps {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.champ {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-size: 13px;
+    font-weight: 600;
+    color: $texte;
+  }
+
+  input, textarea, select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid $bordure-champ;
+    border-radius: $rayon-champ;
+    font-size: 14px;
+    color: $texte;
+    background: $fond-carte;
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.15s;
+
+    &:focus { border-color: $primaire; }
+  }
+}
+
+.ligne-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+
+  @media (max-width: 480px) { grid-template-columns: 1fr; }
+}
+
+.modale-pied {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid $bordure;
+}
+
+@media (max-width: 800px) {
+  .page { padding: 20px 16px 40px; }
+  .en-tete { flex-direction: column; align-items: flex-start; }
+  .sous-nav { width: 100%; overflow-x: auto; }
+}
+

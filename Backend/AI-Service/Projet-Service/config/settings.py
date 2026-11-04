@@ -128,9 +128,9 @@ if _cors_origins and not DEBUG:
 
 # ── Microservices ─────────────────────────────────────────────────────────────
 
-# Market-Service : decouverte Eureka en priorite, repli sur URL directe
-MARKET_SERVICE_NAME = os.getenv("MARKET_SERVICE_NAME", "market-service")
-MARKET_SERVICE_URL = os.getenv("MARKET_SERVICE_URL", "http://localhost:8005")
+# ETUDE-SERVICE (Étude de marché) : découverte Eureka en priorité, repli sur Gateway
+MARKET_SERVICE_NAME = os.getenv("MARKET_SERVICE_NAME", "ETUDE-SERVICE")
+MARKET_SERVICE_URL = os.getenv("MARKET_SERVICE_URL", "http://localhost:8090")
 
 # ── Eureka ────────────────────────────────────────────────────────────────────
 EUREKA_SERVER = os.getenv("EUREKA_SERVER", "http://localhost:8761/eureka/")

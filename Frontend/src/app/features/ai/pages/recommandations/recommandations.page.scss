@@ -1,0 +1,290 @@
+@use '../../../../../styles/variables' as *;
+
+.page {
+  padding: 24px 32px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1240px;
+}
+
+.fil-ariane {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: $gris;
+
+  a { color: $gris; text-decoration: none; &:hover { text-decoration: underline; } }
+  .courant { color: $texte; }
+}
+
+.en-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  h1 { margin: 0; font-size: 26px; font-weight: 700; color: $texte; }
+}
+
+.sous-nav {
+  display: flex;
+  gap: 4px;
+  background: $fond-neutre;
+  border-radius: $rayon-champ;
+  padding: 4px;
+
+  a {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: $texte-secondaire;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover { background: $fond-carte; color: $texte; }
+    &.actif { background: $fond-carte; color: $primaire; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  }
+}
+
+// ─── Progression ─────────────────────────────────────────────────────────────
+.progression-carte {
+  background: $fond-carte;
+  border: 1px solid $bordure;
+  border-radius: $rayon-carte;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.progression-entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.progression-texte {
+  font-size: 14px;
+  color: $texte-secondaire;
+  strong { color: $texte; }
+}
+
+.progression-pct {
+  font-size: 14px;
+  font-weight: 700;
+  color: $primaire;
+}
+
+.progression-barre {
+  height: 8px;
+  background: $fond-neutre;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progression-remplissage {
+  height: 100%;
+  background: linear-gradient(90deg, $primaire, #6366f1);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+// ─── Barre d'actions ─────────────────────────────────────────────────────────
+.barre-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.onglets {
+  display: flex;
+  gap: 4px;
+  background: $fond-neutre;
+  border-radius: $rayon-champ;
+  padding: 4px;
+  flex-wrap: wrap;
+
+  button {
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: $texte-secondaire;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover { background: $fond-carte; color: $texte; }
+    &.actif { background: $fond-carte; color: $primaire; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  }
+}
+
+// ─── Boutons ─────────────────────────────────────────────────────────────────
+.btn-primaire {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: $primaire;
+  color: #fff;
+  border: none;
+  border-radius: $rayon-champ;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+
+  &:hover { background: $primaire-fonce; }
+}
+
+.btn-analyse {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #6366f1, #2b7a86);
+  color: #fff;
+  border: none;
+  border-radius: $rayon-champ;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) { opacity: 0.9; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+// ─── Spinner ─────────────────────────────────────────────────────────────────
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: tourner 0.7s linear infinite;
+}
+
+@keyframes tourner { to { transform: rotate(360deg); } }
+
+// ─── Liste ───────────────────────────────────────────────────────────────────
+.liste-recos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.carte-reco {
+  background: $fond-carte;
+  border: 1px solid $bordure;
+  border-radius: $rayon-carte;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.15s, opacity 0.15s;
+
+  &.appliquee {
+    border-color: $vert;
+    background: $vert-clair;
+  }
+
+  &.ignoree {
+    opacity: 0.55;
+  }
+}
+
+.reco-entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.reco-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.icone-valide {
+  color: $vert;
+}
+
+.reco-titre {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: $texte;
+}
+
+.reco-desc {
+  margin: 0;
+  font-size: 13px;
+  color: $texte-secondaire;
+  line-height: 1.6;
+}
+
+// ─── Actions de statut ───────────────────────────────────────────────────────
+.reco-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid $bordure-legere;
+  flex-wrap: wrap;
+}
+
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.btn-appliquer {
+  background: $vert-clair;
+  color: $vert-fonce;
+  border-color: $vert;
+
+  &:hover:not(:disabled) { background: darken(#e8f5ee, 5%); }
+}
+
+.btn-ignorer {
+  background: transparent;
+  color: $gris;
+  border-color: $bordure-champ;
+
+  &:hover:not(:disabled) { background: $fond-neutre; }
+}
+
+.btn-annuler {
+  background: transparent;
+  color: $texte-secondaire;
+  border-color: $bordure-champ;
+
+  &:hover:not(:disabled) { background: $fond-neutre; }
+}
+
+@media (max-width: 800px) {
+  .page { padding: 20px 16px 40px; }
+  .en-tete { flex-direction: column; align-items: flex-start; }
+  .sous-nav { width: 100%; overflow-x: auto; }
+  .barre-actions { flex-direction: column; align-items: flex-start; }
+}
+

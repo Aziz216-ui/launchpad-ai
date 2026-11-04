@@ -1,0 +1,154 @@
+<div class="page">
+  <!-- Fil d'Ariane -->
+  <nav class="fil-ariane" aria-label="Fil d'Ariane">
+    <a routerLink="/">Mon espace</a>
+    <span aria-hidden="true">›</span>
+    <a routerLink="/co-fondateur-ia">Co-Fondateur IA</a>
+    <span aria-hidden="true">›</span>
+    <span class="courant">Chat Co-Fondateur</span>
+  </nav>
+
+  <div class="en-tete">
+    <div class="titre-groupe">
+      <!-- Bouton toggle mobile -->
+      <button class="btn-toggle-panneau" (click)="togglePanneauGauche()" aria-label="Afficher/masquer les conversations">
+        <app-icon nom="options" [taille]="20" />
+      </button>
+      <h1>Chat Co-Fondateur</h1>
+    </div>
+    <nav class="sous-nav" aria-label="Sections Co-Fondateur IA">
+      <a routerLink="/co-fondateur-ia/projet" routerLinkActive="actif">Mon Projet & Diagnostic</a>
+      <a routerLink="/co-fondateur-ia/recommandations" routerLinkActive="actif">Plan d'action</a>
+      <a routerLink="/co-fondateur-ia/chat" routerLinkActive="actif">Chat Co-Fondateur</a>
+    </nav>
+  </div>
+
+  <div class="chat-conteneur">
+    <!-- ─── Panneau gauche : liste des conversations ─── -->
+    <aside class="panneau-gauche" [class.ferme]="!panneauGaucheOuvert()">
+      <div class="panneau-entete">
+        <h2>Conversations</h2>
+        <button class="btn-nouvelle" (click)="nouvelleConversation()" [disabled]="creationEnCours()">
+          @if (creationEnCours()) {
+            <span class="spinner"></span>
+          } @else {
+            <app-icon nom="plus" [taille]="16" />
+          }
+          Nouvelle
+        </button>
+      </div>
+
+      @if (chargementConvs()) {
+        <app-loader />
+      } @else if (conversations().length === 0) {
+        <div class="convs-vide">
+          <app-icon nom="document" [taille]="32" />
+          <p>Aucune conversation.</p>
+          <button class="btn-primaire-sm" (click)="nouvelleConversation()">Démarrer</button>
+        </div>
+      } @else {
+        <ul class="liste-convs">
+          @for (conv of conversations(); track conv.id) {
+            <li>
+              <button
+                class="conv-item"
+                [class.actif]="estActive(conv)"
+                (click)="ouvrirConversation(conv)"
+              >
+                <app-icon nom="document" [taille]="16" />
+                <div class="conv-info">
+                  <span class="conv-titre">{{ conv.titre }}</span>
+                  <span class="conv-date">{{ conv.date_mise_a_jour | date:'d MMM, HH:mm' }}</span>
+                </div>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </aside>
+
+    <!-- ─── Panneau droit : messages ─── -->
+    <main class="panneau-droit">
+      @if (!conversationActive() && !chargementMessages()) {
+        <div class="bienvenue">
+          <div class="bienvenue-illu" aria-hidden="true">
+            <app-icon nom="etoile" [taille]="48" />
+          </div>
+          <h2>Bonjour, entrepreneur !</h2>
+          <p>Votre Co-Fondateur IA est prêt à vous accompagner.<br />Sélectionnez une conversation ou démarrez-en une nouvelle.</p>
+          <button class="btn-primaire" (click)="nouvelleConversation()" [disabled]="creationEnCours()">
+            <app-icon nom="plus" [taille]="16" />
+            Nouvelle conversation
+          </button>
+        </div>
+      } @else if (chargementMessages()) {
+        <app-loader />
+      } @else if (conversationActive(); as conv) {
+        <!-- En-tête de la conversation -->
+        <div class="conv-entete">
+          <h2>{{ conv.titre }}</h2>
+          <span class="conv-entete-date">Créée le {{ conv.date_creation | date:'d MMMM yyyy' }}</span>
+        </div>
+
+        <!-- Fil de messages -->
+        <div class="messages" #messagesRef>
+          @if (conv.messages.length === 0) {
+            <div class="messages-vide">
+              <p>Envoyez un message pour démarrer la conversation.</p>
+            </div>
+          }
+          @for (msg of conv.messages; track msg.id) {
+            <div class="message" [class.utilisateur]="msg.role === 'utilisateur'" [class.assistant]="msg.role === 'assistant'">
+              @if (msg.role === 'assistant') {
+                <div class="avatar-ia" aria-hidden="true">
+                  <app-icon nom="etoile" [taille]="14" />
+                </div>
+              }
+              <div class="bulle">
+                <p class="bulle-texte">{{ msg.contenu }}</p>
+                <span class="bulle-heure">{{ msg.date_creation | date:'HH:mm' }}</span>
+              </div>
+            </div>
+          }
+
+          @if (envoiEnCours()) {
+            <div class="message assistant">
+              <div class="avatar-ia" aria-hidden="true">
+                <app-icon nom="etoile" [taille]="14" />
+              </div>
+              <div class="bulle bulle-typage">
+                <span class="point"></span>
+                <span class="point"></span>
+                <span class="point"></span>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Zone de saisie -->
+        <div class="saisie-zone">
+          <textarea
+            class="saisie-champ"
+            placeholder="Posez une question à votre Co-Fondateur IA…"
+            rows="1"
+            [value]="messageEnCours()"
+            (input)="messageEnCours.set($any($event.target).value)"
+            (keydown)="surEntree($event)"
+            [disabled]="envoiEnCours()"
+            aria-label="Message"
+          ></textarea>
+          <button
+            class="btn-envoyer"
+            (click)="envoyerMessage()"
+            [disabled]="envoiEnCours() || !messageEnCours().trim()"
+            aria-label="Envoyer"
+          >
+            <app-icon nom="fleche" [taille]="18" />
+          </button>
+        </div>
+        <p class="saisie-indice">Entrée pour envoyer · Maj+Entrée pour un saut de ligne</p>
+      }
+    </main>
+  </div>
+</div>
+

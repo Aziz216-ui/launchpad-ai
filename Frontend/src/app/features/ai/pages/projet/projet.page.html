@@ -1,0 +1,244 @@
+<div class="page">
+  <!-- Fil d'Ariane -->
+  <nav class="fil-ariane" aria-label="Fil d'Ariane">
+    <a routerLink="/">Mon espace</a>
+    <span aria-hidden="true">›</span>
+    <a routerLink="/co-fondateur-ia">Co-Fondateur IA</a>
+    <span aria-hidden="true">›</span>
+    <span class="courant">Mon Projet & Diagnostic</span>
+  </nav>
+
+  <div class="en-tete">
+    <h1>Mon Projet & Diagnostic</h1>
+    <!-- Sous-navigation du module -->
+    <nav class="sous-nav" aria-label="Sections Co-Fondateur IA">
+      <a routerLink="/co-fondateur-ia/projet" routerLinkActive="actif">Mon Projet & Diagnostic</a>
+      <a routerLink="/co-fondateur-ia/recommandations" routerLinkActive="actif">Plan d'action</a>
+      <a routerLink="/co-fondateur-ia/chat" routerLinkActive="actif">Chat Co-Fondateur</a>
+    </nav>
+  </div>
+
+  @if (chargement()) {
+    <app-loader />
+  } @else if (erreur()) {
+    <app-empty-state titre="Erreur de chargement" [texte]="erreur()!">
+      <button class="btn-primaire" (click)="charger()">Réessayer</button>
+    </app-empty-state>
+  } @else if (projet(); as p) {
+    <div class="contenu">
+      <!-- Carte projet -->
+      <section class="carte carte-projet">
+        <div class="carte-entete">
+          <div class="carte-titre-groupe">
+            <h2>{{ p.titre }}</h2>
+            <app-badge [variante]="statutsProjet[p.statut].variante">
+              {{ statutsProjet[p.statut].libelle }}
+            </app-badge>
+          </div>
+          <button class="btn-secondaire btn-icone" (click)="ouvrirModale()" title="Modifier le projet">
+            <app-icon nom="crayon" [taille]="16" />
+            Modifier
+          </button>
+        </div>
+
+        <p class="idee-texte">{{ p.idee }}</p>
+
+        <div class="meta-grille">
+          <div class="meta-item">
+            <span class="meta-libelle">Secteur</span>
+            <span class="meta-valeur">{{ p.secteur }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-libelle">Stade</span>
+            <span class="meta-valeur">{{ stadeLibelle(p.stade) }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-libelle">Public cible</span>
+            <span class="meta-valeur">{{ p.public_cible }}</span>
+          </div>
+          @if (p.budget_estime !== null) {
+            <div class="meta-item">
+              <span class="meta-libelle">Budget estimé</span>
+              <span class="meta-valeur">{{ p.budget_estime | number:'1.0-0':'fr' }} €</span>
+            </div>
+          }        </div>
+
+        <div class="meta-item">
+          <span class="meta-libelle">Objectifs</span>
+          <span class="meta-valeur">{{ p.objectifs }}</span>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions">
+          @if (p.statut === 'brouillon') {
+            <button class="btn-primaire" (click)="activer()" [disabled]="activationEnCours()">
+              @if (activationEnCours()) {
+                <span class="spinner"></span> Activation…
+              } @else {
+                <app-icon nom="cercle-valide" [taille]="16" />
+                Activer le projet
+              }
+            </button>
+          }
+          <button class="btn-analyse" (click)="analyser()" [disabled]="analyseEnCours()">
+            @if (analyseEnCours()) {
+              <span class="spinner spinner-clair"></span> Analyse en cours…
+            } @else {
+              <app-icon nom="etoile" [taille]="16" />
+              Analyser mon projet
+            }
+          </button>
+        </div>
+      </section>
+
+      <!-- Section Diagnostic -->
+      @if (analyse(); as a) {
+        <section class="diagnostic">
+          <div class="diagnostic-entete">
+            <h2>Diagnostic</h2>
+            <span class="diagnostic-date">Généré le {{ a.date_creation | date:'d MMMM yyyy' }}</span>
+          </div>
+
+          <div class="diagnostic-grille">
+            <!-- Score global -->
+            <div class="carte score-carte">
+              <h3>Score global</h3>
+              <div class="score-visuel">
+                <svg width="120" height="120" viewBox="0 0 100 100" aria-hidden="true">
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="#e3e8ea" stroke-width="10" />
+                  <circle
+                    cx="50" cy="50" r="42"
+                    fill="none"
+                    [attr.stroke]="scoreCouleur()"
+                    stroke-width="10"
+                    stroke-linecap="round"
+                    [attr.stroke-dasharray]="circumference"
+                    [attr.stroke-dashoffset]="dashOffset()"
+                    transform="rotate(-90 50 50)"
+                    style="transition: stroke-dashoffset 0.6s ease"
+                  />
+                  <text x="50" y="46" text-anchor="middle" font-size="20" font-weight="700" [attr.fill]="scoreCouleur()">
+                    {{ a.score_global }}
+                  </text>
+                  <text x="50" y="62" text-anchor="middle" font-size="10" fill="#5a6a6f">/100</text>
+                </svg>
+                <span class="score-label" [style.color]="scoreCouleur()">{{ scoreLabel() }}</span>
+              </div>
+              <p class="resume-texte">{{ a.resume }}</p>
+            </div>
+
+            <!-- Forces -->
+            <div class="carte">
+              <h3 class="forces-titre">
+                <app-icon nom="hausse" [taille]="18" />
+                Forces
+              </h3>
+              @if (a.forces.length) {
+                <ul class="liste-items">
+                  @for (force of a.forces; track $index) {
+                    <li class="item-force">
+                      <app-icon nom="valider" [taille]="14" />
+                      {{ force }}
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="vide-texte">Aucune force identifiée.</p>
+              }
+            </div>
+
+            <!-- Faiblesses -->
+            <div class="carte">
+              <h3 class="faiblesses-titre">
+                <app-icon nom="baisse" [taille]="18" />
+                Faiblesses
+              </h3>
+              @if (a.faiblesses.length) {
+                <ul class="liste-items">
+                  @for (faiblesse of a.faiblesses; track $index) {
+                    <li class="item-faiblesse">
+                      <app-icon nom="info" [taille]="14" />
+                      {{ faiblesse }}
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="vide-texte">Aucune faiblesse identifiée.</p>
+              }
+            </div>
+          </div>
+        </section>
+      } @else {
+        <section class="carte sans-analyse">
+          <app-icon nom="etoile" [taille]="40" />
+          <h3>Aucun diagnostic disponible</h3>
+          <p>Cliquez sur « Analyser mon projet » pour obtenir un diagnostic détaillé de votre projet.</p>
+        </section>
+      }
+    </div>
+  }
+</div>
+
+<!-- Modale de modification -->
+@if (modaleOuverte() && projet(); as p) {
+  <div class="fond-modale" (click)="fermerModale()" role="dialog" aria-modal="true" aria-label="Modifier le projet">
+    <div class="modale" (click)="$event.stopPropagation()">
+      <div class="modale-entete">
+        <h2>Modifier le projet</h2>
+        <button class="btn-fermer" (click)="fermerModale()" aria-label="Fermer">
+          <app-icon nom="fermer" [taille]="20" />
+        </button>
+      </div>
+
+      <div class="modale-corps">
+        <div class="champ">
+          <label for="titre">Titre du projet</label>
+          <input id="titre" type="text" [value]="saisie().titre ?? ''"
+            (input)="mettreAJourSaisie('titre', $any($event.target).value)" />
+        </div>
+        <div class="champ">
+          <label for="idee">Idée / Description</label>
+          <textarea id="idee" rows="3" [value]="saisie().idee ?? ''"
+            (input)="mettreAJourSaisie('idee', $any($event.target).value)"></textarea>
+        </div>
+        <div class="champ">
+          <label for="objectifs">Objectifs</label>
+          <textarea id="objectifs" rows="2" [value]="saisie().objectifs ?? ''"
+            (input)="mettreAJourSaisie('objectifs', $any($event.target).value)"></textarea>
+        </div>
+        <div class="ligne-2">
+          <div class="champ">
+            <label for="secteur">Secteur</label>
+            <input id="secteur" type="text" [value]="saisie().secteur ?? ''"
+              (input)="mettreAJourSaisie('secteur', $any($event.target).value)" />
+          </div>
+          <div class="champ">
+            <label for="stade">Stade</label>
+            <select id="stade" [value]="saisie().stade"
+              (change)="mettreAJourSaisie('stade', $any($event.target).value)">
+              @for (s of stades; track s[0]) {
+                <option [value]="s[0]">{{ s[1] }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <div class="champ">
+          <label for="public_cible">Public cible</label>
+          <input id="public_cible" type="text" [value]="saisie().public_cible ?? ''"
+            (input)="mettreAJourSaisie('public_cible', $any($event.target).value)" />
+        </div>
+        <div class="champ">
+          <label for="budget">Budget estimé (€)</label>
+          <input id="budget" type="number" min="0" [value]="saisie().budget_estime ?? ''"
+            (input)="mettreAJourSaisie('budget_estime', +$any($event.target).value || null)" />
+        </div>
+      </div>
+
+      <div class="modale-pied">
+        <button class="btn-secondaire" (click)="fermerModale()">Annuler</button>
+        <button class="btn-primaire" (click)="enregistrer()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+}
+

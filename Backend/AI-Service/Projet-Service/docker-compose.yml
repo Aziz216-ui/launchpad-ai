@@ -47,9 +47,9 @@ services:
       # En prod Linux : mettre l'IP reelle de la machine.
       HOST_IP: "host.docker.internal"
 
-      # Market-Service
-      MARKET_SERVICE_NAME: "market-service"
-      MARKET_SERVICE_URL: "http://host.docker.internal:8005"
+      # ETUDE-SERVICE (Étude de marché via Gateway ou Eureka)
+      MARKET_SERVICE_NAME: "ETUDE-SERVICE"
+      MARKET_SERVICE_URL: "http://host.docker.internal:8090"
 
       # LLM
       LLM_PROVIDER: "openai"

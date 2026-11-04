@@ -128,8 +128,9 @@ if _cors_origins and not DEBUG:
 PROJET_SERVICE_NAME = os.getenv("PROJET_SERVICE_NAME", "projet-service")
 PROJET_SERVICE_URL = os.getenv("PROJET_SERVICE_URL", "http://localhost:8006")
 
-MARKET_SERVICE_NAME = os.getenv("MARKET_SERVICE_NAME", "market-service")
-MARKET_SERVICE_URL = os.getenv("MARKET_SERVICE_URL", "http://localhost:8005")
+# ETUDE-SERVICE (Étude de marché)
+MARKET_SERVICE_NAME = os.getenv("MARKET_SERVICE_NAME", "ETUDE-SERVICE")
+MARKET_SERVICE_URL = os.getenv("MARKET_SERVICE_URL", "http://localhost:8090")
 
 # ── Eureka ────────────────────────────────────────────────────────────────────
 EUREKA_SERVER = os.getenv("EUREKA_SERVER", "http://localhost:8761/eureka/")

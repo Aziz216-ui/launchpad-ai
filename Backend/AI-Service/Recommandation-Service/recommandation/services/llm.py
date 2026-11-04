@@ -1,7 +1,7 @@
 """
 Service LLM pour le Recommandation-Service.
-Genere des recommandations via un LLM OpenAI-compatible.
-Si LLM_API_KEY absent ou echec -> repli sur regles.py.
+Génère des recommandations via un LLM OpenAI-compatible.
+Si LLM_API_KEY absent ou échec -> repli sur regles.py.
 """
 from __future__ import annotations
 import json
@@ -20,7 +20,6 @@ def _get_config():
 
 
 def _appel_llm(messages: list[dict], max_tokens: int = 1500) -> str | None:
-    """Appel generique a l'API LLM. Retourne le contenu texte ou None."""
     cfg = _get_config()
     if not cfg["api_key"]:
         return None
@@ -35,14 +34,14 @@ def _appel_llm(messages: list[dict], max_tokens: int = 1500) -> str | None:
         response.raise_for_status()
         return response.json()["choices"][0]["message"]["content"]
     except Exception as exc:
-        logger.warning("LLM indisponible : %s — repli sur les regles.", exc)
+        logger.warning("LLM indisponible : %s — repli sur les règles.", exc)
         return None
 
 
 PROMPT_SYSTEME = (
-    "Tu es un co-fondateur experimente qui conseille un entrepreneur de maniere bienveillante, "
-    "pratique et directe. Tu parles en francais. Tu fournis des conseils concrets et actionnables. "
-    "Tu connais bien les startups, le financement, le droit des societes et le marketing."
+    "Tu es un co-fondateur expérimenté qui conseille un entrepreneur de manière bienveillante, "
+    "pratique et directe. Tu parles en français. Tu fournis des conseils concrets et actionnables. "
+    "Tu connais bien les startups, le financement, le droit des sociétés et le marketing."
 )
 
 
@@ -51,23 +50,30 @@ def generer_recommandations_llm(
     analyse_data: dict | None = None,
     donnees_marche: dict | None = None,
 ) -> list[dict] | None:
-    """Genere des recommandations ordonnees via LLM. Retourne une liste ou None."""
+    """Génère des recommandations ordonnées via LLM avec données de marché."""
     if donnees_marche is None:
         donnees_marche = {}
 
     forces = analyse_data.get("forces", []) if analyse_data else []
     faiblesses = analyse_data.get("faiblesses", []) if analyse_data else []
+    concurrents = donnees_marche.get("concurrents", [])
+    tendances = donnees_marche.get("tendances", [])
 
-    prompt = f"""Genere des recommandations pour ce projet et retourne UNIQUEMENT ce JSON :
+    concurrence_info = f"{donnees_marche.get('niveau_concurrence', 'inconnu')} ({len(concurrents)} concurrents réels)"
+    tendances_str = ", ".join([f"{t.get('titre')} ({t.get('impact')})" for t in tendances[:4] if isinstance(t, dict)])
+
+    prompt = f"""Génère des recommandations pour ce projet et retourne UNIQUEMENT ce format JSON :
 [
   {{"categorie": "marche|financier|juridique|produit|equipe", "ordre": 1, "titre": "...", "description": "...", "priorite": "haute|moyenne|basse"}}
 ]
 
 Projet : {projet_data.get('titre', 'N/A')} | Stade : {projet_data.get('stade', 'N/A')}
-Forces : {forces[:3]}
-Faiblesses : {faiblesses[:3]}
-Concurrence : {donnees_marche.get('niveau_concurrence', 'inconnu')}
-Genere entre 4 et 6 recommandations ordonnees (prochaines etapes concretes)."""
+Forces actuelles : {forces[:3]}
+Faiblesses actuelles : {faiblesses[:3]}
+Concurrence (ETUDE-SERVICE) : {concurrence_info}
+Tendances marché : {tendances_str or 'non précisées'}
+
+Génère entre 4 et 6 recommandations ordonnées (prochaines étapes concrètes et adaptées au marché)."""
 
     messages = [{"role": "system", "content": PROMPT_SYSTEME}, {"role": "user", "content": prompt}]
     contenu = _appel_llm(messages, max_tokens=1000)
@@ -81,4 +87,3 @@ Genere entre 4 et 6 recommandations ordonnees (prochaines etapes concretes)."""
         return recos
     except Exception:
         return None
-

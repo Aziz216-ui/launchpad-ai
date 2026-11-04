@@ -1,16 +1,13 @@
 """
-Moteur de regles — repli complet sans cle LLM.
-Fournit : analyse forces/faiblesses.
+Moteur de règles pour l'analyse de projet (Projet-Service).
+Fournit : analyse forces/faiblesses et score global basés sur le projet et l'ETUDE-SERVICE.
 """
 from __future__ import annotations
-from typing import Any
 
-
-# ── Analyse forces / faiblesses ───────────────────────────────────────────────
 
 def analyser_projet(projet, donnees_marche: dict) -> dict:
     """
-    Analyse un projet par regles et retourne :
+    Analyse un projet par règles et retourne :
     - forces (list[str])
     - faiblesses (list[str])
     - score_global (int 0-100)
@@ -20,77 +17,111 @@ def analyser_projet(projet, donnees_marche: dict) -> dict:
     faiblesses = []
     score = 50  # Base
 
-    # --- Champs du projet ---
+    # --- 1. Champs du projet ---
     if projet.idee and len(projet.idee) > 50:
-        forces.append("Idee bien detaillee et documentee.")
+        forces.append("Idée bien détaillée et documentée.")
         score += 5
     else:
-        faiblesses.append("L'idee manque de detail — developper la description.")
+        faiblesses.append("L'idée manque de détail — développer la description.")
         score -= 5
 
     if projet.objectifs and len(projet.objectifs) > 30:
-        forces.append("Objectifs clairement definis.")
+        forces.append("Objectifs clairement définis.")
         score += 5
     else:
         faiblesses.append("Les objectifs sont vagues ou absents — les formaliser.")
         score -= 10
 
     if projet.public_cible:
-        forces.append(f"Public cible identifie : {projet.public_cible[:60]}.")
+        forces.append(f"Public cible identifié : {projet.public_cible[:60]}.")
         score += 5
     else:
-        faiblesses.append("Aucun public cible defini — identifier le segment client.")
+        faiblesses.append("Aucun public cible défini — identifier le segment client.")
         score -= 5
 
     if projet.budget_estime and float(projet.budget_estime) > 0:
-        forces.append(f"Budget estime fourni : {projet.budget_estime} EUR.")
+        forces.append(f"Budget estimé fourni : {projet.budget_estime} EUR.")
         score += 5
     else:
-        faiblesses.append("Aucun budget estime — realiser un previsionnel financier.")
+        faiblesses.append("Aucun budget estimé — réaliser un prévisionnel financier.")
         score -= 5
 
     if projet.secteur:
-        forces.append(f"Secteur clairement identifie : {projet.secteur}.")
+        forces.append(f"Secteur clairement identifié : {projet.secteur}.")
         score += 3
     else:
-        faiblesses.append("Secteur d'activite non precise.")
+        faiblesses.append("Secteur d'activité non précisé.")
         score -= 3
 
-    # --- Donnees du Market-Service ---
+    # --- 2. Données de l'ETUDE-SERVICE ---
     niveau = (donnees_marche.get("niveau_concurrence") or "inconnu").lower()
-    nb_concurrents = len(donnees_marche.get("concurrents", []))
-    nb_etudes = len(donnees_marche.get("etudes", []))
+    concurrents = donnees_marche.get("concurrents", [])
+    nb_concurrents = len(concurrents)
+    etudes = donnees_marche.get("etudes", [])
+    nb_etudes = len(etudes)
 
-    if niveau in ("eleve", "eleve"):
-        faiblesses.append(f"Concurrence elevee ({nb_concurrents} concurrent(s)) — differentiation requise.")
+    # Analyse du niveau de concurrence
+    if niveau == "eleve":
+        faiblesses.append(f"Concurrence élevée ({nb_concurrents} concurrent(s) identifié(s)) — différenciation requise.")
         score -= 10
     elif niveau == "moyen":
-        faiblesses.append("Concurrence moderee — surveiller le marche.")
+        faiblesses.append("Concurrence modérée — surveiller le marché.")
         score -= 5
     elif niveau == "faible":
-        forces.append("Concurrence faible — opportunite de marche.")
+        forces.append("Concurrence faible — opportunité de marché favorable.")
         score += 10
 
+    # Études disponibles
     if nb_etudes > 0:
-        forces.append(f"{nb_etudes} etude(s) de marche disponible(s).")
+        forces.append(f"{nb_etudes} étude(s) de marché disponible(s).")
         score += 5
 
-    tendances = donnees_marche.get("tendances", [])
-    croissances = [t for t in tendances if isinstance(t, dict)
-                   and str(t.get("evolution", "")).lower() in ("forte_croissance", "croissance", "hausse", "positive")]
-    if croissances:
-        forces.append("Le marche est en croissance — fenetre d'opportunite.")
-        score += 8
+        # Analyse du taux de croissance et de la taille de marché
+        croissance_forte = False
+        for e in etudes:
+            if isinstance(e, dict):
+                taux = e.get("taux_croissance")
+                if taux is not None:
+                    try:
+                        if float(taux) >= 10.0:
+                            croissance_forte = True
+                    except (ValueError, TypeError):
+                        pass
 
+        if croissance_forte:
+            forces.append("Secteur en forte croissance (taux de croissance ≥ 10%).")
+            score += 7
+
+    # Tendances réelles du nouveau format (impact : "positif" | "negatif" | "neutre")
+    tendances = donnees_marche.get("tendances", [])
+    tendances_positives = [
+        t.get("titre") for t in tendances
+        if isinstance(t, dict) and str(t.get("impact", "")).lower() == "positif"
+    ]
+    tendances_negatives = [
+        t.get("titre") for t in tendances
+        if isinstance(t, dict) and str(t.get("impact", "")).lower() == "negatif"
+    ]
+
+    if tendances_positives:
+        titres = ", ".join(tendances_positives[:2])
+        forces.append(f"Tendances de marché favorables : {titres}.")
+        score += 6
+
+    if tendances_negatives:
+        titres = ", ".join(tendances_negatives[:2])
+        faiblesses.append(f"Tendances défavorables ou menaces identifiées : {titres}.")
+        score -= 6
+
+    # Normalisation du score
     score = max(0, min(100, score))
 
     resume_parts = [
-        f"Score de viabilite : {score}/100.",
-        f"Forces identifies : {len(forces)}. Faiblesses : {len(faiblesses)}.",
+        f"Score de viabilité : {score}/100.",
+        f"Forces identifiées : {len(forces)}. Faiblesses : {len(faiblesses)}.",
     ]
     if niveau != "inconnu":
         resume_parts.append(f"Niveau de concurrence : {niveau}.")
     resume = " ".join(resume_parts)
 
     return {"forces": forces, "faiblesses": faiblesses, "score_global": score, "resume": resume}
-

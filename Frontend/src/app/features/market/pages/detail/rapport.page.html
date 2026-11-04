@@ -1,0 +1,139 @@
+﻿@if (chargement()) {
+  <app-loader texte="G├⌐n├⌐ration du rapportΓÇª" />
+} @else if (erreur()) {
+  <app-empty-state [compact]="true" titre="Rapport indisponible" [texte]="erreur()!" />
+} @else if (rapport(); as r) {
+  <div class="disposition">
+    <article class="document">
+      <header>
+        <span class="sur-titre">LaunchPad AI ┬╖ Rapport d'├⌐tude de march├⌐</span>
+        <h2>{{ r.etude.titre }}</h2>
+        <p class="sous-titre">{{ r.marche_cible.cible || (r.marche_cible.secteur.nom | nomSecteur) }} ┬╖ {{ r.marche_cible.zone_geographique || 'Zone non pr├⌐cis├⌐e' }}</p>
+        <p class="meta">G├⌐n├⌐r├⌐ le {{ genereLe() | date: 'd MMMM y' }} ┬╖ {{ r.etude.statut === 'brouillon' ? 'Version brouillon' : 'Version finalis├⌐e' }}</p>
+        <div class="potentiel" [class]="r.potentiel_commercial.niveau">
+          <div class="valeur">
+            <span>Potentiel commercial</span>
+            <strong>{{ potentiels[r.potentiel_commercial.niveau].libelle }} ┬╖ {{ r.potentiel_commercial.score }} / {{ r.potentiel_commercial.score_max }}</strong>
+          </div>
+          <div class="barre" role="img" [attr.aria-label]="'Score ' + r.potentiel_commercial.score + ' sur ' + r.potentiel_commercial.score_max">
+            <div [style.width.%]="pourcentagePotentiel()"></div>
+          </div>
+        </div>
+      </header>
+
+      <section id="s1">
+        <h3>1. March├⌐ cible</h3>
+        <table class="cle-valeur">
+          <tbody>
+            <tr><th scope="row">Secteur</th><td>{{ r.marche_cible.secteur.nom | nomSecteur }}</td></tr>
+            <tr><th scope="row">Cible</th><td>{{ r.marche_cible.cible || 'ΓÇö' }}</td></tr>
+            <tr><th scope="row">Zone g├⌐ographique</th><td>{{ r.marche_cible.zone_geographique || 'ΓÇö' }}</td></tr>
+            <tr><th scope="row">Taille du march├⌐</th><td>{{ r.marche_cible.taille_marche | montant: true }} / an</td></tr>
+            <tr><th scope="row">Croissance annuelle</th><td>{{ r.marche_cible.taux_croissance | pourcentage: true }}</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="s2">
+        <h3>2. Hypoth├¿ses</h3>
+        @if (r.hypotheses | lignes; as hypotheses) {
+          @if (hypotheses.length) {
+            <ol>@for (h of hypotheses; track $index) {<li>{{ h }}</li>}</ol>
+          } @else {
+            <p>Aucune hypoth├¿se saisie.</p>
+          }
+        }
+      </section>
+
+      <section id="s3">
+        <h3>3. Concurrents</h3>
+        @if (r.concurrents.length) {
+          <div class="defilement">
+            <table class="tableau">
+              <thead><tr><th scope="col">Concurrent</th><th scope="col">Pays</th><th scope="col" class="droite">Prix</th><th scope="col" class="droite">Part de march├⌐</th></tr></thead>
+              <tbody>
+                @for (c of r.concurrents; track c.id) {
+                  <tr><td class="gras">{{ c.nom }}</td><td>{{ c.pays || 'ΓÇö' }}</td><td class="droite">{{ c.prix_moyen | montant }}</td><td class="droite">{{ c.part_de_marche | pourcentage }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p>Aucun concurrent associ├⌐ ├á l'├⌐tude.</p>
+        }
+      </section>
+
+      <section id="s4">
+        <h3>4. Comparaison des offres et des prix</h3>
+        @if (r.comparaison_prix; as c) {
+          @if (c.prix_propose !== null && c.prix_moyen !== null && c.ecart_moyenne_pct !== null) {
+            <p>Avec {{ c.prix_propose | montant }}, {{ r.etude.titre }} se situe {{ (c.ecart_moyenne_pct < 0 ? -c.ecart_moyenne_pct : c.ecart_moyenne_pct) | pourcentage }}
+              {{ c.ecart_moyenne_pct < 0 ? 'sous' : 'au-dessus de' }} la moyenne du march├⌐ ({{ c.prix_moyen | montant }}).
+              Positionnement : <strong>{{ positionnements[c.positionnement] }}</strong>.</p>
+          } @else {
+            <p>Comparaison impossible : {{ c.prix_propose === null ? 'aucun prix propos├⌐' : 'aucun concurrent associ├⌐' }}.</p>
+          }
+          <div class="barres">
+            @for (x of c.concurrents; track x.id) {
+              <div class="ligne"><span class="nom">{{ x.nom }}</span><div class="piste"><div [style.width.%]="(x.prix_moyen / prixMax()) * 100"></div></div><span class="prix">{{ x.prix_moyen | montant }}</span></div>
+            }
+            @if (c.prix_propose !== null) {
+              <div class="ligne offre"><span class="nom">Mon offre</span><div class="piste"><div [style.width.%]="(c.prix_propose / prixMax()) * 100"></div></div><span class="prix">{{ c.prix_propose | montant }}</span></div>
+            }
+          </div>
+        }
+      </section>
+
+      <section id="s5">
+        <h3>5. Personas</h3>
+        @if (r.personas.length) {
+          <ul>
+            @for (p of r.personas; track p.id) {
+              <li><strong>{{ p.nom }}</strong>
+                @if (infosPersona(p); as infos) { ΓÇö {{ infos }}.}
+                @if (besoinPrincipal(p.besoins); as besoin) { Besoin principal : {{ besoin }}.}
+              </li>
+            }
+          </ul>
+        } @else {
+          <p>Aucun persona d├⌐fini.</p>
+        }
+      </section>
+
+      <section id="s6">
+        <h3>6. Analyse SWOT @if (r.swot.source === 'calculee') {<small>(calcul├⌐e automatiquement)</small>}</h3>
+        <div class="swot">
+          <div class="forces"><h4>Forces</h4><ul>@for (e of r.swot.forces; track $index) {<li>{{ e.description }}</li>} @empty {<li class="aucun">ΓÇö</li>}</ul></div>
+          <div class="faiblesses"><h4>Faiblesses</h4><ul>@for (e of r.swot.faiblesses; track $index) {<li>{{ e.description }}</li>} @empty {<li class="aucun">ΓÇö</li>}</ul></div>
+          <div class="opportunites"><h4>Opportunit├⌐s</h4><ul>@for (e of r.swot.opportunites; track $index) {<li>{{ e.description }}</li>} @empty {<li class="aucun">ΓÇö</li>}</ul></div>
+          <div class="menaces"><h4>Menaces</h4><ul>@for (e of r.swot.menaces; track $index) {<li>{{ e.description }}</li>} @empty {<li class="aucun">ΓÇö</li>}</ul></div>
+        </div>
+      </section>
+
+      <section id="s7">
+        <h3>7. Conclusion</h3>
+        <p>{{ conclusion() }}</p>
+      </section>
+
+      <footer>Rapport g├⌐n├⌐r├⌐ par LaunchPad AI ├á partir des donn├⌐es saisies dans l'├⌐tude.</footer>
+    </article>
+
+    <aside class="cote">
+      <div class="carte telechargement">
+        <button type="button" class="btn-primaire" (click)="store.telechargerPdf()" [disabled]="store.telechargementEnCours()">
+          <app-icon nom="telecharger" [taille]="16" />{{ store.telechargementEnCours() ? 'G├⌐n├⌐rationΓÇª' : 'T├⌐l├⌐charger en PDF' }}
+        </button>
+        <p>7 sections{{ pagesPdf() ? ' ┬╖ environ ' + pagesPdf() + ' page' + (pagesPdf()! > 1 ? 's' : '') + ' A4' : '' }} ┬╖ g├⌐n├⌐r├⌐ le {{ genereLe() | date: "d MMMM y '├á' HH:mm" }}</p>
+      </div>
+      <nav class="carte sommaire" aria-label="Sommaire du rapport">
+        <h3>Sommaire</h3>
+        @for (s of sections; track s; let i = $index) {
+          <button type="button" (click)="allerA(i)">{{ i + 1 }}. {{ s }}</button>
+        }
+      </nav>
+      @if (r.etude.statut === 'brouillon') {
+        <div class="avertissement">├ëtude en brouillon : le rapport changera si vous modifiez vos donn├⌐es. Finalisez l'├⌐tude pour le figer.</div>
+      }
+    </aside>
+  </div>
+}
