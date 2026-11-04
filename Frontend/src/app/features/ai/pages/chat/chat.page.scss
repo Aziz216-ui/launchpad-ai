@@ -179,12 +179,22 @@
   gap: 2px;
 }
 
+.conv-ligne {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  &:hover .btn-suppr-item {
+    opacity: 1;
+  }
+}
+
 .conv-item {
   width: 100%;
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 10px 32px 10px 12px;
   background: transparent;
   border: none;
   border-radius: 8px;
@@ -197,6 +207,29 @@
   &.actif { background: $primaire-clair; color: $primaire-tres-fonce; }
 
   app-icon { flex-shrink: 0; margin-top: 2px; color: $gris; }
+}
+
+.btn-suppr-item {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: $gris;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+
+  &:hover {
+    color: $rouge;
+    background: $rouge-clair;
+  }
 }
 
 .conv-info {
@@ -290,11 +323,39 @@
   border-bottom: 1px solid $bordure;
   flex-shrink: 0;
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
 
   h2 { margin: 0; font-size: 15px; font-weight: 700; color: $texte; }
+}
+
+.conv-entete-infos {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-suppr-entete {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  color: $rouge;
+  border: 1px solid $rouge-clair;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: $rouge-clair;
+    border-color: $rouge;
+  }
 }
 
 .conv-entete-date {

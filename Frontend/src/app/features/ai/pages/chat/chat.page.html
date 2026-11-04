@@ -49,7 +49,7 @@
       } @else {
         <ul class="liste-convs">
           @for (conv of conversations(); track conv.id) {
-            <li>
+            <li class="conv-ligne">
               <button
                 class="conv-item"
                 [class.actif]="estActive(conv)"
@@ -60,6 +60,15 @@
                   <span class="conv-titre">{{ conv.titre }}</span>
                   <span class="conv-date">{{ conv.date_mise_a_jour | date:'d MMM, HH:mm' }}</span>
                 </div>
+              </button>
+              <button
+                type="button"
+                class="btn-suppr-item"
+                (click)="demanderSuppression(conv, $event)"
+                title="Supprimer la conversation"
+                aria-label="Supprimer la conversation"
+              >
+                <app-icon nom="corbeille" [taille]="14" />
               </button>
             </li>
           }
@@ -86,8 +95,19 @@
       } @else if (conversationActive(); as conv) {
         <!-- En-tête de la conversation -->
         <div class="conv-entete">
-          <h2>{{ conv.titre }}</h2>
-          <span class="conv-entete-date">Créée le {{ conv.date_creation | date:'d MMMM yyyy' }}</span>
+          <div class="conv-entete-infos">
+            <h2>{{ conv.titre }}</h2>
+            <span class="conv-entete-date">Créée le {{ conv.date_creation | date:'d MMMM yyyy' }}</span>
+          </div>
+          <button
+            type="button"
+            class="btn-suppr-entete"
+            (click)="demanderSuppression(conv)"
+            title="Supprimer cette conversation"
+          >
+            <app-icon nom="corbeille" [taille]="15" />
+            Supprimer
+          </button>
         </div>
 
         <!-- Fil de messages -->
@@ -150,5 +170,17 @@
       }
     </main>
   </div>
+
+  @if (conversationASupprimer(); as aSuppr) {
+    <app-confirm-modal
+      titre="Supprimer cette conversation ?"
+      avant="Êtes-vous sûr de vouloir supprimer la conversation "
+      [nom]="aSuppr.titre"
+      apres=" ? Cette action supprimera définitivement tous ses messages."
+      [enCours]="suppressionEnCours()"
+      (confirmer)="confirmerSuppression()"
+      (annuler)="conversationASupprimer.set(null)"
+    />
+  }
 </div>
 

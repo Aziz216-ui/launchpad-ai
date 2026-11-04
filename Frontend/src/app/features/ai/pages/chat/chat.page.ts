@@ -13,6 +13,7 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 import { environment } from '../../../../../environments/environment';
+import { ConfirmModalComponent } from '../../../../shared/components/confirm-modal.component';
 import { IconComponent } from '../../../../shared/components/icon.component';
 import { LoaderComponent } from '../../../../shared/components/loader.component';
 import { NotificationService } from '../../../../core/notifications/notification.service';
@@ -25,7 +26,7 @@ import { Conversation, ConversationDetail, Message } from '../../models/ai.model
  */
 @Component({
   selector: 'app-chat',
-  imports: [DatePipe, RouterLink, FormsModule, IconComponent, LoaderComponent],
+  imports: [DatePipe, RouterLink, FormsModule, ConfirmModalComponent, IconComponent, LoaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './chat.page.html',
   styleUrl: './chat.page.scss',
@@ -46,6 +47,8 @@ export class ChatPage implements AfterViewChecked {
   protected readonly messageEnCours = signal('');
   protected readonly creationEnCours = signal(false);
   protected readonly panneauGaucheOuvert = signal(true); // mobile: toggle
+  protected readonly conversationASupprimer = signal<Conversation | null>(null);
+  protected readonly suppressionEnCours = signal(false);
 
   private doitDefiler = false;
 
@@ -177,6 +180,44 @@ export class ChatPage implements AfterViewChecked {
 
   protected togglePanneauGauche(): void {
     this.panneauGaucheOuvert.update((v) => !v);
+  }
+
+  protected demanderSuppression(conv: Conversation, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.conversationASupprimer.set(conv);
+  }
+
+  protected confirmerSuppression(): void {
+    const conv = this.conversationASupprimer();
+    if (!conv) return;
+
+    this.suppressionEnCours.set(true);
+    this.api.supprimerConversation(conv.id).subscribe({
+      next: () => {
+        this.suppressionEnCours.set(false);
+        this.conversationASupprimer.set(null);
+        this.notifications.succes(`La conversation « ${conv.titre} » a été supprimée.`);
+
+        // Mettre à jour la liste
+        this.conversations.update((liste) => liste.filter((c) => c.id !== conv.id));
+
+        // Si c'était la conversation courante, ouvrir une autre ou vider
+        if (this.conversationActive()?.id === conv.id) {
+          const restantes = this.conversations();
+          if (restantes.length > 0) {
+            this.ouvrirConversation(restantes[0]);
+          } else {
+            this.conversationActive.set(null);
+          }
+        }
+      },
+      error: () => {
+        this.suppressionEnCours.set(false);
+        this.notifications.erreur('Impossible de supprimer la conversation.');
+      },
+    });
   }
 }
 
