@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { NotificationService } from '../../../../core/notifications/notification.service';
@@ -9,10 +9,12 @@ import { MenuActionsComponent } from '../../components/menu-actions.component';
 import { InitialesPipe, MontantPipe, NomSecteurPipe, PourcentagePipe } from '../../pipes/format.pipes';
 import { formatMontant, formatPourcentage } from '../../utils/format';
 import { messageErreur } from '../../utils/form';
+import { CarteLieuxComponent } from '../../components/carte-lieux.component';
 import { ConcurrentModalComponent } from '../../components/concurrent-modal.component';
 import { POSITIONNEMENTS } from '../../models/libelles';
 import { Concurrent } from '../../models/market.models';
 import { EtudeStore } from '../../services/etude-store.service';
+import { GeocodageService, PointCarte, regrouperParLieu } from '../../services/geocodage.service';
 import { MarketApiService } from '../../services/market-api.service';
 
 /** Onglet « Concurrents » (maquette Concurrents.dc.html). */
@@ -20,6 +22,7 @@ import { MarketApiService } from '../../services/market-api.service';
   selector: 'app-concurrents',
   imports: [
     RouterLink,
+    CarteLieuxComponent,
     ConfirmModalComponent,
     ConcurrentModalComponent,
     EmptyStateComponent,
@@ -38,8 +41,15 @@ export class ConcurrentsPage {
   protected readonly store = inject(EtudeStore);
   private readonly api = inject(MarketApiService);
   private readonly notifications = inject(NotificationService);
+  private readonly geocodage = inject(GeocodageService);
 
   protected readonly concurrents = computed(() => this.store.etude()?.concurrents_details ?? []);
+
+  /** Carte des concurrents : un marqueur par pays, infobulle avec les concurrents qui y sont établis. */
+  protected readonly pays = computed(() => regrouperParLieu(this.concurrents(), (c) => c.pays, (c) => c.nom));
+  protected readonly pointsPays = signal<PointCarte[]>([]);
+  protected readonly localisationEnCours = signal(false);
+  private versionCarte = 0;
 
   protected readonly modal = signal<{ mode: 'associer' | 'modifier'; concurrent: Concurrent | null } | null>(null);
   protected readonly aSupprimer = signal<Concurrent | null>(null);
@@ -91,6 +101,19 @@ export class ConcurrentsPage {
     return `${moinsCher.nom} est l'offre la moins chère du marché (${prix}). `
       + `${etude.titre} doit se démarquer par la valeur de son offre plutôt que par le prix.`;
   });
+
+  constructor() {
+    effect(() => {
+      const pays = this.pays();
+      const version = ++this.versionCarte;
+      this.localisationEnCours.set(true);
+      this.geocodage.placer(pays, 'pays').then((points) => {
+        if (version !== this.versionCarte) return;
+        this.pointsPays.set(points);
+        this.localisationEnCours.set(false);
+      });
+    });
+  }
 
   protected retirer(concurrent: Concurrent): void {
     const etude = this.store.etude();

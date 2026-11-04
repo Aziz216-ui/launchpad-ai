@@ -9,6 +9,13 @@
 </div>
 
 @if (concurrents().length) {
+  @if (pays().size) {
+    <section class="carte carte-geo">
+      <h3>Où sont vos concurrents</h3>
+      <app-carte-lieux [points]="pointsPays()" [hauteur]="280" [zoom]="5" libelle="Carte des pays des concurrents"
+        [messageVide]="localisationEnCours() ? 'Localisation des pays…' : 'Les pays des concurrents n’ont pas pu être localisés.'" />
+    </section>
+  }
   <div class="tableau-conteneur">
     <table>
       <thead>

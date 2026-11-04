@@ -9,6 +9,7 @@ import { environment } from '../../../../../environments/environment';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { BadgeComponent } from '../../../../shared/components/badge.component';
 import { FieldErrorComponent } from '../../components/field-error.component';
+import { RechercheLieuComponent } from '../../components/recherche-lieu.component';
 import { LoaderComponent } from '../../../../shared/components/loader.component';
 import { formatMontant, formatPourcentage, formatSaisie, lireNombre } from '../../utils/format';
 import { appliquerErreursServeur, messageErreur, nombreValidator } from '../../utils/form';
@@ -42,12 +43,10 @@ const CONSEILS = [
   'Une bonne hypothèse est mesurable. Précisez ce que vous voulez vérifier et comment vous le testerez.',
 ];
 
-const ZONES = ['France', 'Tunisie', 'Maghreb', 'Europe', 'International'];
-
 /** Création et modification d'une étude en 3 étapes (maquette Creation.dc.html). */
 @Component({
   selector: 'app-etude-formulaire',
-  imports: [ReactiveFormsModule, RouterLink, DatePipe, BadgeComponent, FieldErrorComponent, LoaderComponent],
+  imports: [ReactiveFormsModule, RouterLink, DatePipe, BadgeComponent, FieldErrorComponent, LoaderComponent, RechercheLieuComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './etude-formulaire.page.html',
   styleUrl: './etude-formulaire.page.scss',
@@ -92,12 +91,6 @@ export class EtudeFormulairePage implements OnInit {
 
   private readonly valeurs = toSignal(this.formulaire.valueChanges, {
     initialValue: this.formulaire.getRawValue(),
-  });
-
-  /** Zones proposées, plus la valeur enregistrée si elle n'est pas dans la liste. */
-  protected readonly zones = computed(() => {
-    const zone = this.valeurs().zone_geographique;
-    return zone && !ZONES.includes(zone) ? [...ZONES, zone] : ZONES;
   });
 
   /** Encadré « Votre étude en bref », mis à jour pendant la saisie. */

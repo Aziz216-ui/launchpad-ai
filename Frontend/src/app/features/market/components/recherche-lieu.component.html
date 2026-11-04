@@ -1,0 +1,40 @@
+<div class="recherche">
+  <input
+    type="text"
+    role="combobox"
+    autocomplete="off"
+    aria-autocomplete="list"
+    [id]="identifiant()"
+    [attr.aria-expanded]="ouvert()"
+    [attr.aria-controls]="listeId()"
+    [attr.aria-activedescendant]="actif() >= 0 ? listeId() + '-' + actif() : null"
+    [attr.aria-invalid]="invalide()"
+    [placeholder]="placeholder()"
+    [value]="texte()"
+    [disabled]="desactive()"
+    (input)="saisir($event)"
+    (keydown)="clavier($event)"
+    (blur)="sortie()" />
+  @if (ouvert()) {
+    <ul class="suggestions" role="listbox" [id]="listeId()" aria-label="Lieux suggérés">
+      @for (s of suggestions(); track s.detail; let i = $index) {
+        <!-- mousedown : choisit avant que le champ ne perde le focus -->
+        <li role="option" [id]="listeId() + '-' + i" [attr.aria-selected]="actif() === i" [class.actif]="actif() === i"
+          (mousedown)="$event.preventDefault(); choisir(s)">
+          <strong>{{ s.libelle }}</strong>
+          <small>{{ s.detail }}</small>
+        </li>
+      }
+    </ul>
+  }
+</div>
+@if (recherche()) {
+  <span class="aide">Recherche de lieux…</span>
+} @else if (indisponible()) {
+  <span class="aide">Suggestions indisponibles pour le moment : saisissez la zone librement.</span>
+} @else {
+  <span class="aide">Tapez au moins 3 lettres pour voir des suggestions, ou saisissez la zone librement.</span>
+}
+@if (lieu()) {
+  <app-carte-lieux class="mini-carte" [points]="points()" [hauteur]="170" [zoom]="9" [libelle]="'Carte : ' + lieu()!.libelle" />
+}

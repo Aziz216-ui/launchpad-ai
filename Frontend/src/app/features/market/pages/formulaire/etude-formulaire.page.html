@@ -66,16 +66,13 @@
                   <input type="text" formControlName="cible" />
                   <app-field-error [controle]="formulaire.controls.cible" />
                 </label>
-                <label class="champ" [class.en-erreur]="formulaire.controls.zone_geographique.touched && formulaire.controls.zone_geographique.invalid">
-                  Zone géographique *
-                  <select formControlName="zone_geographique">
-                    <option value="" disabled>Choisir une zone</option>
-                    @for (z of zones(); track z) {
-                      <option [value]="z">{{ z }}</option>
-                    }
-                  </select>
+                <!-- div et non label : la carte du lieu choisi ne doit pas renvoyer le focus vers le champ -->
+                <div class="champ" [class.en-erreur]="formulaire.controls.zone_geographique.touched && formulaire.controls.zone_geographique.invalid">
+                  <label for="zone-geographique">Zone géographique *</label>
+                  <app-recherche-lieu formControlName="zone_geographique" identifiant="zone-geographique"
+                    [invalide]="formulaire.controls.zone_geographique.touched && formulaire.controls.zone_geographique.invalid" />
                   <app-field-error [controle]="formulaire.controls.zone_geographique" />
-                </label>
+                </div>
                 <label class="champ" [class.en-erreur]="formulaire.controls.taille_marche.touched && formulaire.controls.taille_marche.invalid">
                   Taille du marché (€ / an) *
                   <input type="text" inputmode="numeric" formControlName="taille_marche" />

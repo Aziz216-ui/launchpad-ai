@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { NotificationService } from '../../../../core/notifications/notification.service';
@@ -8,9 +8,11 @@ import { IconComponent } from '../../../../shared/components/icon.component';
 import { InitialesPipe, LignesPipe, MontantPipe } from '../../pipes/format.pipes';
 import { lignes } from '../../utils/format';
 import { messageErreur } from '../../utils/form';
+import { CarteLieuxComponent } from '../../components/carte-lieux.component';
 import { PersonaModalComponent } from '../../components/persona-modal.component';
 import { Persona } from '../../models/market.models';
 import { EtudeStore } from '../../services/etude-store.service';
+import { GeocodageService, PointCarte, regrouperParLieu } from '../../services/geocodage.service';
 import { MarketApiService } from '../../services/market-api.service';
 
 /** Couleurs des pastilles des personas, dans l'ordre des maquettes. */
@@ -23,7 +25,7 @@ const COULEURS = [
 /** Onglet « Personas » (maquette Main.dc.html). */
 @Component({
   selector: 'app-personas',
-  imports: [RouterLink, ConfirmModalComponent, EmptyStateComponent, IconComponent, PersonaModalComponent, InitialesPipe, LignesPipe, MontantPipe],
+  imports: [RouterLink, CarteLieuxComponent, ConfirmModalComponent, EmptyStateComponent, IconComponent, PersonaModalComponent, InitialesPipe, LignesPipe, MontantPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './personas.page.html',
   styleUrl: './personas.page.scss',
@@ -32,9 +34,29 @@ export class PersonasPage {
   protected readonly store = inject(EtudeStore);
   private readonly api = inject(MarketApiService);
   private readonly notifications = inject(NotificationService);
+  private readonly geocodage = inject(GeocodageService);
 
   protected readonly couleurs = COULEURS;
   protected readonly personas = computed(() => this.store.etude()?.personas ?? []);
+
+  /** Carte des personas : un marqueur par localisation, infobulle avec les personas qui y vivent. */
+  protected readonly localisations = computed(() => regrouperParLieu(this.personas(), (p) => p.localisation, (p) => p.nom));
+  protected readonly pointsPersonas = signal<PointCarte[]>([]);
+  protected readonly localisationEnCours = signal(false);
+  private versionCarte = 0;
+
+  constructor() {
+    effect(() => {
+      const localisations = this.localisations();
+      const version = ++this.versionCarte;
+      this.localisationEnCours.set(true);
+      this.geocodage.placer(localisations, 'lieu').then((points) => {
+        if (version !== this.versionCarte) return;
+        this.pointsPersonas.set(points);
+        this.localisationEnCours.set(false);
+      });
+    });
+  }
 
   /**
    * « Ce qui rassemble vos personas » : besoins cités par au moins deux personas

@@ -1,0 +1,62 @@
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recherche {
+  position: relative;
+
+  input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+.suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: #ffffff;
+  border: 1px solid $bordure;
+  border-radius: $rayon-champ;
+  box-shadow: 0 8px 24px rgba($texte, 0.12);
+
+  li {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+
+    &:hover,
+    &.actif {
+      background: $primaire-clair;
+    }
+  }
+  strong {
+    font-size: 13px;
+    font-weight: 500;
+    color: $texte;
+  }
+  small {
+    font-size: 11px;
+    font-weight: 400;
+    color: $gris;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.mini-carte {
+  margin-top: 4px;
+}

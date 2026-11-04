@@ -9,6 +9,13 @@
 </div>
 
 @if (personas().length) {
+  @if (localisations().size) {
+    <section class="carte carte-geo">
+      <h3>Où vivent vos personas</h3>
+      <app-carte-lieux [points]="pointsPersonas()" [hauteur]="260" [zoom]="9" libelle="Carte des localisations des personas"
+        [messageVide]="localisationEnCours() ? 'Localisation des personas…' : 'Les localisations des personas n’ont pas pu être trouvées.'" />
+    </section>
+  }
   <div class="cartes">
     @for (p of personas(); track p.id; let i = $index) {
       <article>
