@@ -6,10 +6,13 @@ import logging, os, requests
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
-TIMEOUT = 5
+TIMEOUT = 2
 _DEFAULT_FALLBACK = "http://localhost:8006"
 
 def _resoudre_base_url() -> str:
+    if os.getenv("EUREKA_ENABLED", "true").lower() in ("false", "0", "no"):
+        fallback = getattr(settings, "PROJET_SERVICE_URL", getattr(settings, "MARKET_SERVICE_URL", _DEFAULT_FALLBACK))
+        return fallback.rstrip("/")
     service_name = getattr(settings, "PROJET_SERVICE_NAME", os.getenv("PROJET_SERVICE_NAME", "projet-service"))
     try:
         import py_eureka_client.eureka_client as eureka_client

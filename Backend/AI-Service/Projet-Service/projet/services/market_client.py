@@ -19,11 +19,14 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-TIMEOUT = 5  # secondes
+TIMEOUT = 2  # secondes
 _DEFAULT_FALLBACK = "http://localhost:8090"
 
 
 def _resoudre_base_url() -> str:
+    if os.getenv("EUREKA_ENABLED", "true").lower() in ("false", "0", "no"):
+        fallback = getattr(settings, "PROJET_SERVICE_URL", getattr(settings, "MARKET_SERVICE_URL", _DEFAULT_FALLBACK))
+        return fallback.rstrip("/")
     """
     Tente de résoudre l'URL de base d'ETUDE-SERVICE via Eureka.
     Retourne l'URL résolue ou la passerelle de repli.
