@@ -8,7 +8,7 @@
       <header>
         <span class="sur-titre">LaunchPad AI · Rapport d'étude de marché</span>
         <h2>{{ r.etude.titre }}</h2>
-        <p class="sous-titre">{{ r.marche_cible.cible || r.marche_cible.secteur.nom }} · {{ r.marche_cible.zone_geographique || 'Zone non précisée' }}</p>
+        <p class="sous-titre">{{ r.marche_cible.cible || (r.marche_cible.secteur.nom | nomSecteur) }} · {{ r.marche_cible.zone_geographique || 'Zone non précisée' }}</p>
         <p class="meta">Généré le {{ genereLe() | date: 'd MMMM y' }} · {{ r.etude.statut === 'brouillon' ? 'Version brouillon' : 'Version finalisée' }}</p>
         <div class="potentiel" [class]="r.potentiel_commercial.niveau">
           <div class="valeur">
@@ -25,7 +25,7 @@
         <h3>1. Marché cible</h3>
         <table class="cle-valeur">
           <tbody>
-            <tr><th scope="row">Secteur</th><td>{{ r.marche_cible.secteur.nom }}</td></tr>
+            <tr><th scope="row">Secteur</th><td>{{ r.marche_cible.secteur.nom | nomSecteur }}</td></tr>
             <tr><th scope="row">Cible</th><td>{{ r.marche_cible.cible || '—' }}</td></tr>
             <tr><th scope="row">Zone géographique</th><td>{{ r.marche_cible.zone_geographique || '—' }}</td></tr>
             <tr><th scope="row">Taille du marché</th><td>{{ r.marche_cible.taille_marche | montant: true }} / an</td></tr>
@@ -112,8 +112,7 @@
 
       <section id="s7">
         <h3>7. Conclusion</h3>
-        <p><strong>{{ r.potentiel_commercial.conclusion }}</strong></p>
-        <ul>@for (j of r.potentiel_commercial.justification; track $index) {<li>{{ j }}</li>}</ul>
+        <p>{{ conclusion() }}</p>
       </section>
 
       <footer>Rapport généré par LaunchPad AI à partir des données saisies dans l'étude.</footer>
@@ -124,7 +123,7 @@
         <button type="button" class="btn-primaire" (click)="store.telechargerPdf()" [disabled]="store.telechargementEnCours()">
           <app-icon nom="telecharger" [taille]="16" />{{ store.telechargementEnCours() ? 'Génération…' : 'Télécharger en PDF' }}
         </button>
-        <p>7 sections · généré le {{ genereLe() | date: "d MMMM y 'à' HH:mm" }}</p>
+        <p>7 sections{{ pagesPdf() ? ' · environ ' + pagesPdf() + ' page' + (pagesPdf()! > 1 ? 's' : '') + ' A4' : '' }} · généré le {{ genereLe() | date: "d MMMM y 'à' HH:mm" }}</p>
       </div>
       <nav class="carte sommaire" aria-label="Sommaire du rapport">
         <h3>Sommaire</h3>

@@ -21,8 +21,11 @@ import {
   Tendance,
 } from '../models/market.models';
 
-/** Accès REST au Market-Service (préfixe environment.marketApiUrl). */
-@Injectable({ providedIn: 'root' })
+/**
+ * Accès REST aux 4 microservices du marché via l'API Gateway (préfixe environment.marketApiUrl).
+ * Fourni par market.routes.ts, avec le HttpClient du module (marketInterceptor).
+ */
+@Injectable()
 export class MarketApiService {
   private readonly http = inject(HttpClient);
   private readonly url = environment.marketApiUrl;

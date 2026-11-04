@@ -6,7 +6,7 @@ import { ConfirmModalComponent } from '../../../../shared/components/confirm-mod
 import { EmptyStateComponent } from '../../../../shared/components/empty-state.component';
 import { IconComponent } from '../../../../shared/components/icon.component';
 import { MenuActionsComponent } from '../../components/menu-actions.component';
-import { InitialesPipe, MontantPipe, PourcentagePipe } from '../../pipes/format.pipes';
+import { InitialesPipe, MontantPipe, NomSecteurPipe, PourcentagePipe } from '../../pipes/format.pipes';
 import { formatMontant, formatPourcentage } from '../../utils/format';
 import { messageErreur } from '../../utils/form';
 import { ConcurrentModalComponent } from '../../components/concurrent-modal.component';
@@ -27,6 +27,7 @@ import { MarketApiService } from '../../services/market-api.service';
     MenuActionsComponent,
     InitialesPipe,
     MontantPipe,
+    NomSecteurPipe,
     PourcentagePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -70,6 +71,25 @@ export class ConcurrentsPage {
       texte += ` Votre offre à ${formatMontant(c.prix_propose)} ${position} la moyenne du marché (positionnement ${POSITIONNEMENTS[c.positionnement]}).`;
     }
     return { titre: titres[c.positionnement], texte };
+  });
+
+  /**
+   * Carte « Votre angle de différenciation » : part du concurrent le moins cher et de sa
+   * faiblesse déclarée (aucune donnée inventée : pas de carte sans concurrent).
+   */
+  protected readonly differenciation = computed(() => {
+    const liste = this.concurrents();
+    const etude = this.store.etude();
+    if (!liste.length || !etude) return null;
+    const moinsCher = [...liste].sort((a, b) => a.prix_moyen - b.prix_moyen || a.nom.localeCompare(b.nom))[0];
+    const prix = formatMontant(moinsCher.prix_moyen);
+    if (moinsCher.faiblesses) {
+      const faiblesse = moinsCher.faiblesses.charAt(0).toLowerCase() + moinsCher.faiblesses.slice(1).replace(/\.$/, '');
+      return `${moinsCher.nom} est l'offre la moins chère du marché (${prix}), mais avec une limite : ${faiblesse}. `
+        + `${etude.titre} peut se démarquer en répondant à ce manque.`;
+    }
+    return `${moinsCher.nom} est l'offre la moins chère du marché (${prix}). `
+      + `${etude.titre} doit se démarquer par la valeur de son offre plutôt que par le prix.`;
   });
 
   protected retirer(concurrent: Concurrent): void {

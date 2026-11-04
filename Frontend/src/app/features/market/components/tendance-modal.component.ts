@@ -8,18 +8,21 @@ import { messageErreur } from '../utils/form';
 import { IMPACTS } from '../models/libelles';
 import { EtudeMarcheDetail, Tendance } from '../models/market.models';
 import { MarketApiService } from '../services/market-api.service';
+import { NomSecteurPipe } from '../pipes/format.pipes';
 
 /** Modale « Associer une tendance » : tendances du secteur pas encore retenues pour l'étude. */
 @Component({
   selector: 'app-tendance-modal',
-  imports: [ModalComponent, LoaderComponent, BadgeComponent],
+  imports: [ModalComponent, LoaderComponent, BadgeComponent, NomSecteurPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-modal titre="Associer une tendance" (fermer)="fermer.emit()">
       @if (chargement()) {
         <app-loader texte="Chargement des tendances…" />
+      } @else if (etude().secteur === null) {
+        <p class="aide">Le secteur de cette étude a été supprimé : modifiez l'étude pour choisir un nouveau secteur.</p>
       } @else if (disponibles().length) {
-        <p class="aide">Tendances du secteur {{ etude().secteur_nom }} pas encore associées à cette étude :</p>
+        <p class="aide">Tendances du secteur {{ etude().secteur_nom | nomSecteur }} pas encore associées à cette étude :</p>
         <ul>
           @for (t of disponibles(); track t.id) {
             <li>
@@ -34,8 +37,8 @@ import { MarketApiService } from '../services/market-api.service';
           }
         </ul>
       } @else {
-        <p class="aide">Toutes les tendances du secteur {{ etude().secteur_nom }} sont déjà associées à l'étude.
-          Un administrateur peut en ajouter depuis l'admin du Market-Service.</p>
+        <p class="aide">Toutes les tendances du secteur {{ etude().secteur_nom | nomSecteur }} sont déjà associées à l'étude.
+          Un administrateur peut en ajouter depuis l'admin du secteur-service.</p>
       }
       <ng-container pied>
         <button type="button" class="btn-secondaire" (click)="fermer.emit()" [disabled]="enCours()">Annuler</button>
@@ -105,6 +108,11 @@ export class TendanceModalComponent implements OnInit {
 
   ngOnInit(): void {
     const etude = this.etude();
+    if (etude.secteur === null) {
+      // Secteur supprimé (événement secteur.supprime) : rien à proposer
+      this.chargement.set(false);
+      return;
+    }
     this.api.listerTendances({ secteur: etude.secteur }).subscribe({
       next: (liste) => {
         this.disponibles.set(liste.filter((t) => !etude.tendances.includes(t.id)));

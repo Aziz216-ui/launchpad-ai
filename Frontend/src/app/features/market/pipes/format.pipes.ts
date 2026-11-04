@@ -25,6 +25,14 @@ export class InitialesPipe implements PipeTransform {
   }
 }
 
+/** Nom du secteur ; null (secteur supprimé dans SECTEUR-SERVICE) -> « Secteur supprimé ». */
+@Pipe({ name: 'nomSecteur' })
+export class NomSecteurPipe implements PipeTransform {
+  transform(nom: string | null | undefined): string {
+    return nom || 'Secteur supprimé';
+  }
+}
+
 /** Texte libre -> liste de lignes, pour les @for. */
 @Pipe({ name: 'lignes' })
 export class LignesPipe implements PipeTransform {

@@ -79,7 +79,7 @@
                 <label class="champ" [class.en-erreur]="formulaire.controls.taille_marche.touched && formulaire.controls.taille_marche.invalid">
                   Taille du marché (€ / an) *
                   <input type="text" inputmode="numeric" formControlName="taille_marche" />
-                  <span class="aide">Montant annuel estimé du marché</span>
+                  <span class="aide">{{ aideTailleMarche() }}</span>
                   <app-field-error [controle]="formulaire.controls.taille_marche" />
                 </label>
                 <label class="champ" [class.en-erreur]="formulaire.controls.taux_croissance.touched && formulaire.controls.taux_croissance.invalid">
@@ -89,6 +89,9 @@
                   <app-field-error [controle]="formulaire.controls.taux_croissance" />
                 </label>
               </div>
+              @if (encadreMarche(); as encadre) {
+                <p class="encadre-marche"><strong>Un marché délimité, une analyse précise.</strong> {{ encadre }}</p>
+              }
             </div>
           }
           @case (2) {
@@ -116,7 +119,7 @@
               <label class="champ" [class.en-erreur]="formulaire.controls.hypotheses.touched && formulaire.controls.hypotheses.invalid">
                 Vos hypothèses de marché *
                 <textarea rows="7" formControlName="hypotheses"></textarea>
-                <span class="aide">Décrivez les besoins, les freins ou la disposition à payer que vous souhaitez vérifier. Une hypothèse par ligne.</span>
+                <span class="aide">Décrivez les besoins, les freins ou la disposition à payer que vous souhaitez vérifier.</span>
                 <app-field-error [controle]="formulaire.controls.hypotheses" />
               </label>
             </div>

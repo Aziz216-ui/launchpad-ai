@@ -18,9 +18,7 @@
     <div class="kpi">
       <span class="libelle">Niveau de concurrence</span>
       <span class="valeur" [style.color]="niveau() === 'moyen' ? '#9A5B07' : niveaux[niveau()].couleur">{{ niveaux[niveau()].libelle }}</span>
-      @if (niveau() === 'inconnu') {
-        <span class="detail">Associez des concurrents pour l'évaluer</span>
-      }
+      <span class="detail">{{ sousTitresNiveau[niveau()] }}</span>
     </div>
   </div>
 
@@ -63,7 +61,7 @@
 
     <section class="carte regard">
       <h2>Votre marché en un regard</h2>
-      <div><span>Secteur</span><strong>{{ etude.secteur_nom }}</strong></div>
+      <div><span>Secteur</span><strong>{{ etude.secteur_nom | nomSecteur }}</strong></div>
       <div><span>Cible</span><strong>{{ etude.cible || '—' }}</strong></div>
       <div><span>Zone géographique</span><strong>{{ etude.zone_geographique || '—' }}</strong></div>
       <div><span>Mon offre</span><strong>{{ etude.prix_propose | montant }}</strong></div>

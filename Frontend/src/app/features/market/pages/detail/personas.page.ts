@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { ConfirmModalComponent } from '../../../../shared/components/confirm-modal.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state.component';
 import { IconComponent } from '../../../../shared/components/icon.component';
 import { InitialesPipe, LignesPipe, MontantPipe } from '../../pipes/format.pipes';
+import { lignes } from '../../utils/format';
 import { messageErreur } from '../../utils/form';
 import { PersonaModalComponent } from '../../components/persona-modal.component';
 import { Persona } from '../../models/market.models';
@@ -21,7 +23,7 @@ const COULEURS = [
 /** Onglet « Personas » (maquette Main.dc.html). */
 @Component({
   selector: 'app-personas',
-  imports: [ConfirmModalComponent, EmptyStateComponent, IconComponent, PersonaModalComponent, InitialesPipe, LignesPipe, MontantPipe],
+  imports: [RouterLink, ConfirmModalComponent, EmptyStateComponent, IconComponent, PersonaModalComponent, InitialesPipe, LignesPipe, MontantPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './personas.page.html',
   styleUrl: './personas.page.scss',
@@ -33,6 +35,26 @@ export class PersonasPage {
 
   protected readonly couleurs = COULEURS;
   protected readonly personas = computed(() => this.store.etude()?.personas ?? []);
+
+  /**
+   * « Ce qui rassemble vos personas » : besoins cités par au moins deux personas
+   * (comparaison sans casse ni espaces superflus). Rien d'inventé : liste vide sinon.
+   */
+  protected readonly besoinsCommuns = computed(() => {
+    const occurrences = new Map<string, { texte: string; personas: number }>();
+    for (const persona of this.personas()) {
+      const vus = new Set<string>();
+      for (const besoin of lignes(persona.besoins)) {
+        const cle = besoin.toLocaleLowerCase('fr').replace(/\s+/g, ' ').replace(/[.\s]+$/, '');
+        if (!cle || vus.has(cle)) continue;
+        vus.add(cle);
+        const entree = occurrences.get(cle) ?? { texte: besoin.replace(/[.\s]+$/, ''), personas: 0 };
+        entree.personas += 1;
+        occurrences.set(cle, entree);
+      }
+    }
+    return [...occurrences.values()].filter((e) => e.personas >= 2).map((e) => e.texte);
+  });
 
   /** null : fermée ; { persona: null } : création ; { persona } : modification. */
   protected readonly modal = signal<{ persona: Persona | null } | null>(null);

@@ -6,7 +6,7 @@ export const environment = {
   production: false,
 
   /** Market-Service (module Étude de marché, features/market). */
-  marketApiUrl: 'http://localhost:8005/api/market',
+  marketApiUrl: 'http://localhost:8090/api/market',
   /** AI-Service (module Co-Fondateur IA, features/ai) : à remplir par le membre concerné. */
   aiApiUrl: '',
   /** Finance-Service (module Finance, features/finance) : à remplir par le membre concerné. */

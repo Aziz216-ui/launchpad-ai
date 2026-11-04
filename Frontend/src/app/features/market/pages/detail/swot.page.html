@@ -13,6 +13,10 @@
   </div>
 </div>
 
+@if (store.swotGenereeAutomatiquement()) {
+  <p class="swot-auto" role="status">SWOT générée automatiquement après la finalisation de l'étude.</p>
+}
+
 <div class="compteurs">
   @for (q of quadrants(); track q.type) {
     <div class="compteur">

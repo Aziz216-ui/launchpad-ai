@@ -6,7 +6,7 @@ import { NotificationService } from '../../../core/notifications/notification.se
 import { FieldErrorComponent } from './field-error.component';
 import { LoaderComponent } from '../../../shared/components/loader.component';
 import { ModalComponent } from './modal.component';
-import { MontantPipe, PourcentagePipe } from '../pipes/format.pipes';
+import { MontantPipe, NomSecteurPipe, PourcentagePipe } from '../pipes/format.pipes';
 import { formatSaisie, lireNombre } from '../utils/format';
 import { appliquerErreursServeur, messageErreur, nombreValidator } from '../utils/form';
 import { Concurrent, ConcurrentSaisie, EtudeMarcheDetail } from '../models/market.models';
@@ -22,7 +22,7 @@ type Mode = 'associer' | 'creer' | 'modifier';
  */
 @Component({
   selector: 'app-concurrent-modal',
-  imports: [ReactiveFormsModule, ModalComponent, FieldErrorComponent, LoaderComponent, MontantPipe, PourcentagePipe],
+  imports: [ReactiveFormsModule, ModalComponent, FieldErrorComponent, LoaderComponent, MontantPipe, NomSecteurPipe, PourcentagePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './concurrent-modal.component.html',
   styles: `
@@ -146,6 +146,12 @@ export class ConcurrentModalComponent implements OnInit {
   /** Concurrents du secteur de l'étude qui ne lui sont pas encore associés. */
   private chargerDisponibles(): void {
     const etude = this.etude();
+    if (etude.secteur === null) {
+      // Secteur supprimé (événement secteur.supprime) : rien à proposer
+      this.disponibles.set([]);
+      this.chargement.set(false);
+      return;
+    }
     this.chargement.set(true);
     this.api.listerConcurrents({ secteur: etude.secteur }).subscribe({
       next: (liste) => {

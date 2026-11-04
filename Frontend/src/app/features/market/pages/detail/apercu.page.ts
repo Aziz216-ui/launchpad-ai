@@ -3,9 +3,9 @@ import { RouterLink } from '@angular/router';
 
 import { BadgeComponent } from '../../../../shared/components/badge.component';
 import { LoaderComponent } from '../../../../shared/components/loader.component';
-import { LignesPipe, MontantPipe, PourcentagePipe } from '../../pipes/format.pipes';
+import { LignesPipe, MontantPipe, NomSecteurPipe, PourcentagePipe } from '../../pipes/format.pipes';
 import { formatMontant, formatPourcentage } from '../../utils/format';
-import { NIVEAUX, POTENTIELS } from '../../models/libelles';
+import { NIVEAUX, POTENTIELS, SOUS_TITRES_NIVEAU } from '../../models/libelles';
 import { RapportEtude } from '../../models/market.models';
 import { EtudeStore } from '../../services/etude-store.service';
 import { MarketApiService } from '../../services/market-api.service';
@@ -16,7 +16,7 @@ const LONGUEUR_ARC = 220;
 /** Onglet « Aperçu » (maquette Apercu.dc.html). */
 @Component({
   selector: 'app-apercu',
-  imports: [RouterLink, BadgeComponent, LoaderComponent, MontantPipe, PourcentagePipe, LignesPipe],
+  imports: [RouterLink, BadgeComponent, LoaderComponent, MontantPipe, PourcentagePipe, LignesPipe, NomSecteurPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './apercu.page.html',
   styleUrl: './apercu.page.scss',
@@ -26,6 +26,7 @@ export class ApercuPage {
   private readonly api = inject(MarketApiService);
 
   protected readonly niveaux = NIVEAUX;
+  protected readonly sousTitresNiveau = SOUS_TITRES_NIVEAU;
   protected readonly potentiels = POTENTIELS;
   protected readonly longueurArc = LONGUEUR_ARC;
 

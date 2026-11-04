@@ -2,9 +2,11 @@
   @if (mode() === 'associer') {
     @if (chargement()) {
       <app-loader texte="Chargement des concurrents…" />
+    } @else if (etude().secteur === null) {
+      <p class="vide">Le secteur de cette étude a été supprimé : modifiez l'étude pour choisir un nouveau secteur.</p>
     } @else {
       @if (disponibles().length) {
-        <p class="vide">Concurrents du secteur {{ etude().secteur_nom }} pas encore associés à cette étude :</p>
+        <p class="vide">Concurrents du secteur {{ etude().secteur_nom | nomSecteur }} pas encore associés à cette étude :</p>
         <ul class="liste">
           @for (c of disponibles(); track c.id) {
             <li>
@@ -17,7 +19,7 @@
           }
         </ul>
       } @else {
-        <p class="vide">Tous les concurrents du secteur {{ etude().secteur_nom }} sont déjà associés à l'étude.</p>
+        <p class="vide">Tous les concurrents du secteur {{ etude().secteur_nom | nomSecteur }} sont déjà associés à l'étude.</p>
       }
       <button type="button" class="lien" (click)="mode.set('creer')">+ Créer un nouveau concurrent</button>
     }

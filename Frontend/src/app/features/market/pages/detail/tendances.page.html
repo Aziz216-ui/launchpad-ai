@@ -46,8 +46,17 @@
           <div><span><i class="negatif"></i>Points de vigilance</span><strong>{{ balance().negatives }}</strong></div>
           <div><span><i class="neutre"></i>Tendance neutre</span><strong>{{ balance().neutres }}</strong></div>
         </div>
-        <a class="lien-fleche" routerLink="../swot">Voir l'impact dans la SWOT →</a>
+        @if (!priorite()) {
+          <a class="lien-fleche" routerLink="../swot">Voir l'impact dans la SWOT →</a>
+        }
       </section>
+      @if (priorite(); as p) {
+        <section class="carte-conseil">
+          <h3>Votre priorité</h3>
+          <p>{{ p }}</p>
+          <a class="lien-fleche" routerLink="../swot">Voir l'impact dans la SWOT →</a>
+        </section>
+      }
     </div>
   </div>
 } @else {

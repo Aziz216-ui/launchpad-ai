@@ -1,7 +1,7 @@
 <div class="entete-section">
   <div class="titre">
     <h2>Votre paysage concurrentiel</h2>
-    <p>{{ concurrents().length }} concurrent(s) associé(s) à votre étude · secteur {{ store.etude()?.secteur_nom }}.</p>
+    <p>{{ concurrents().length }} concurrent(s) associé(s) à votre étude · secteur {{ store.etude()?.secteur_nom | nomSecteur }}.</p>
   </div>
   <button type="button" class="btn-primaire" (click)="modal.set({ mode: 'associer', concurrent: null })">
     <app-icon nom="plus" [taille]="16" />Associer un concurrent
@@ -16,9 +16,9 @@
           <th scope="col">Nom</th>
           <th scope="col">Pays</th>
           <th scope="col">Prix moyen</th>
-          <th scope="col">Part de marché</th>
-          <th scope="col">Forces</th>
-          <th scope="col">Faiblesses</th>
+          <th scope="col" class="secondaire">Part de marché</th>
+          <th scope="col" class="secondaire">Forces</th>
+          <th scope="col" class="secondaire">Faiblesses</th>
           <th scope="col"><span class="visually-hidden">Actions</span></th>
         </tr>
       </thead>
@@ -28,21 +28,24 @@
             <td>
               <span class="nom">
                 <span class="initiales" aria-hidden="true">{{ c.nom | initiales: 'concurrent' }}</span>
-                <strong>{{ c.nom }}</strong>
+                <span class="identite">
+                  <strong>{{ c.nom }}</strong>
+                  @if (c.description) {<small [title]="c.description">{{ c.description }}</small>}
+                </span>
               </span>
             </td>
             <td>{{ c.pays || '—' }}</td>
             <td>{{ c.prix_moyen | montant }}</td>
-            <td>
+            <td class="secondaire">
               <span class="part">
                 <span>{{ c.part_de_marche | pourcentage }}</span>
                 <span class="jauge"><span [style.width.%]="c.part_de_marche"></span></span>
               </span>
             </td>
-            <td class="force">
+            <td class="force secondaire">
               @if (c.forces) {✓ {{ c.forces }}} @else {—}
             </td>
-            <td class="faiblesse">
+            <td class="faiblesse secondaire">
               @if (c.faiblesses) {✕ {{ c.faiblesses }}} @else {—}
             </td>
             <td class="actions-ligne">
@@ -59,13 +62,22 @@
   </div>
   <p class="note">{{ notePartsDeMarche() }}</p>
 
-  @if (positionnement(); as p) {
+  @if (positionnement() || differenciation()) {
     <div class="grille-2">
+      @if (differenciation(); as d) {
+        <section class="carte">
+          <h3>Votre angle de différenciation</h3>
+          <p>{{ d }}</p>
+          <span class="badge-opportunite">Opportunité</span>
+        </section>
+      }
+      @if (positionnement(); as p) {
       <section class="carte">
         <h3>{{ p.titre }}</h3>
         <p>{{ p.texte }}</p>
         <a class="lien-fleche" routerLink="../prix">Voir la comparaison des offres et des prix →</a>
       </section>
+      }
     </div>
   }
 } @else {

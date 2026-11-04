@@ -103,6 +103,20 @@
   max-width: 320px;
 }
 
+.encadre-marche {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: $fond-encadre;
+  font-size: 12px;
+  line-height: 1.5;
+  color: $texte-secondaire;
+
+  strong {
+    color: $texte;
+  }
+}
+
 .encadre-prix {
   margin: 0;
   padding: 12px 14px;

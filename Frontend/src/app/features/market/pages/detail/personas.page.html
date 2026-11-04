@@ -60,6 +60,16 @@
       </article>
     }
   </div>
+
+  @if (besoinsCommuns().length) {
+    <section class="carte communs">
+      <h3>Ce qui rassemble vos personas</h3>
+      <div class="puces">
+        @for (b of besoinsCommuns(); track b) {<span class="puce commun">{{ b }}</span>}
+      </div>
+      <a class="lien-fleche" routerLink="../swot">Voir l'impact dans la SWOT →</a>
+    </section>
+  }
 } @else {
   <app-empty-state [compact]="true" titre="Aucun persona défini"
     texte="Décrivez vos clients types : leurs besoins, leurs frustrations et leur façon d'acheter. Ils renforcent votre SWOT et votre potentiel commercial.">

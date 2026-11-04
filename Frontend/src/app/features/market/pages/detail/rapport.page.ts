@@ -4,7 +4,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, u
 import { EmptyStateComponent } from '../../../../shared/components/empty-state.component';
 import { IconComponent } from '../../../../shared/components/icon.component';
 import { LoaderComponent } from '../../../../shared/components/loader.component';
-import { LignesPipe, MontantPipe, PourcentagePipe } from '../../pipes/format.pipes';
+import { LignesPipe, MontantPipe, NomSecteurPipe, PourcentagePipe } from '../../pipes/format.pipes';
 import { lignes } from '../../utils/format';
 import { messageErreur } from '../../utils/form';
 import { POSITIONNEMENTS, POTENTIELS } from '../../models/libelles';
@@ -25,7 +25,7 @@ const SECTIONS = [
 /** Onglet « Rapport » (maquette Rapport.dc.html), alimenté par GET /etudes/<id>/rapport/. */
 @Component({
   selector: 'app-rapport',
-  imports: [DatePipe, EmptyStateComponent, IconComponent, LoaderComponent, LignesPipe, MontantPipe, PourcentagePipe],
+  imports: [DatePipe, EmptyStateComponent, IconComponent, LoaderComponent, LignesPipe, MontantPipe, NomSecteurPipe, PourcentagePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './rapport.page.html',
   styleUrl: './rapport.page.scss',
@@ -49,6 +49,20 @@ export class RapportPage {
     return p ? Math.max(0, Math.min(100, (p.score / p.score_max) * 100)) : 0;
   });
 
+  /** Nombre de pages A4 du PDF généré par le serveur (null tant qu'il n'est pas connu). */
+  protected readonly pagesPdf = signal<number | null>(null);
+
+  /**
+   * Conclusion rédigée en paragraphe : conclusion du serveur, puis les facteurs du score.
+   * Ex. « Potentiel commercial moyen (score 3/7). Il s'appuie sur : forte croissance… ; … »
+   */
+  protected readonly conclusion = computed(() => {
+    const p = this.rapport()?.potentiel_commercial;
+    if (!p) return '';
+    const facteurs = p.justification.map((j) => j.charAt(0).toLowerCase() + j.slice(1)).join(' ; ');
+    return facteurs ? `${p.conclusion} Ce score s'appuie sur les éléments suivants : ${facteurs}.` : p.conclusion;
+  });
+
   /** Échelle des barres de prix : le prix le plus élevé occupe toute la largeur. */
   protected readonly prixMax = computed(() => {
     const c = this.rapport()?.comparaison_prix;
@@ -70,11 +84,27 @@ export class RapportPage {
         this.rapport.set(r);
         this.genereLe.set(new Date());
         this.chargement.set(false);
+        this.compterPagesPdf(id);
       },
       error: (e: unknown) => {
         this.erreur.set(messageErreur(e, 'Impossible de générer le rapport.'));
         this.chargement.set(false);
       },
+    });
+  }
+
+  /**
+   * « environ N pages A4 » : lit le PDF généré par le serveur et compte ses pages
+   * (objets /Type /Page). En cas d'échec, l'information n'est simplement pas affichée.
+   */
+  private compterPagesPdf(id: number): void {
+    this.api.rapportPdf(id).subscribe({
+      next: (pdf) =>
+        pdf.text().then((contenu) => {
+          const pages = contenu.match(/\/Type\s*\/Page(?!s)/g)?.length ?? 0;
+          this.pagesPdf.set(pages || null);
+        }),
+      error: () => this.pagesPdf.set(null),
     });
   }
 

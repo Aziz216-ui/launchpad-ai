@@ -1,6 +1,10 @@
 /**
- * Interfaces TypeScript du Market-Service, écrites d'après le schéma OpenAPI
- * (GET /api/market/schema/). Les décimaux sont renvoyés en nombres JSON.
+ * Interfaces TypeScript des microservices du marché (via l'API Gateway), écrites d'après
+ * leurs schémas OpenAPI (/api/market/<ressource>/schema/). Les décimaux sont des nombres JSON.
+ *
+ * Les relations entre services sont des identifiants : le backend accepte toujours
+ * secteur, concurrents, tendances et etude, et renvoie en plus secteur_id, concurrent_ids,
+ * tendance_ids et etude_id. secteur_id / secteur_nom valent null si le secteur a été supprimé.
  */
 
 export type StatutEtude = 'brouillon' | 'finalisee';
@@ -21,8 +25,10 @@ export interface Secteur {
 export interface Concurrent {
   id: number;
   nom: string;
-  secteur: number;
-  secteur_nom: string;
+  secteur: number | null;
+  secteur_id: number | null;
+  /** null si le secteur a été supprimé (afficher « Secteur supprimé »). */
+  secteur_nom: string | null;
   site_web: string;
   description: string;
   forces: string;
@@ -45,6 +51,7 @@ export interface Tendance {
   id: number;
   titre: string;
   secteur: number;
+  secteur_id: number;
   secteur_nom: string;
   description: string;
   impact: ImpactTendance;
@@ -54,6 +61,7 @@ export interface Tendance {
 export interface Persona {
   id: number;
   etude: number;
+  etude_id: number;
   nom: string;
   tranche_age: string;
   profession: string;
@@ -65,11 +73,12 @@ export interface Persona {
   date_creation: string;
 }
 
-export type PersonaSaisie = Omit<Persona, 'id' | 'date_creation'>;
+export type PersonaSaisie = Omit<Persona, 'id' | 'etude_id' | 'date_creation'>;
 
 export interface ElementSwot {
   id: number;
   etude: number;
+  etude_id: number;
   type: TypeSwot;
   description: string;
   /** true : créé par « Générer la SWOT » (remplacé à chaque génération). */
@@ -85,8 +94,10 @@ export interface EtudeMarche {
   projet_id: number;
   entrepreneur_id: number | null;
   statut: StatutEtude;
-  secteur: number;
-  secteur_nom: string;
+  secteur: number | null;
+  secteur_id: number | null;
+  /** null si le secteur a été supprimé (afficher « Secteur supprimé »). */
+  secteur_nom: string | null;
   titre: string;
   taille_marche: number;
   taux_croissance: number;
@@ -95,10 +106,12 @@ export interface EtudeMarche {
   hypotheses: string;
   description_offre: string;
   prix_propose: number | null;
-  /** IDs des concurrents associés à l'étude. */
+  /** IDs des concurrents associés à l'étude (identique à concurrent_ids). */
   concurrents: number[];
-  /** IDs des tendances associées à l'étude. */
+  concurrent_ids: number[];
+  /** IDs des tendances associées à l'étude (identique à tendance_ids). */
   tendances: number[];
+  tendance_ids: number[];
   date_creation: string;
   date_mise_a_jour: string;
 }
@@ -197,7 +210,7 @@ export interface RapportEtude {
     date_mise_a_jour: string;
   };
   marche_cible: {
-    secteur: { id: number; nom: string };
+    secteur: { id: number | null; nom: string | null };
     cible: string;
     zone_geographique: string;
     taille_marche: number;

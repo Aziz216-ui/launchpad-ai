@@ -40,6 +40,25 @@ export class TendancesPage {
     };
   });
 
+  /**
+   * Carte « Votre priorité » : déduite des tendances associées (point de vigilance principal
+   * si les risques dominent, sinon opportunité principale). Pas de carte sans tendance orientée.
+   */
+  protected readonly priorite = computed(() => {
+    const liste = this.tendances();
+    const risque = liste.find((t) => t.impact === 'negatif');
+    const opportunite = liste.find((t) => t.impact === 'positif');
+    const { positives, negatives } = this.balance();
+    if (risque && (negatives > positives || !opportunite)) {
+      return `Sécuriser votre projet face à « ${risque.titre} » avant d'accélérer : c'est le principal point de vigilance de votre marché.`;
+    }
+    if (opportunite) {
+      const suite = risque ? ` Gardez un œil sur « ${risque.titre} ».` : '';
+      return `Appuyez-vous sur « ${opportunite.titre} » : c'est la principale opportunité de votre marché.${suite}`;
+    }
+    return null;
+  });
+
   protected retirer(tendance: Tendance): void {
     const etude = this.store.etude();
     if (!etude) return;

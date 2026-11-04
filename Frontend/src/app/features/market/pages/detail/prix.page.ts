@@ -5,7 +5,28 @@ import { EmptyStateComponent } from '../../../../shared/components/empty-state.c
 import { MontantPipe, PourcentagePipe } from '../../pipes/format.pipes';
 import { formatMontant } from '../../utils/format';
 import { POSITIONNEMENTS } from '../../models/libelles';
+import { PositionnementPrix } from '../../models/market.models';
 import { EtudeStore } from '../../services/etude-store.service';
+
+/** Largeur minimale d'une barre du graphique, en % de la piste. */
+const LARGEUR_MINIMALE = 1.5;
+
+const CONSEILS: Record<PositionnementPrix, { titre: string; texte: string } | null> = {
+  economique: {
+    titre: 'Accessible, sans compromis',
+    texte:
+      "Votre prix se situe dans la fourchette basse. Validez-le auprès de vos personas et vérifiez le coût d'acquisition avant de le confirmer.",
+  },
+  aligne: {
+    titre: 'Dans la moyenne du marché',
+    texte: 'Votre prix est aligné sur celui des concurrents : votre différence devra venir de la valeur de votre offre.',
+  },
+  premium: {
+    titre: 'Un prix premium à justifier',
+    texte: 'Votre prix dépasse la moyenne du marché. Mettez en avant ce qui le justifie auprès de vos personas.',
+  },
+  inconnu: null,
+};
 
 /** Onglet « Comparaison des offres et des prix » (maquette Prix.dc.html). */
 @Component({
@@ -34,6 +55,18 @@ export class PrixPage {
     if (!c) return [];
     // Le graphique de la maquette garde l'ordre du tableau des concurrents (prix croissants)
     return c.concurrents.map((x) => ({ nom: x.nom, prix: x.prix_moyen, largeur: x.prix_moyen * this.echelle() }));
+  });
+
+  /** Largeur affichée : un prix à 0 € garde une barre visible (largeur minimale). */
+  protected largeurVisible(largeur: number): number {
+    return Math.max(largeur, LARGEUR_MINIMALE);
+  }
+
+  /** Carte de conseil déduite du positionnement prix (maquette « Accessible, sans compromis »). */
+  protected readonly conseil = computed(() => {
+    const c = this.comparaison();
+    if (!c || c.prix_propose === null) return null;
+    return CONSEILS[c.positionnement];
   });
 
   protected readonly largeurOffre = computed(() => (this.comparaison()?.prix_propose ?? 0) * this.echelle());

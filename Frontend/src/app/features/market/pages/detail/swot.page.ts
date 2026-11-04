@@ -36,7 +36,10 @@ export class SwotPage {
   /** Les 4 quadrants avec leurs éléments et compteurs. */
   protected readonly quadrants = computed(() =>
     TYPES_SWOT.map((t) => {
-      const elements = this.elements().filter((e) => e.type === t.type);
+      // Comme la maquette : éléments générés automatiquement d'abord, puis ceux ajoutés à la main
+      const elements = this.elements()
+        .filter((e) => e.type === t.type)
+        .sort((a, b) => Number(b.genere_automatiquement) - Number(a.genere_automatiquement) || a.id - b.id);
       return { ...t, elements, automatiques: elements.filter((e) => e.genere_automatiquement).length };
     }),
   );

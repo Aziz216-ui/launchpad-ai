@@ -83,7 +83,7 @@
               @if (etude.cible) {
                 <p>{{ etude.cible }}</p>
               }
-              <span>{{ etude.secteur_nom }}</span>
+              <span>{{ etude.secteur_nom | nomSecteur }}</span>
             </div>
             <div class="niveau">
               <span class="libelle">Niveau de concurrence</span>

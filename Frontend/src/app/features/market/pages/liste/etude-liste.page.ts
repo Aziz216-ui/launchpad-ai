@@ -13,6 +13,7 @@ import { messageErreur } from '../../utils/form';
 import { NIVEAUX, ORDRE_NIVEAUX, STATUTS } from '../../models/libelles';
 import { EtudeMarche, NiveauConcurrence } from '../../models/market.models';
 import { MarketApiService } from '../../services/market-api.service';
+import { NomSecteurPipe } from '../../pipes/format.pipes';
 
 type Filtre = 'toutes' | 'brouillon' | 'finalisee';
 type Tri = 'recent' | 'nom' | 'niveau';
@@ -28,6 +29,7 @@ type Tri = 'recent' | 'nom' | 'niveau';
     EmptyStateComponent,
     IconComponent,
     LoaderComponent,
+    NomSecteurPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './etude-liste.page.html',

@@ -120,6 +120,21 @@ export class EtudeFormulairePage implements OnInit {
     };
   });
 
+  /** Aide du champ « Taille du marché » : zone saisie et année en cours (maquette « Marché français estimé pour 2026 »). */
+  protected readonly aideTailleMarche = computed(() => {
+    const zone = this.valeurs().zone_geographique;
+    const annee = new Date().getFullYear();
+    return zone ? `Marché ${zone} estimé pour ${annee}` : 'Montant annuel estimé du marché';
+  });
+
+  /** Encadré de l'étape 1 : résumé du marché saisi (cible, secteur, zone), affiché une fois complet. */
+  protected readonly encadreMarche = computed(() => {
+    const v = this.valeurs();
+    const secteur = this.secteurs().find((s) => s.id === Number(v.secteur))?.nom;
+    if (!v.cible || !v.zone_geographique || !secteur) return null;
+    return `${v.cible.trim()} · secteur ${secteur} · ${v.zone_geographique}.`;
+  });
+
   /** Encadré de l'étape 2 : prix proposé comparé aux concurrents de l'étude. */
   protected readonly encadrePrix = computed(() => {
     const c = this.comparaison();

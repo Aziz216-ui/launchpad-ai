@@ -34,10 +34,10 @@
             <span class="libelle-moyenne" aria-hidden="true" [style.--position]="positionMoyenne()">Moyenne {{ c.prix_moyen | montant }}</span>
           }
           @for (b of barres(); track b.nom) {
-            <div class="ligne"><span class="nom">{{ b.nom }}</span><span class="piste"><span [style.width.%]="b.largeur"></span></span><span class="prix">{{ b.prix | montant }}</span></div>
+            <div class="ligne"><span class="nom">{{ b.nom }}</span><span class="piste"><span [style.width.%]="largeurVisible(b.largeur)"></span></span><span class="prix">{{ b.prix | montant }}</span></div>
           }
           @if (c.prix_propose !== null) {
-            <div class="ligne offre"><span class="nom">Mon offre</span><span class="piste"><span [style.width.%]="largeurOffre()"></span></span><span class="prix">{{ c.prix_propose | montant }}</span></div>
+            <div class="ligne offre"><span class="nom">Mon offre</span><span class="piste"><span [style.width.%]="largeurVisible(largeurOffre())"></span></span><span class="prix">{{ c.prix_propose | montant }}</span></div>
           }
         </div>
         <div class="legende">
@@ -61,7 +61,14 @@
           }
           <a class="lien-fleche" [routerLink]="['/etude-marche', store.id(), 'modifier']" [queryParams]="{ etape: 2 }">Modifier mon prix →</a>
         </section>
+        @if (conseil(); as conseil) {
+          <section class="carte-conseil">
+            <h3>{{ conseil.titre }}</h3>
+            <p>{{ conseil.texte }}</p>
+          </section>
+        }
       </div>
     </div>
+    <p class="note">Prix moyens des offres des concurrents associés à l'étude, hors promotions et options supplémentaires.</p>
   }
 }

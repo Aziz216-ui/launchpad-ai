@@ -22,6 +22,14 @@ export const NIVEAUX: Record<NiveauConcurrence, { libelle: string; couleur: stri
   eleve: { libelle: 'Élevé', couleur: '#B23A3A', barres: 3 },
 };
 
+/** Sous-titre de la carte « Niveau de concurrence » de l'aperçu (maquette Apercu.dc.html). */
+export const SOUS_TITRES_NIVEAU: Record<NiveauConcurrence, string> = {
+  inconnu: "Associez des concurrents pour l'évaluer",
+  faible: 'Marché encore peu occupé',
+  moyen: 'Marché encore différenciable',
+  eleve: 'Marché déjà très occupé',
+};
+
 /** Ordre de tri du plus concurrentiel au moins concurrentiel. */
 export const ORDRE_NIVEAUX: NiveauConcurrence[] = ['eleve', 'moyen', 'faible', 'inconnu'];
 

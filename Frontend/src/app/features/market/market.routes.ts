@@ -1,15 +1,21 @@
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { Routes } from '@angular/router';
 
 import { MarketComponent } from './market.component';
+import { MarketApiService } from './services/market-api.service';
+import { marketInterceptor } from './services/market-http';
 
 /**
  * Routes du module « Étude de marché » (chargées à la demande sous /etude-marche).
  * MarketComponent enveloppe tous les écrans et porte les styles du module.
+ * Le module a son propre HttpClient : marketInterceptor traduit les erreurs 404 et 503
+ * de l'API Gateway (voir services/market-http.ts).
  */
 export default [
   {
     path: '',
     component: MarketComponent,
+    providers: [provideHttpClient(withInterceptors([marketInterceptor])), MarketApiService],
     children: [
       {
         path: '',
