@@ -13,9 +13,10 @@ const LONGUEUR_MIN = 3;
 let compteur = 0;
 
 /**
- * Champ « lieu » avec suggestions OpenStreetMap (Nominatim) et petite carte du lieu choisi.
- * La valeur du formulaire reste un simple texte (ex. « Sfax, Tunisie ») : la saisie libre est
- * toujours acceptée, y compris quand Nominatim ne répond pas.
+ * Champ « lieu » avec suggestions OpenStreetMap (Nominatim) et petite carte.
+ * Le lieu se choisit au clavier (suggestions) ou sur la carte (clic ou déplacement du marqueur,
+ * puis reverse geocoding). La valeur du formulaire reste un simple texte (ex. « Sfax, Tunisie ») :
+ * la saisie libre est toujours acceptée, y compris quand Nominatim ne répond pas.
  */
 @Component({
   selector: 'app-recherche-lieu',
@@ -39,8 +40,12 @@ export class RechercheLieuComponent implements ControlValueAccessor {
   protected readonly recherche = signal(false);
   protected readonly indisponible = signal(false);
   protected readonly desactive = signal(false);
-  /** Lieu affiché sur la carte : suggestion choisie, ou texte saisi géocodé à la sortie du champ. */
+  /** Lieu affiché sur la carte : suggestion choisie, point cliqué, ou texte saisi géocodé à la sortie du champ. */
   protected readonly lieu = signal<Lieu | null>(null);
+  /** Reverse geocoding d'un point choisi sur la carte. */
+  protected readonly lieuCarte = signal<'aucun' | 'recherche' | 'introuvable'>('aucun');
+  /** Numéro de la dernière demande de placement : une réponse plus ancienne est ignorée. */
+  private placement = 0;
 
   protected readonly listeId = computed(() => `${this.identifiant()}-suggestions`);
   protected readonly points = computed(() => {
@@ -106,15 +111,43 @@ export class RechercheLieuComponent implements ControlValueAccessor {
     const texte = (evenement.target as HTMLInputElement).value;
     this.texte.set(texte);
     this.onChange(texte);
-    if (this.lieu() && this.lieu()!.libelle !== texte) this.lieu.set(null);
+    this.lieuCarte.set('aucun');
     this.saisies.next(texte);
   }
 
   protected choisir(lieu: Lieu): void {
+    this.placement++;
     this.texte.set(lieu.libelle);
     this.onChange(lieu.libelle);
     this.lieu.set(lieu);
+    this.lieuCarte.set('aucun');
     this.fermer();
+  }
+
+  /** Clic sur la carte ou fin du déplacement du marqueur : le champ prend le nom du lieu. */
+  protected choisirSurCarte({ lat, lon }: { lat: number; lon: number }): void {
+    const demande = ++this.placement;
+    // Le marqueur suit tout de suite le clic ; le nom arrive avec la réponse de Nominatim
+    this.lieu.set({ libelle: this.texte(), detail: '', lat, lon });
+    this.lieuCarte.set('recherche');
+    this.fermer();
+    this.onTouched();
+    this.geocodage.lieuAuxCoordonnees(lat, lon).then(
+      (lieu) => {
+        if (demande !== this.placement) return;
+        if (!lieu) {
+          this.lieuCarte.set('introuvable');
+          return;
+        }
+        this.texte.set(lieu.libelle);
+        this.onChange(lieu.libelle);
+        this.lieu.set(lieu);
+        this.lieuCarte.set('aucun');
+      },
+      () => {
+        if (demande === this.placement) this.lieuCarte.set('introuvable');
+      },
+    );
   }
 
   protected clavier(evenement: KeyboardEvent): void {
@@ -135,15 +168,16 @@ export class RechercheLieuComponent implements ControlValueAccessor {
   protected sortie(): void {
     this.onTouched();
     this.fermer();
-    if (!this.lieu()) this.localiser(this.texte());
+    if (this.lieu()?.libelle !== this.texte()) this.localiser(this.texte());
   }
 
   /** Place sur la carte un texte saisi librement (sans suggestion choisie), si Nominatim le trouve. */
   private localiser(texte: string): void {
     if (texte.trim().length < LONGUEUR_MIN) return;
+    const demande = ++this.placement;
     this.geocodage.localiser(texte).then(
       (lieu) => {
-        if (lieu && this.texte() === texte) this.lieu.set(lieu);
+        if (lieu && demande === this.placement && this.texte() === texte) this.lieu.set(lieu);
       },
       () => this.indisponible.set(true),
     );

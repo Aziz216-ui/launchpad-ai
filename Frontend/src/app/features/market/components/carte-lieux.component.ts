@@ -8,6 +8,7 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   viewChild,
 } from '@angular/core';
@@ -52,6 +53,8 @@ function chargerLeaflet(): Promise<Leaflet> {
 
 /**
  * Carte OpenStreetMap (Leaflet) avec un marqueur par point et une infobulle.
+ * En mode `selectionnable`, un clic sur la carte ou le déplacement du marqueur émet `choisi`
+ * (le parent met alors à jour `points`).
  * Si Leaflet ou le fond de carte ne se chargent pas, un message remplace la carte
  * et le reste de la page fonctionne normalement.
  */
@@ -59,7 +62,7 @@ function chargerLeaflet(): Promise<Leaflet> {
   selector: 'app-carte-lieux',
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'carte-lieux' },
+  host: { class: 'carte-lieux', '[class.selectionnable]': 'selectionnable()' },
   styleUrl: './carte-lieux.component.scss',
   template: `
     <div #conteneur class="carte-lieux-fond" [style.height.px]="hauteur()" role="region" [attr.aria-label]="libelle()"></div>
@@ -77,6 +80,8 @@ export class CarteLieuxComponent {
   readonly zoom = input(10);
   readonly libelle = input('Carte');
   readonly messageVide = input('');
+  readonly selectionnable = input(false);
+  readonly choisi = output<{ lat: number; lon: number }>();
 
   protected readonly etat = signal<'chargement' | 'pret' | 'erreur'>('chargement');
 
@@ -84,6 +89,11 @@ export class CarteLieuxComponent {
   private L: Leaflet | null = null;
   private carte: CarteLeaflet | null = null;
   private marqueurs: LayerGroup | null = null;
+  /**
+   * Dernier point placé à la main : tant que le marqueur y reste (y compris quand le parent
+   * renvoie ce point avec son nom), la vue ne bouge pas sous le curseur.
+   */
+  private positionChoisie: string | null = null;
 
   constructor() {
     const destroyRef = inject(DestroyRef);
@@ -99,6 +109,9 @@ export class CarteLieuxComponent {
           L.tileLayer(TUILES, { maxZoom: 19, attribution: ATTRIBUTION }).addTo(this.carte);
           this.carte.attributionControl.setPrefix(false);
           this.marqueurs = L.layerGroup().addTo(this.carte);
+          this.carte.on('click', (e) => {
+            if (this.selectionnable()) this.choisir(e.latlng.lat, e.latlng.lng);
+          });
           // Le conteneur peut changer de taille (mise en page, mobile) : la carte reste cadrée sur ses points
           observateur = new ResizeObserver(() => {
             this.carte?.invalidateSize({ pan: false });
@@ -129,12 +142,29 @@ export class CarteLieuxComponent {
     marqueurs.clearLayers();
     // Marqueur dessiné en CSS : aucune image à copier, il s'affiche aussi en production
     const icone = L.divIcon({ className: 'carte-lieux-marqueur', html: '<span></span>', iconSize: [24, 24], iconAnchor: [12, 29], popupAnchor: [0, -26] });
+    const selectionnable = this.selectionnable();
     for (const point of points) {
-      L.marker([point.lat, point.lon], { icon: icone, title: point.titre, alt: point.titre })
-        .bindPopup(infobulle(point))
-        .addTo(marqueurs);
+      const marqueur = L.marker([point.lat, point.lon], { icon: icone, title: point.titre, alt: point.titre, draggable: selectionnable });
+      if (selectionnable) {
+        marqueur.on('dragend', () => {
+          const position = marqueur.getLatLng();
+          this.choisir(position.lat, position.lng);
+        });
+      } else {
+        marqueur.bindPopup(infobulle(point));
+      }
+      marqueur.addTo(marqueurs);
     }
-    this.cadrer();
+    const placeALaMain = points.length === 1 && cle(points[0].lat, points[0].lon) === this.positionChoisie;
+    if (!placeALaMain) {
+      this.positionChoisie = null;
+      this.cadrer();
+    }
+  }
+
+  private choisir(lat: number, lon: number): void {
+    this.positionChoisie = cle(lat, lon);
+    this.choisi.emit({ lat, lon });
   }
 
   /** Centre la carte sur l'unique point, ou l'ajuste pour tous les montrer. */
@@ -149,6 +179,8 @@ export class CarteLieuxComponent {
     }
   }
 }
+
+const cle = (lat: number, lon: number) => `${lat.toFixed(6)},${lon.toFixed(6)}`;
 
 /** Contenu de l'infobulle construit en DOM (textContent) : les noms saisis ne sont jamais interprétés en HTML. */
 function infobulle(point: PointCarte): HTMLElement {

@@ -41,6 +41,14 @@
     }
   }
 
+  // Choix d'un lieu : curseur de visée sur la carte, main sur le marqueur déplaçable
+  &.selectionnable .leaflet-container {
+    cursor: crosshair;
+  }
+  &.selectionnable .carte-lieux-marqueur {
+    cursor: grab;
+  }
+
   // Épingle aux couleurs du module (dans un span : Leaflet positionne l'élément avec transform)
   .carte-lieux-marqueur span {
     display: block;

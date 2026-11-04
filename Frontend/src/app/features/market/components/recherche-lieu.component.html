@@ -28,13 +28,17 @@
     </ul>
   }
 </div>
-@if (recherche()) {
+@if (lieuCarte() === 'recherche') {
+  <span class="aide" role="status">Recherche du lieu…</span>
+} @else if (lieuCarte() === 'introuvable') {
+  <span class="aide" role="status">Lieu introuvable, saisissez-le à la main</span>
+} @else if (recherche()) {
   <span class="aide">Recherche de lieux…</span>
 } @else if (indisponible()) {
   <span class="aide">Suggestions indisponibles pour le moment : saisissez la zone librement.</span>
 } @else {
   <span class="aide">Tapez au moins 3 lettres pour voir des suggestions, ou saisissez la zone librement.</span>
 }
-@if (lieu()) {
-  <app-carte-lieux class="mini-carte" [points]="points()" [hauteur]="170" [zoom]="9" [libelle]="'Carte : ' + lieu()!.libelle" />
-}
+<app-carte-lieux class="mini-carte" [points]="points()" [hauteur]="200" [zoom]="9" [selectionnable]="true"
+  [libelle]="lieu() ? 'Carte de la zone : ' + lieu()!.libelle : 'Carte pour choisir la zone'" (choisi)="choisirSurCarte($event)" />
+<span class="aide">Cliquez sur la carte ou déplacez le marqueur pour choisir la zone.</span>
