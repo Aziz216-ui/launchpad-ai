@@ -1,0 +1,25 @@
+# docker-compose LOCAL de l'API Gateway (tests en autonomie).
+# Eureka (Backend/Eureka) et les services tournent sur la machine hôte.
+# Lancement : docker compose up -d --build
+services:
+  api-gateway:
+    build: .
+    container_name: api-gateway
+    ports:
+      - "8090:8090"
+    environment:
+      SPRING_PROFILES_ACTIVE: eureka
+      EUREKA_SERVER_URL: http://host.docker.internal:8761/eureka/
+      EUREKA_INSTANCE_HOST: localhost        # port 8090 publié sur la machine
+      JWT_ENABLED: ${JWT_ENABLED:-false}
+      KEYCLOAK_JWK_SET_URI: http://host.docker.internal:8080/realms/launchpad/protocol/openid-connect/certs
+      CORS_ALLOWED_ORIGINS: http://localhost:4200
+      # Les services enregistrés dans Eureka sous "localhost" ne sont pas joignables
+      # depuis ce conteneur (localhost = le conteneur lui-même) : on passe par l'hôte.
+      # Le Market-Service doit alors accepter host.docker.internal dans ALLOWED_HOSTS.
+      MARKET_SERVICE_URI: http://host.docker.internal:8005
+      # ACCOUNTING_SERVICE_URI: http://host.docker.internal:8085
+      # LAWYER_SERVICE_URI: http://host.docker.internal:8082
+      # LEGAL_SERVICE_URI: http://host.docker.internal:3003
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # nécessaire sous Linux, sans effet sous Docker Desktop
