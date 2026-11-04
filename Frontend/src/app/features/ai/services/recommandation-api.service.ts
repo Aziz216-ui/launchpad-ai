@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import { Recommandation } from '../models/ai.models';
@@ -17,7 +17,9 @@ export class RecommandationApiService {
   listerRecommandations(projetId?: number): Observable<Recommandation[]> {
     let params = new HttpParams();
     if (projetId !== undefined) params = params.set('projet_id', String(projetId));
-    return this.http.get<Recommandation[]>(`${this.url}/recommandations/`, { params });
+    return this.http.get<any>(`${this.url}/recommandations/`, { params }).pipe(
+      map((res) => (Array.isArray(res) ? res : (res?.results ?? []))),
+    );
   }
 
   modifierStatut(id: number, statut: string): Observable<Recommandation> {
@@ -25,6 +27,8 @@ export class RecommandationApiService {
   }
 
   genererRecommandations(projetId: number): Observable<Recommandation[]> {
-    return this.http.post<Recommandation[]>(`${this.url}/recommandations/generer/`, { projet_id: projetId });
+    return this.http.post<any>(`${this.url}/recommandations/generer/`, { projet_id: projetId }).pipe(
+      map((res) => (Array.isArray(res) ? res : (res?.results ?? []))),
+    );
   }
 }

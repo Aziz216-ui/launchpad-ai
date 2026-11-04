@@ -65,7 +65,8 @@ export class ChatPage implements AfterViewChecked {
     this.chargementConvs.set(true);
     this.api.listerConversations(this.projetId).subscribe({
       next: (convs) => {
-        const triees = [...convs].sort((a, b) => b.date_mise_a_jour.localeCompare(a.date_mise_a_jour));
+        const liste = Array.isArray(convs) ? convs : [];
+        const triees = [...liste].sort((a, b) => (b.date_mise_a_jour ?? '').localeCompare(a.date_mise_a_jour ?? ''));
         this.conversations.set(triees);
         this.chargementConvs.set(false);
         // Ouvrir la plus récente automatiquement
@@ -132,12 +133,15 @@ export class ChatPage implements AfterViewChecked {
     this.doitDefiler = true;
 
     this.api.envoyerMessage(conv.id, contenu).subscribe({
-      next: (reponse) => {
-        // Remplacer le msg optimiste + ajouter la réponse IA
+      next: (reponse: any) => {
         this.conversationActive.update((c) => {
           if (!c) return c;
-          const msgs = c.messages.filter((m) => m.id !== msgUser.id);
-          return { ...c, messages: [...msgs, { ...msgUser, id: reponse.id - 1 }, reponse] };
+          const existants = c.messages.filter((m) => m.id !== msgUser.id);
+          // Si le backend renvoie la liste [msg_utilisateur, msg_assistant]
+          if (Array.isArray(reponse)) {
+            return { ...c, messages: [...existants, ...reponse] };
+          }
+          return { ...c, messages: [...existants, msgUser, reponse] };
         });
         this.envoiEnCours.set(false);
         this.doitDefiler = true;

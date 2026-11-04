@@ -73,7 +73,8 @@ export class RecommandationsPage {
     this.erreur.set(null);
     this.api.listerRecommandations(this.projetId).subscribe({
       next: (recos) => {
-        this.recommandations.set(recos.sort((a, b) => a.ordre - b.ordre));
+        const liste = Array.isArray(recos) ? recos : [];
+        this.recommandations.set([...liste].sort((a, b) => a.ordre - b.ordre));
         this.chargement.set(false);
       },
       error: () => {
@@ -87,7 +88,8 @@ export class RecommandationsPage {
     this.generationEnCours.set(true);
     this.api.genererRecommandations(this.projetId).subscribe({
       next: (recos) => {
-        this.recommandations.set(recos.sort((a, b) => a.ordre - b.ordre));
+        const liste = Array.isArray(recos) ? recos : [];
+        this.recommandations.set([...liste].sort((a, b) => a.ordre - b.ordre));
         this.generationEnCours.set(false);
         this.notifications.succes('Recommandations régénérées avec succès !');
       },

@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import { Conversation, ConversationDetail, Message } from '../models/ai.models';
@@ -17,7 +17,9 @@ export class ConversationApiService {
   listerConversations(projetId?: number): Observable<Conversation[]> {
     let params = new HttpParams();
     if (projetId !== undefined) params = params.set('projet_id', String(projetId));
-    return this.http.get<Conversation[]>(`${this.url}/conversations/`, { params });
+    return this.http.get<any>(`${this.url}/conversations/`, { params }).pipe(
+      map((res) => (Array.isArray(res) ? res : (res?.results ?? []))),
+    );
   }
 
   lireConversation(id: number): Observable<ConversationDetail> {

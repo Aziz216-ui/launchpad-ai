@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import { AnalyseProjet, Projet, ProjetSaisie } from '../models/ai.models';
@@ -17,7 +17,9 @@ export class ProjetApiService {
   // ─── Projets ───────────────────────────────────────────────────────────────
 
   listerProjets(): Observable<Projet[]> {
-    return this.http.get<Projet[]>(`${this.url}/projets/`);
+    return this.http.get<any>(`${this.url}/projets/`).pipe(
+      map((res) => (Array.isArray(res) ? res : (res?.results ?? []))),
+    );
   }
 
   lireProjet(id: number): Observable<Projet> {
@@ -47,7 +49,16 @@ export class ProjetApiService {
   // ─── Analyses ──────────────────────────────────────────────────────────────
 
   listerAnalyses(): Observable<AnalyseProjet[]> {
-    return this.http.get<AnalyseProjet[]>(`${this.url}/analyses/`);
+    return this.http.get<any>(`${this.url}/analyses/`).pipe(
+      map((res) => {
+        const liste = Array.isArray(res) ? res : (res?.results ?? []);
+        // Normaliser projet_id si DRF a renvoyé projet au lieu de projet_id
+        return liste.map((a: any) => ({
+          ...a,
+          projet_id: a.projet_id ?? a.projet,
+        }));
+      }),
+    );
   }
 
   lireAnalyse(id: number): Observable<AnalyseProjet> {
@@ -58,4 +69,3 @@ export class ProjetApiService {
     return this.http.delete<void>(`${this.url}/analyses/${id}/`);
   }
 }
-
