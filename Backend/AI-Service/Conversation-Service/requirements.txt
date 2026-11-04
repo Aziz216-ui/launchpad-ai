@@ -1,0 +1,11 @@
+django>=5.1,<5.2
+djangorestframework>=3.15,<3.16
+psycopg2-binary>=2.9,<2.10
+drf-spectacular>=0.27,<0.28
+django-cors-headers>=4.4,<4.5
+python-dotenv>=1.0,<1.1
+py_eureka_client>=0.11,<0.12
+requests>=2.32,<2.33
+gunicorn>=23.0,<24.0
+whitenoise[brotli]>=6.8,<6.9
+

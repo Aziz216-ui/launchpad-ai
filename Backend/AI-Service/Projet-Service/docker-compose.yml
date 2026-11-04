@@ -1,0 +1,69 @@
+version: "3.9"
+
+services:
+  projet_db:
+    image: postgres:16-alpine
+    container_name: projet_db
+    environment:
+      POSTGRES_DB: projet_db
+      POSTGRES_USER: projet_user
+      POSTGRES_PASSWORD: projet_password
+    volumes:
+      - projet_db_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U projet_user -d projet_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  projet_service:
+    build: .
+    container_name: projet_service
+    depends_on:
+      projet_db:
+        condition: service_healthy
+    environment:
+      # Django
+      SECRET_KEY: "docker-secret-key-change-in-production"
+      DEBUG: "False"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,0.0.0.0,projet_service"
+
+      # Base de donnees
+      DB_NAME: projet_db
+      DB_USER: projet_user
+      DB_PASSWORD: projet_password
+      DB_HOST: projet_db
+      DB_PORT: "5432"
+
+      # Eureka
+      # Dans Docker, utilise le nom du conteneur eureka-server (resolu par le reseau Docker)
+      EUREKA_SERVER: "http://eureka-server:8761/eureka/"
+      APP_NAME: "projet-service"
+      APP_PORT: "8006"
+      # HOST_IP : IP de la machine hote, joignable depuis le gateway.
+      # Sous Docker Desktop (Windows/Mac) : host.docker.internal
+      # En prod Linux : mettre l'IP reelle de la machine.
+      HOST_IP: "host.docker.internal"
+
+      # Market-Service
+      MARKET_SERVICE_NAME: "market-service"
+      MARKET_SERVICE_URL: "http://host.docker.internal:8005"
+
+      # LLM
+      LLM_PROVIDER: "openai"
+      LLM_API_KEY: ""
+      LLM_MODEL: "gpt-4o-mini"
+      LLM_BASE_URL: "https://api.openai.com/v1"
+    ports:
+      - "8006:8006"
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py seed_projet &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8006 --workers 1 --timeout 120"
+    restart: unless-stopped
+
+volumes:
+  projet_db_data:
+

@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  conversation_db:
+    image: postgres:16-alpine
+    container_name: conversation_db
+    environment:
+      POSTGRES_DB: conversation_db
+      POSTGRES_USER: conversation_user
+      POSTGRES_PASSWORD: conversation_password
+    volumes:
+      - conversation_db_data:/var/lib/postgresql/data
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U conversation_user -d conversation_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  conversation_service:
+    build: .
+    container_name: conversation_service
+    depends_on:
+      conversation_db:
+        condition: service_healthy
+    environment:
+      SECRET_KEY: "docker-secret-key-change-in-production"
+      DEBUG: "False"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,0.0.0.0,conversation_service"
+      DB_NAME: conversation_db
+      DB_USER: conversation_user
+      DB_PASSWORD: conversation_password
+      DB_HOST: conversation_db
+      DB_PORT: "5432"
+      EUREKA_SERVER: "http://eureka-server:8761/eureka/"
+      APP_NAME: "conversation-service"
+      APP_PORT: "8008"
+      HOST_IP: "host.docker.internal"
+      PROJET_SERVICE_NAME: "projet-service"
+      PROJET_SERVICE_URL: "http://host.docker.internal:8006"
+      MARKET_SERVICE_NAME: "market-service"
+      MARKET_SERVICE_URL: "http://host.docker.internal:8005"
+      LLM_PROVIDER: "openai"
+      LLM_API_KEY: ""
+      LLM_MODEL: "gpt-4o-mini"
+      LLM_BASE_URL: "https://api.openai.com/v1"
+    ports:
+      - "8008:8008"
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py seed_conversation &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8008 --workers 1 --timeout 120"
+    restart: unless-stopped
+
+volumes:
+  conversation_db_data:
+
