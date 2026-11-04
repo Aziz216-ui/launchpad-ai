@@ -62,11 +62,18 @@
   }
 }
 
+// Le formulaire prend la largeur disponible ; la colonne de droite garde 320 px.
+// En dessous de 1100 px, les deux colonnes s'empilent comme avant.
 .colonnes {
   gap: 20px;
 
   > .laterale {
     flex: 1 1 260px;
+  }
+
+  @media (min-width: 1100px) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
   }
 }
 
@@ -97,6 +104,12 @@
     font-size: 13px;
     color: $gris;
   }
+}
+
+// 3 colonnes de champs au plus : en pleine largeur, la carte sous « Zone géographique »
+// ne doit pas étirer une ligne de 4 champs
+.grille-champs {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, max(240px, calc((100% - 32px) / 3))), 1fr));
 }
 
 .prix {

@@ -143,10 +143,18 @@
   color: $gris;
 }
 
+// 3 colonnes sur grand écran, 4 à partir de 1600 px ; en dessous, la grille s'adapte (2 puis 1 colonne)
 .cartes {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   gap: 16px;
+
+  @media (min-width: 1200px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  @media (min-width: 1600px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .carte-etude {
