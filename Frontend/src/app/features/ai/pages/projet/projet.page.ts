@@ -71,6 +71,20 @@ export class ProjetPage {
     return this.circumference * (1 - s / 100);
   });
 
+  protected readonly listeObjectifs = computed(() => {
+    const obj = this.projet()?.objectifs;
+    if (!obj) return [];
+    const lignes = obj
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (lignes.length > 1) return lignes;
+    return obj
+      .split(/\.\s+/)
+      .map((s) => s.trim().replace(/\.$/, ''))
+      .filter(Boolean);
+  });
+
   constructor() {
     this.charger();
   }

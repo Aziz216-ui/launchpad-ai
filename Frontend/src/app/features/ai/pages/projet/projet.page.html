@@ -5,18 +5,8 @@
     <span aria-hidden="true">›</span>
     <a routerLink="/co-fondateur-ia">Co-Fondateur IA</a>
     <span aria-hidden="true">›</span>
-    <span class="courant">Mon Projet & Diagnostic</span>
+    <span class="courant">Mon Projet & Diagnostic IA</span>
   </nav>
-
-  <div class="en-tete">
-    <h1>Mon Projet & Diagnostic</h1>
-    <!-- Sous-navigation du module -->
-    <nav class="sous-nav" aria-label="Sections Co-Fondateur IA">
-      <a routerLink="/co-fondateur-ia/projet" routerLinkActive="actif">Mon Projet & Diagnostic</a>
-      <a routerLink="/co-fondateur-ia/recommandations" routerLinkActive="actif">Plan d'action</a>
-      <a routerLink="/co-fondateur-ia/chat" routerLinkActive="actif">Chat Co-Fondateur</a>
-    </nav>
-  </div>
 
   @if (chargement()) {
     <app-loader />
@@ -25,157 +15,189 @@
       <button class="btn-primaire" (click)="charger()">Réessayer</button>
     </app-empty-state>
   } @else if (projet(); as p) {
-    <div class="contenu">
-      <!-- Carte projet -->
-      <section class="carte carte-projet">
-        <div class="carte-entete">
-          <div class="carte-titre-groupe">
-            <h2>{{ p.titre }}</h2>
-            <app-badge [variante]="statutsProjet[p.statut].variante">
-              {{ statutsProjet[p.statut].libelle }}
-            </app-badge>
+    <!-- En-tête principal conforme à la maquette -->
+    <div class="en-tete-maquette">
+      <div class="en-tete-textes">
+        <div class="titre-avec-badge">
+          <h1>Mon Projet & Diagnostic IA</h1>
+          <span class="badge-statut" [class.actif]="p.statut === 'actif'" [class.brouillon]="p.statut === 'brouillon'">
+            {{ statutsProjet[p.statut].libelle }}
+          </span>
+        </div>
+        <p class="sous-titre-page">Décrivez votre projet, puis laissez votre Co-Fondateur IA en évaluer la viabilité.</p>
+      </div>
+
+      <div class="actions-en-tete">
+        @if (p.statut === 'brouillon') {
+          <button type="button" class="btn-secondaire" (click)="activer()" [disabled]="activationEnCours()">
+            <app-icon nom="cercle-valide" [taille]="16" />
+            Activer
+          </button>
+        }
+        <button type="button" class="btn-lancer-diag" (click)="analyser()" [disabled]="analyseEnCours()">
+          @if (analyseEnCours()) {
+            <span class="spinner spinner-clair"></span> Analyse en cours…
+          } @else {
+            <app-icon nom="etoile" [taille]="16" />
+            Lancer le Diagnostic IA
+          }
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation des sous-pages -->
+    <nav class="sous-nav" aria-label="Sections Co-Fondateur IA">
+      <a routerLink="/co-fondateur-ia/projet" routerLinkActive="actif">Mon Projet & Diagnostic</a>
+      <a routerLink="/co-fondateur-ia/recommandations" routerLinkActive="actif">Plan d'action</a>
+      <a routerLink="/co-fondateur-ia/chat" routerLinkActive="actif">Chat Co-Fondateur</a>
+    </nav>
+
+    <!-- ─── Deux Cartes Principales (Maquette) ─── -->
+    <div class="grille-projet">
+      <!-- CARTE GAUCHE : Détails du projet -->
+      <section class="carte carte-details">
+        <div class="details-haut">
+          <div class="avatar-titre">
+            <div class="avatar-cercle">{{ p.titre ? p.titre.charAt(0).toUpperCase() : 'P' }}</div>
+            <div class="avatar-textes">
+              <h2>{{ p.titre }}</h2>
+              <span class="details-sous-titre">Détails du projet</span>
+            </div>
           </div>
-          <button class="btn-secondaire btn-icone" (click)="ouvrirModale()" title="Modifier le projet">
-            <app-icon nom="crayon" [taille]="16" />
+          <button type="button" class="btn-modifier" (click)="ouvrirModale()">
+            <app-icon nom="crayon" [taille]="14" />
             Modifier
           </button>
         </div>
 
-        <p class="idee-texte">{{ p.idee }}</p>
-
-        <div class="meta-grille">
-          <div class="meta-item">
-            <span class="meta-libelle">Secteur</span>
-            <span class="meta-valeur">{{ p.secteur }}</span>
+        <div class="tuiles-grille">
+          <div class="tuile">
+            <span class="tuile-libelle">Secteur</span>
+            <span class="tuile-valeur">{{ p.secteur }}</span>
           </div>
-          <div class="meta-item">
-            <span class="meta-libelle">Stade</span>
-            <span class="meta-valeur">{{ stadeLibelle(p.stade) }}</span>
+          <div class="tuile">
+            <span class="tuile-libelle">Stade</span>
+            <span class="tuile-valeur">{{ stadeLibelle(p.stade) }}</span>
           </div>
-          <div class="meta-item">
-            <span class="meta-libelle">Public cible</span>
-            <span class="meta-valeur">{{ p.public_cible }}</span>
+          <div class="tuile">
+            <span class="tuile-libelle">Cible</span>
+            <span class="tuile-valeur">{{ p.public_cible }}</span>
           </div>
-          @if (p.budget_estime !== null) {
-            <div class="meta-item">
-              <span class="meta-libelle">Budget estimé</span>
-              <span class="meta-valeur">{{ p.budget_estime | number:'1.0-0':'fr' }} €</span>
-            </div>
-          }        </div>
-
-        <div class="meta-item">
-          <span class="meta-libelle">Objectifs</span>
-          <span class="meta-valeur">{{ p.objectifs }}</span>
-        </div>
-
-        <!-- Actions -->
-        <div class="actions">
-          @if (p.statut === 'brouillon') {
-            <button class="btn-primaire" (click)="activer()" [disabled]="activationEnCours()">
-              @if (activationEnCours()) {
-                <span class="spinner"></span> Activation…
-              } @else {
-                <app-icon nom="cercle-valide" [taille]="16" />
-                Activer le projet
-              }
-            </button>
-          }
-          <button class="btn-analyse" (click)="analyser()" [disabled]="analyseEnCours()">
-            @if (analyseEnCours()) {
-              <span class="spinner spinner-clair"></span> Analyse en cours…
-            } @else {
-              <app-icon nom="etoile" [taille]="16" />
-              Analyser mon projet
-            }
-          </button>
+          <div class="tuile">
+            <span class="tuile-libelle">Budget estimé</span>
+            <span class="tuile-valeur">
+              {{ p.budget_estime ? (p.budget_estime | number:'1.0-0':'fr') + ' €' : 'Non renseigné' }}
+            </span>
+          </div>
         </div>
       </section>
 
-      <!-- Section Diagnostic -->
-      @if (analyse(); as a) {
-        <section class="diagnostic">
-          <div class="diagnostic-entete">
-            <h2>Diagnostic</h2>
-            <span class="diagnostic-date">Généré le {{ a.date_creation | date:'d MMMM yyyy' }}</span>
-          </div>
+      <!-- CARTE DROITE : Objectifs du projet -->
+      <section class="carte carte-objectifs">
+        <h2 class="objectifs-titre">Objectifs du projet</h2>
 
-          <div class="diagnostic-grille">
-            <!-- Score global -->
-            <div class="carte score-carte">
-              <h3>Score global</h3>
-              <div class="score-visuel">
-                <svg width="120" height="120" viewBox="0 0 100 100" aria-hidden="true">
-                  <circle cx="50" cy="50" r="42" fill="none" stroke="#e3e8ea" stroke-width="10" />
-                  <circle
-                    cx="50" cy="50" r="42"
-                    fill="none"
-                    [attr.stroke]="scoreCouleur()"
-                    stroke-width="10"
-                    stroke-linecap="round"
-                    [attr.stroke-dasharray]="circumference"
-                    [attr.stroke-dashoffset]="dashOffset()"
-                    transform="rotate(-90 50 50)"
-                    style="transition: stroke-dashoffset 0.6s ease"
-                  />
-                  <text x="50" y="46" text-anchor="middle" font-size="20" font-weight="700" [attr.fill]="scoreCouleur()">
-                    {{ a.score_global }}
-                  </text>
-                  <text x="50" y="62" text-anchor="middle" font-size="10" fill="#5a6a6f">/100</text>
-                </svg>
-                <span class="score-label" [style.color]="scoreCouleur()">{{ scoreLabel() }}</span>
-              </div>
-              <p class="resume-texte">{{ a.resume }}</p>
-            </div>
+        <!-- Bloc Vision -->
+        <div class="bloc-vision">
+          <span class="vision-label">Vision</span>
+          <p class="vision-contenu">{{ p.idee }}</p>
+        </div>
 
-            <!-- Forces -->
-            <div class="carte">
-              <h3 class="forces-titre">
-                <app-icon nom="hausse" [taille]="18" />
-                Forces
-              </h3>
-              @if (a.forces.length) {
-                <ul class="liste-items">
-                  @for (force of a.forces; track $index) {
-                    <li class="item-force">
-                      <app-icon nom="valider" [taille]="14" />
-                      {{ force }}
-                    </li>
-                  }
-                </ul>
-              } @else {
-                <p class="vide-texte">Aucune force identifiée.</p>
-              }
-            </div>
-
-            <!-- Faiblesses -->
-            <div class="carte">
-              <h3 class="faiblesses-titre">
-                <app-icon nom="baisse" [taille]="18" />
-                Faiblesses
-              </h3>
-              @if (a.faiblesses.length) {
-                <ul class="liste-items">
-                  @for (faiblesse of a.faiblesses; track $index) {
-                    <li class="item-faiblesse">
-                      <app-icon nom="info" [taille]="14" />
-                      {{ faiblesse }}
-                    </li>
-                  }
-                </ul>
-              } @else {
-                <p class="vide-texte">Aucune faiblesse identifiée.</p>
-              }
-            </div>
-          </div>
-        </section>
-      } @else {
-        <section class="carte sans-analyse">
-          <app-icon nom="etoile" [taille]="40" />
-          <h3>Aucun diagnostic disponible</h3>
-          <p>Cliquez sur « Analyser mon projet » pour obtenir un diagnostic détaillé de votre projet.</p>
-        </section>
-      }
+        <!-- Objectifs à court terme -->
+        <div class="court-terme-section">
+          <span class="court-terme-titre">Objectifs à court terme</span>
+          <ol class="court-terme-liste">
+            @for (obj of listeObjectifs(); track $index) {
+              <li>
+                <span class="num-case">{{ $index + 1 }}</span>
+                <span class="obj-texte">{{ obj }}</span>
+              </li>
+            }
+          </ol>
+        </div>
+      </section>
     </div>
+
+    <!-- ─── Section Diagnostic (affichée en dessous) ─── -->
+    @if (analyse(); as a) {
+      <section class="diagnostic-section">
+        <div class="diagnostic-entete">
+          <div class="diagnostic-titre-groupe">
+            <h2>Résultats du Diagnostic</h2>
+            <span class="diagnostic-source-badge">Source : {{ a.source === 'llm' ? 'IA générative' : 'Règles expertes' }}</span>
+          </div>
+          <span class="diagnostic-date">Généré le {{ a.date_creation | date:'d MMMM yyyy à HH:mm' }}</span>
+        </div>
+
+        <div class="diagnostic-grille">
+          <!-- Score global -->
+          <div class="carte score-carte">
+            <h3>Score global</h3>
+            <div class="score-visuel">
+              <svg width="120" height="120" viewBox="0 0 100 100" aria-hidden="true">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="#e3e8ea" stroke-width="10" />
+                <circle
+                  cx="50" cy="50" r="42"
+                  fill="none"
+                  [attr.stroke]="scoreCouleur()"
+                  stroke-width="10"
+                  stroke-linecap="round"
+                  [attr.stroke-dasharray]="circumference"
+                  [attr.stroke-dashoffset]="dashOffset()"
+                  transform="rotate(-90 50 50)"
+                  style="transition: stroke-dashoffset 0.6s ease"
+                />
+                <text x="50" y="46" text-anchor="middle" font-size="20" font-weight="700" [attr.fill]="scoreCouleur()">
+                  {{ a.score_global }}
+                </text>
+                <text x="50" y="62" text-anchor="middle" font-size="10" fill="#5a6a6f">/100</text>
+              </svg>
+              <span class="score-label" [style.color]="scoreCouleur()">{{ scoreLabel() }}</span>
+            </div>
+            <p class="resume-texte">{{ a.resume }}</p>
+          </div>
+
+          <!-- Forces -->
+          <div class="carte">
+            <h3 class="forces-titre">
+              <app-icon nom="hausse" [taille]="18" />
+              Forces identifiées
+            </h3>
+            @if (a.forces.length) {
+              <ul class="liste-items">
+                @for (force of a.forces; track $index) {
+                  <li class="item-force">
+                    <app-icon nom="valider" [taille]="14" />
+                    <span>{{ force }}</span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="vide-texte">Aucune force identifiée.</p>
+            }
+          </div>
+
+          <!-- Faiblesses -->
+          <div class="carte">
+            <h3 class="faiblesses-titre">
+              <app-icon nom="baisse" [taille]="18" />
+              Points d'attention
+            </h3>
+            @if (a.faiblesses.length) {
+              <ul class="liste-items">
+                @for (faiblesse of a.faiblesses; track $index) {
+                  <li class="item-faiblesse">
+                    <app-icon nom="info" [taille]="14" />
+                    <span>{{ faiblesse }}</span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="vide-texte">Aucun point d'attention identifié.</p>
+            }
+          </div>
+        </div>
+      </section>
+    }
   }
 </div>
 
@@ -185,7 +207,7 @@
     <div class="modale" (click)="$event.stopPropagation()">
       <div class="modale-entete">
         <h2>Modifier le projet</h2>
-        <button class="btn-fermer" (click)="fermerModale()" aria-label="Fermer">
+        <button type="button" class="btn-fermer" (click)="fermerModale()" aria-label="Fermer">
           <app-icon nom="fermer" [taille]="20" />
         </button>
       </div>
@@ -197,13 +219,13 @@
             (input)="mettreAJourSaisie('titre', $any($event.target).value)" />
         </div>
         <div class="champ">
-          <label for="idee">Idée / Description</label>
+          <label for="idee">Vision / Idée du projet</label>
           <textarea id="idee" rows="3" [value]="saisie().idee ?? ''"
             (input)="mettreAJourSaisie('idee', $any($event.target).value)"></textarea>
         </div>
         <div class="champ">
-          <label for="objectifs">Objectifs</label>
-          <textarea id="objectifs" rows="2" [value]="saisie().objectifs ?? ''"
+          <label for="objectifs">Objectifs (séparez chaque objectif par une nouvelle ligne)</label>
+          <textarea id="objectifs" rows="3" [value]="saisie().objectifs ?? ''"
             (input)="mettreAJourSaisie('objectifs', $any($event.target).value)"></textarea>
         </div>
         <div class="ligne-2">
@@ -223,7 +245,7 @@
           </div>
         </div>
         <div class="champ">
-          <label for="public_cible">Public cible</label>
+          <label for="public_cible">Cible / Public cible</label>
           <input id="public_cible" type="text" [value]="saisie().public_cible ?? ''"
             (input)="mettreAJourSaisie('public_cible', $any($event.target).value)" />
         </div>
@@ -235,10 +257,9 @@
       </div>
 
       <div class="modale-pied">
-        <button class="btn-secondaire" (click)="fermerModale()">Annuler</button>
-        <button class="btn-primaire" (click)="enregistrer()">Enregistrer</button>
+        <button type="button" class="btn-secondaire" (click)="fermerModale()">Annuler</button>
+        <button type="button" class="btn-primaire" (click)="enregistrer()">Enregistrer</button>
       </div>
     </div>
   </div>
 }
-
