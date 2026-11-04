@@ -1,0 +1,38 @@
+services:
+  document-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: document_db
+      POSTGRES_USER: ${DB_USERNAME:-document}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-document}
+    ports:
+      - "${DB_HOST_PORT:-5434}:5432"
+    volumes:
+      - document-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d document_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  document-service:
+    build: .
+    image: launchpad/document-service:latest
+    depends_on:
+      document-db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://document-db:5432/document_db
+      DB_USERNAME: ${DB_USERNAME:-document}
+      DB_PASSWORD: ${DB_PASSWORD:-document}
+      EUREKA_SERVER_URL: ${EUREKA_SERVER_URL:-http://host.docker.internal:8761/eureka/}
+      PREVISION_SERVICE_URL: ${PREVISION_SERVICE_URL:-http://host.docker.internal:8081}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-host.docker.internal}
+    ports:
+      - "${DOCUMENT_HTTP_PORT:-8082}:8082"
+    volumes:
+      - document-files:/app/data/documents
+
+volumes:
+  document-db-data:
+  document-files:
