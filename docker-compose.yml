@@ -35,21 +35,6 @@ services:
     networks:
       - launchpad-net
 
-  postgres-inforequest:
-    image: postgres:16-alpine
-    container_name: postgres-inforequest
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: lawyer_inforequest_db
-      POSTGRES_USER: app_user
-      POSTGRES_PASSWORD: '12345678'
-    ports:
-      - "5436:5432"
-    volumes:
-      - postgres_inforequest_data:/var/lib/postgresql/data
-    networks:
-      - launchpad-net
-
   postgres-docreview:
     image: postgres:16-alpine
     container_name: postgres-docreview
@@ -170,32 +155,6 @@ services:
     profiles:
       - full-stack
 
-  lawyer-inforequest-service:
-    build:
-      context: ./Backend/Lawyer-InfoRequest-Service
-      dockerfile: Dockerfile
-    container_name: lawyer-inforequest-service
-    restart: unless-stopped
-    environment:
-      DB_HOST: postgres-inforequest
-      DB_PORT: 5432
-      DB_NAME: lawyer_inforequest_db
-      DB_USER: app_user
-      DB_PASSWORD: '12345678'
-      RABBITMQ_HOST: rabbitmq
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
-      CLIENT_SERVICE_URL: http://lawyer-client-service:8082
-    ports:
-      - "8085:8085"
-    depends_on:
-      - postgres-inforequest
-      - rabbitmq
-      - lawyer-client-service
-    networks:
-      - launchpad-net
-    profiles:
-      - full-stack
-
   lawyer-docreview-service:
     build:
       context: ./Backend/Lawyer-DocReview-Service
@@ -226,7 +185,6 @@ volumes:
   postgres_data:
   postgres_client_data:
   postgres_message_data:
-  postgres_inforequest_data:
   postgres_docreview_data:
   rabbitmq_data:
 
