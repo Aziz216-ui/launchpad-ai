@@ -144,11 +144,14 @@ class ProjetViewSet(viewsets.ModelViewSet):
                         "source": analyse.source,
                         "projet": {
                             "id": projet.pk,
-                            "nom": projet.nom,
-                            "description": projet.description,
+                            "titre": projet.titre,
+                            "nom": projet.titre,
+                            "idee": projet.idee,
+                            "description": projet.idee,
                             "secteur": projet.secteur,
                             "stade": projet.stade,
-                            "budget": float(projet.budget) if projet.budget is not None else None,
+                            "budget": float(projet.budget_estime) if projet.budget_estime is not None else None,
+                            "budget_estime": float(projet.budget_estime) if projet.budget_estime is not None else None,
                         },
                     },
                 )
