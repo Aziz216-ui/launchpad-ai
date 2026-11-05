@@ -4,7 +4,7 @@
 #
 # Les services dont le port est encore À CONFIRMER gardent leur lb:// : sans
 # Eureka, aucune instance n'est trouvée et la gateway répond 503 "Service
-# indisponible". Définir AI_SERVICE_URI=http://localhost:<port> (etc.) pour les router.
+# indisponible". Définir USER_SERVICE_URI=http://localhost:<port> pour le router.
 # =============================================================================
 
 eureka:
@@ -31,3 +31,9 @@ launchpad:
       uri: ${PREVISION_SERVICE_URI:http://localhost:8081}
     document:
       uri: ${DOCUMENT_SERVICE_URI:http://localhost:8083}
+    projet:
+      uri: ${PROJET_SERVICE_URI:http://localhost:8006}
+    recommandation:
+      uri: ${RECOMMANDATION_SERVICE_URI:http://localhost:8007}
+    conversation:
+      uri: ${CONVERSATION_SERVICE_URI:http://localhost:8008}

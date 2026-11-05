@@ -58,7 +58,14 @@ class RoutesTest extends GatewayTestSupport {
                 Map.entry("legal-service", "lb://LEGAL-SERVICE"),
                 Map.entry("legal-docs", "lb://LEGAL-SERVICE"),
                 Map.entry("legal-docs-json", "lb://LEGAL-SERVICE"),
-                Map.entry("ai-service", "lb://AI-SERVICE"),
+                Map.entry("ai-projet-docs", "lb://PROJET-SERVICE"),
+                Map.entry("ai-recommandation-docs", "lb://RECOMMANDATION-SERVICE"),
+                Map.entry("ai-conversation-docs", "lb://CONVERSATION-SERVICE"),
+                Map.entry("ai-recommandation-schema", "lb://RECOMMANDATION-SERVICE"),
+                Map.entry("ai-conversation-schema", "lb://CONVERSATION-SERVICE"),
+                Map.entry("ai-projet-service", "lb://PROJET-SERVICE"),
+                Map.entry("ai-recommandation-service", "lb://RECOMMANDATION-SERVICE"),
+                Map.entry("ai-conversation-service", "lb://CONVERSATION-SERVICE"),
                 Map.entry("document-service", "lb://DOCUMENT-SERVICE"),
                 Map.entry("prevision-service", "lb://PREVISION-SERVICE"),
                 Map.entry("user-service", "lb://USER-SERVICE")));
@@ -72,6 +79,16 @@ class RoutesTest extends GatewayTestSupport {
                 .isLessThan(ids.indexOf("prevision-service"));
     }
 
+    /** IA : les schémas choisis par Referer passent avant ai-projet-service, qui prend /api/ai/schema/ par défaut. */
+    @Test
+    void aiSchemaRoutesAreEvaluatedBeforeProjetDefault() {
+        List<String> ids = routes().stream().map(Route::getId).toList();
+        assertThat(ids.indexOf("ai-recommandation-schema")).isNotNegative()
+                .isLessThan(ids.indexOf("ai-projet-service"));
+        assertThat(ids.indexOf("ai-conversation-schema")).isNotNegative()
+                .isLessThan(ids.indexOf("ai-projet-service"));
+    }
+
     @Test
     void routesCarryTheServiceNameUsedIn503() {
         Map<String, Object> services = routes().stream()
@@ -80,6 +97,8 @@ class RoutesTest extends GatewayTestSupport {
                 .containsEntry("market-swot-service", "SWOT-SERVICE")
                 .containsEntry("market-etude-docs", "ETUDE-SERVICE")
                 .containsEntry("lawyer-docs", "lawyer-space")
+                .containsEntry("ai-recommandation-service", "RECOMMANDATION-SERVICE")
+                .containsEntry("ai-conversation-docs", "CONVERSATION-SERVICE")
                 .containsEntry("user-service", "USER-SERVICE");
     }
 
@@ -88,7 +107,7 @@ class RoutesTest extends GatewayTestSupport {
         client.get().uri("/actuator/gateway/routes").exchange()
                 .expectStatus().isOk()
                 .expectBody()
-                .jsonPath("$.length()").isEqualTo(18)
+                .jsonPath("$.length()").isEqualTo(25)
                 .jsonPath("$[?(@.route_id == 'accounting-service')].uri").isEqualTo("lb://PROFESSIONAL-SERVICE")
                 .jsonPath("$[?(@.route_id == 'lawyer-service')].uri").isEqualTo("lb://lawyer-space");
     }
