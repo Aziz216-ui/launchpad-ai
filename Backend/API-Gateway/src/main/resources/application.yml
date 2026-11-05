@@ -177,13 +177,78 @@ spring:
               metadata:
                 service: LEGAL-SERVICE
 
-            # --- IA : AI-Service (nom Eureka et port À CONFIRMER) ----------------
-            - id: ai-service
-              uri: ${launchpad.services.ai.uri}
+            # --- IA : Co-Fondateur IA, 3 microservices Django (Backend/AI-Service) --
+            # Les 3 services servent leur Swagger UI et leur schéma au MÊME chemin
+            # (/api/ai/docs/ et /api/ai/schema/) : on les expose sous /docs/ai/<service>/.
+            #   /docs/ai/<service>/docs/   -> /api/ai/docs/   (Swagger UI)
+            #   /docs/ai/<service>/schema/ -> /api/ai/schema/ (définition OpenAPI)
+            - id: ai-projet-docs
+              uri: ${launchpad.services.projet.uri}
               predicates:
-                - Path=/api/ai/**
+                - Path=/docs/ai/projet/docs/**, /docs/ai/projet/schema/**
+              filters:
+                - RewritePath=/docs/ai/projet/(?<segment>.*), /api/ai/$\{segment}
               metadata:
-                service: AI-SERVICE
+                service: PROJET-SERVICE
+            - id: ai-recommandation-docs
+              uri: ${launchpad.services.recommandation.uri}
+              predicates:
+                - Path=/docs/ai/recommandation/docs/**, /docs/ai/recommandation/schema/**
+              filters:
+                - RewritePath=/docs/ai/recommandation/(?<segment>.*), /api/ai/$\{segment}
+              metadata:
+                service: RECOMMANDATION-SERVICE
+            - id: ai-conversation-docs
+              uri: ${launchpad.services.conversation.uri}
+              predicates:
+                - Path=/docs/ai/conversation/docs/**, /docs/ai/conversation/schema/**
+              filters:
+                - RewritePath=/docs/ai/conversation/(?<segment>.*), /api/ai/$\{segment}
+              metadata:
+                service: CONVERSATION-SERVICE
+
+            # La page Swagger UI charge son schéma à l'adresse absolue /api/ai/schema/ :
+            # on l'envoie au service dont la page fait la demande (en-tête Referer).
+            # Sans Referer correspondant, /api/ai/schema/ va à PROJET-SERVICE (route suivante).
+            - id: ai-recommandation-schema
+              uri: ${launchpad.services.recommandation.uri}
+              predicates:
+                - Path=/api/ai/schema/**
+                - Header=Referer, .*/docs/ai/recommandation/.*
+              metadata:
+                service: RECOMMANDATION-SERVICE
+            - id: ai-conversation-schema
+              uri: ${launchpad.services.conversation.uri}
+              predicates:
+                - Path=/api/ai/schema/**
+                - Header=Referer, .*/docs/ai/conversation/.*
+              metadata:
+                service: CONVERSATION-SERVICE
+
+            # projet-service, port 8006 : projets, analyses. Reçoit aussi /api/ai/health/,
+            # /api/ai/docs/ et /api/ai/schema/, communs aux 3 services (un seul chemin possible).
+            - id: ai-projet-service
+              uri: ${launchpad.services.projet.uri}
+              predicates:
+                - Path=/api/ai/projets/**, /api/ai/analyses/**, /api/ai/health/**, /api/ai/docs/**, /api/ai/schema/**
+              metadata:
+                service: PROJET-SERVICE
+
+            # recommandation-service, port 8007
+            - id: ai-recommandation-service
+              uri: ${launchpad.services.recommandation.uri}
+              predicates:
+                - Path=/api/ai/recommandations/**
+              metadata:
+                service: RECOMMANDATION-SERVICE
+
+            # conversation-service, port 8008 : conversations et leurs messages
+            - id: ai-conversation-service
+              uri: ${launchpad.services.conversation.uri}
+              predicates:
+                - Path=/api/ai/conversations/**
+              metadata:
+                service: CONVERSATION-SERVICE
 
             # --- Finance : deux services. Document-Service AVANT Prevision-Service :
             # sinon /api/finance/** capturerait aussi les documents et les notifications.
@@ -238,8 +303,12 @@ launchpad:
       uri: ${LAWYER_SERVICE_URI:lb://lawyer-space}
     legal:
       uri: ${LEGAL_SERVICE_URI:lb://LEGAL-SERVICE}
-    ai:
-      uri: ${AI_SERVICE_URI:lb://AI-SERVICE}            # À CONFIRMER
+    projet:
+      uri: ${PROJET_SERVICE_URI:lb://PROJET-SERVICE}
+    recommandation:
+      uri: ${RECOMMANDATION_SERVICE_URI:lb://RECOMMANDATION-SERVICE}
+    conversation:
+      uri: ${CONVERSATION_SERVICE_URI:lb://CONVERSATION-SERVICE}
     prevision:
       uri: ${PREVISION_SERVICE_URI:lb://PREVISION-SERVICE}
     document:

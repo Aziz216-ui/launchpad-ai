@@ -68,7 +68,9 @@ Fonctionnalités transverses (aucun service n'a à les refaire) :
 | Comptable | `PROFESSIONAL-SERVICE` | 8085 | `/api/comptable/**` | `accounting-service` | `ACCOUNTING_SERVICE_URI` | `/api/comptable/docs`, `/api/comptable/docs.json` |
 | Avocat | `lawyer-space` (minuscules) | 8082 | `/api/lawyer/**` | `lawyer-service` | `LAWYER_SERVICE_URI` | `/swagger-ui/**`, `/v3/api-docs/**` (hors préfixe) |
 | Juridique | `LEGAL-SERVICE` | 3003 | `/api/legal/**` | `legal-service` | `LEGAL_SERVICE_URI` | `/api/docs`, `/api/docs-json` (hors préfixe) |
-| IA | ⚠️ `AI-SERVICE` **à confirmer** | ⚠️ **à confirmer** | `/api/ai/**` | `ai-service` | `AI_SERVICE_URI` | ⚠️ **à confirmer** |
+| IA : projets, analyses | `PROJET-SERVICE` | 8006 | `/api/ai/projets/**`, `/api/ai/analyses/**`, `/api/ai/health/**` (+ `/api/ai/docs/`, `/api/ai/schema/` par défaut) | `ai-projet-service` | `PROJET_SERVICE_URI` | `/api/ai/docs/`, `/api/ai/schema/` |
+| IA : recommandations | `RECOMMANDATION-SERVICE` | 8007 | `/api/ai/recommandations/**` | `ai-recommandation-service` | `RECOMMANDATION_SERVICE_URI` | `/api/ai/docs/`, `/api/ai/schema/` (même chemin) |
+| IA : conversations | `CONVERSATION-SERVICE` | 8008 | `/api/ai/conversations/**` | `ai-conversation-service` | `CONVERSATION_SERVICE_URI` | `/api/ai/docs/`, `/api/ai/schema/` (même chemin) |
 | Finance : documents | `DOCUMENT-SERVICE` | 8083 | `/api/finance/documents/**`, `/api/finance/projets/*/documents`, `/api/finance/projets/*/notifications` | `document-service` | `DOCUMENT_SERVICE_URI` | `/swagger-ui.html`, `/v3/api-docs` (hors préfixe, accès direct sur 8083) |
 | Finance : prévisions | `PREVISION-SERVICE` | 8081 | `/api/finance/**` (après `document-service`) | `prevision-service` | `PREVISION_SERVICE_URI` | `/swagger-ui.html`, `/v3/api-docs` (hors préfixe, accès direct sur 8081) |
 | Utilisateurs | ⚠️ `USER-SERVICE` **à confirmer** | ⚠️ **à confirmer** | `/api/auth/**`, `/api/users/**` | `user-service` | `USER_SERVICE_URI` | ⚠️ **à confirmer** |
@@ -77,6 +79,18 @@ Les 4 routes Market sont déclarées **dans cet ordre** : la SWOT passe avant le
 `/api/market/etudes/5/generer-swot/` partirait vers ETUDE-SERVICE. Chaque service Market a aussi
 une route de docs explicite (`market-secteur-docs`, `market-concurrent-docs`, `market-swot-docs`,
 `market-etude-docs`), placée en tête. Détails : [Backend/Market/README.md](../Market/README.md).
+
+Les 3 services IA (Co-Fondateur IA, [Backend/AI-Service](../AI-Service)) partagent le préfixe
+`/api/ai/` et servent tous leur health, leur Swagger UI et leur schéma aux **mêmes chemins**
+(`/api/ai/health/`, `/api/ai/docs/`, `/api/ai/schema/`) :
+- `/api/ai/health/` (et `/api/ai/docs/`, `/api/ai/schema/` appelés directement) va à **PROJET-SERVICE**,
+  le service central dont dépendent les deux autres ;
+- les docs de chaque service sont exposées sous `/docs/ai/<service>/docs/` et `/docs/ai/<service>/schema/`
+  (routes `ai-projet-docs`, `ai-recommandation-docs`, `ai-conversation-docs`, réécrites vers `/api/ai/...`) ;
+- la page Swagger UI charge son schéma à l'adresse absolue `/api/ai/schema/` : les routes
+  `ai-recommandation-schema` et `ai-conversation-schema` l'envoient au service dont la page fait la
+  demande (en-tête `Referer` contenant `/docs/ai/recommandation/` ou `/docs/ai/conversation/`).
+  Elles sont déclarées avant `ai-projet-service`.
 
 Routes de documentation supplémentaires (réécriture, pour les docs servies hors préfixe) :
 
@@ -101,7 +115,9 @@ Les routes juridiques `/docs/legal…` sont à supprimer si le Legal-Service pas
 | Comptable | http://localhost:8090/api/comptable/docs | http://localhost:8090/api/comptable/docs.json |
 | Avocat | http://localhost:8090/docs/lawyer/swagger-ui/index.html | http://localhost:8090/docs/lawyer/v3/api-docs |
 | Juridique | http://localhost:8090/docs/legal | http://localhost:8090/docs/legal-json |
-| IA | ⚠️ à confirmer | ⚠️ à confirmer |
+| IA : projets, analyses | http://localhost:8090/docs/ai/projet/docs/ | http://localhost:8090/docs/ai/projet/schema/ |
+| IA : recommandations | http://localhost:8090/docs/ai/recommandation/docs/ | http://localhost:8090/docs/ai/recommandation/schema/ |
+| IA : conversations | http://localhost:8090/docs/ai/conversation/docs/ | http://localhost:8090/docs/ai/conversation/schema/ |
 | Finance (documents) | http://localhost:8083/swagger-ui.html (direct) | http://localhost:8083/v3/api-docs (direct) |
 | Finance (prévisions) | http://localhost:8081/swagger-ui.html (direct) | http://localhost:8081/v3/api-docs (direct) |
 | Utilisateurs | ⚠️ à confirmer | ⚠️ à confirmer |
@@ -138,9 +154,10 @@ Tout est dans `src/main/resources/` :
 - **eureka** (par défaut) : la gateway s'enregistre dans Eureka et route en `lb://<NOM-EUREKA>`.
   Le registre est relu toutes les 5 s : un service qui démarre est joignable quelques secondes après.
 - **local** : sans Eureka, URL directes `http://localhost:<port>` pour Market (8010 à 8013),
-  Comptable (8085), Avocat (8082), Juridique (3003), Finance prévisions (8081) et Finance
-  documents (8083). IA et Utilisateurs n'ont pas encore de port confirmé : ils répondent 503
-  tant que `AI_SERVICE_URI` ou `USER_SERVICE_URI` n'est pas défini.
+  Comptable (8085), Avocat (8082), Juridique (3003), Finance prévisions (8081), Finance
+  documents (8083) et IA (projets 8006, recommandations 8007, conversations 8008).
+  Utilisateurs n'a pas encore de port confirmé : il répond 503 tant que `USER_SERVICE_URI`
+  n'est pas défini.
 
 Dans les deux profils, `<NOM>_SERVICE_URI` bascule un service en URL directe, par exemple pour
 tester le service d'un autre membre sur son PC : `LEGAL_SERVICE_URI=http://192.168.1.20:3003`.
@@ -286,8 +303,9 @@ Tests d'intégration (`@SpringBootTest` sur un port aléatoire, faux services Mo
 
 | Classe | Vérifie |
 |---|---|
-| `RoutesTest` | profil eureka par défaut, les 17 routes chargées en `lb://`, `/actuator/gateway/routes`, `/actuator/health` |
+| `RoutesTest` | profil eureka par défaut, les 25 routes chargées en `lb://`, ordre des routes Finance et des schémas IA, `/actuator/gateway/routes`, `/actuator/health` |
 | `MarketRoutesTest` | chaque chemin `/api/market/...` arrive au bon des 4 services Market (dont `/etudes/<id>/generer-swot/` → SWOT-SERVICE), docs comprises ; l'ancienne route unique n'existe plus |
+| `AiRoutesTest` | chaque chemin `/api/ai/...` arrive au bon des 3 services IA, réécriture des docs `/docs/ai/<service>/…`, schéma `/api/ai/schema/` envoyé selon le `Referer` ; l'ancienne route unique `/api/ai/**` n'existe plus |
 | `ProxyTest` | relais vers un faux etude-service (profil local) : chemin et query inchangés, `Authorization` transmis, `X-Request-Id`, CORS (en-tête unique, préflight, origine refusée) |
 | `ServiceUnavailableTest` | 503 JSON pour un service éteint (URL directe), un `lb://` sans instance et une connexion coupée avant réponse (conteneur Docker en cours d'arrêt), CORS sur le 503 |
 | `DocsRewriteTest` | réécriture des docs avocat (`/docs/lawyer/…`) et juridique (`/docs/legal…`) |
