@@ -1,0 +1,102 @@
+﻿<div class="entete-section">
+  <div class="titre">
+    <h2>Vos clients cibles</h2>
+    <p>{{ personas().length }} profil(s) de clients cibles pour votre ├⌐tude.</p>
+  </div>
+  <button type="button" class="btn-primaire" (click)="modal.set({ persona: null })">
+    <app-icon nom="plus" [taille]="16" />Ajouter un persona
+  </button>
+</div>
+
+@if (personas().length) {
+  @if (localisations().size) {
+    <section class="carte carte-geo">
+      <h3>O├╣ vivent vos personas</h3>
+      <app-carte-lieux [points]="pointsPersonas()" [hauteur]="260" [zoom]="9" libelle="Carte des localisations des personas"
+        [messageVide]="localisationEnCours() ? 'Localisation des personasΓÇª' : 'Les localisations des personas nΓÇÖont pas pu ├¬tre trouv├⌐es.'" />
+    </section>
+  }
+  <div class="cartes">
+    @for (p of personas(); track p.id; let i = $index) {
+      <article>
+        <div class="identite">
+          <span class="avatar" aria-hidden="true" [style.background]="couleurs[i % 3].fond" [style.color]="couleurs[i % 3].texte">{{ p.nom | initiales }}</span>
+          <div>
+            <h3>{{ p.nom }}</h3>
+            @if (p.profession) {
+              <span class="profession">{{ p.profession }}</span>
+            }
+          </div>
+        </div>
+
+        @if (p.tranche_age || p.localisation || p.revenu_estime !== null) {
+          <div class="puces">
+            @if (p.tranche_age) {<span class="puce">{{ p.tranche_age }}</span>}
+            @if (p.localisation) {<span class="puce">{{ p.localisation }}</span>}
+            @if (p.revenu_estime !== null) {<span class="puce">Γëê {{ p.revenu_estime | montant }} / mois</span>}
+          </div>
+        }
+
+        @if (p.besoins | lignes; as besoins) {
+          @if (besoins.length) {
+            <div class="bloc">
+              <h4 class="vert">Besoins</h4>
+              <ul>@for (b of besoins; track $index) {<li>{{ b }}</li>}</ul>
+            </div>
+          }
+        }
+        @if (p.frustrations | lignes; as frustrations) {
+          @if (frustrations.length) {
+            <div class="bloc">
+              <h4 class="rouge">Frustrations</h4>
+              <ul>@for (f of frustrations; track $index) {<li>{{ f }}</li>}</ul>
+            </div>
+          }
+        }
+        @if (p.comportement_achat) {
+          <div class="bloc">
+            <h4 class="bleu">Comportement d'achat</h4>
+            <p>{{ p.comportement_achat }}</p>
+          </div>
+        }
+
+        <div class="actions-carte">
+          <button type="button" class="btn-texte" (click)="modal.set({ persona: p })">Modifier</button>
+          <button type="button" class="btn-texte danger" (click)="aSupprimer.set(p)">Supprimer</button>
+        </div>
+      </article>
+    }
+  </div>
+
+  @if (besoinsCommuns().length) {
+    <section class="carte communs">
+      <h3>Ce qui rassemble vos personas</h3>
+      <div class="puces">
+        @for (b of besoinsCommuns(); track b) {<span class="puce commun">{{ b }}</span>}
+      </div>
+      <a class="lien-fleche" routerLink="../swot">Voir l'impact dans la SWOT ΓåÆ</a>
+    </section>
+  }
+} @else {
+  <app-empty-state [compact]="true" titre="Aucun persona d├⌐fini"
+    texte="D├⌐crivez vos clients types : leurs besoins, leurs frustrations et leur fa├ºon d'acheter. Ils renforcent votre SWOT et votre potentiel commercial.">
+    <button type="button" class="btn-primaire" (click)="modal.set({ persona: null })">
+      <app-icon nom="plus" [taille]="16" />Ajouter un persona
+    </button>
+  </app-empty-state>
+}
+
+@if (modal(); as m) {
+  <app-persona-modal [etudeId]="store.id()!" [persona]="m.persona" (fermer)="modal.set(null)" (enregistre)="apresEnregistrement()" />
+}
+
+@if (aSupprimer(); as p) {
+  <app-confirm-modal
+    titre="Supprimer ce persona ?"
+    avant="Le persona "
+    [nom]="p.nom"
+    apres=" sera supprim├⌐ d├⌐finitivement de l'├⌐tude."
+    [enCours]="suppressionEnCours()"
+    (confirmer)="supprimer()"
+    (annuler)="aSupprimer.set(null)" />
+}
