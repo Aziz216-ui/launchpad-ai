@@ -131,13 +131,21 @@ spring:
               metadata:
                 service: AI-SERVICE
 
-            # --- Finance : Finance-Service (nom Eureka et port À CONFIRMER) -------
-            - id: finance-service
-              uri: ${launchpad.services.finance.uri}
+            # --- Finance : deux services. Document-Service AVANT Prevision-Service :
+            # sinon /api/finance/** capturerait aussi les documents et les notifications.
+            - id: document-service
+              uri: ${launchpad.services.document.uri}
+              predicates:
+                - Path=/api/finance/documents/**, /api/finance/projets/*/documents, /api/finance/projets/*/notifications
+              metadata:
+                service: DOCUMENT-SERVICE
+
+            - id: prevision-service
+              uri: ${launchpad.services.prevision.uri}
               predicates:
                 - Path=/api/finance/**
               metadata:
-                service: FINANCE-SERVICE
+                service: PREVISION-SERVICE
 
             # --- Utilisateurs : User-Service (nom Eureka et port À CONFIRMER) -----
             - id: user-service
@@ -172,8 +180,10 @@ launchpad:
       uri: ${LEGAL_SERVICE_URI:lb://LEGAL-SERVICE}
     ai:
       uri: ${AI_SERVICE_URI:lb://AI-SERVICE}            # À CONFIRMER
-    finance:
-      uri: ${FINANCE_SERVICE_URI:lb://FINANCE-SERVICE}  # À CONFIRMER
+    prevision:
+      uri: ${PREVISION_SERVICE_URI:lb://PREVISION-SERVICE}
+    document:
+      uri: ${DOCUMENT_SERVICE_URI:lb://DOCUMENT-SERVICE}
     user:
       uri: ${USER_SERVICE_URI:lb://USER-SERVICE}        # À CONFIRMER
 
