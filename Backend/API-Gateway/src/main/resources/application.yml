@@ -42,7 +42,7 @@ spring:
               '[/**]':
                 allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
                 allowed-methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
-                allowed-headers: Authorization, Content-Type
+                allowed-headers: Authorization, Content-Type, X-Lawyer-Id   # X-Lawyer-Id : services avocat
                 exposed-headers: X-Request-Id, Content-Disposition
                 max-age: 3600
 

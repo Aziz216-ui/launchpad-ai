@@ -3,16 +3,17 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of, catchError, map } from 'rxjs';
 import { Client, Message, DocReview, LawyerProfile } from '../models/lawyer.models';
 import { AuthService } from './auth.service';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class LawyerService {
-  // Real REST Backend endpoints matching Spring Boot & Django controllers
-  private clientApi = 'http://localhost:8082/api/lawyer/clients';
-  private messageApi = 'http://localhost:8084/api/lawyer/messages';
-  private docReviewApi = 'http://localhost:8086/api/lawyer/reviews';
-  private usersApi = 'http://localhost:8001/api/auth/lawyers/';
+  // Tous les appels passent par l'API Gateway (voir environment.ts)
+  private clientApi = `${environment.lawyerApiUrl}/clients`;
+  private messageApi = `${environment.lawyerApiUrl}/messages`;
+  private docReviewApi = `${environment.lawyerApiUrl}/reviews`;
+  private usersApi = `${environment.userApiUrl}/lawyers/`;
 
   constructor(private http: HttpClient, private authService: AuthService) {}
 
