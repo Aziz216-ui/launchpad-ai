@@ -126,3 +126,4 @@ class Command(BaseCommand):
             except KeyboardInterrupt:
                 self.stdout.write(self.style.WARNING("\nArrêt du consumer demandé par l'utilisateur."))
                 break
+

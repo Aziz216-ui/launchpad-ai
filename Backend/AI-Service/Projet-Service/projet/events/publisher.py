@@ -94,3 +94,4 @@ def publier_evenement(event: str, data: dict, source: str = "projet-service") ->
             event, exc,
         )
         return False
+

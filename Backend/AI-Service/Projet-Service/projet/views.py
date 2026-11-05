@@ -130,7 +130,7 @@ class ProjetViewSet(viewsets.ModelViewSet):
                 source=source,
             )
 
-            # Publication asynchrone RabbitMQ après le commit (garantie: jamais d'événement pour écriture annulée)
+            # Publication asynchrone RabbitMQ après le commit (garantie du cours: jamais d'événement pour écriture annulée)
             transaction.on_commit(
                 lambda: publier_evenement(
                     event="diagnostic.termine",
