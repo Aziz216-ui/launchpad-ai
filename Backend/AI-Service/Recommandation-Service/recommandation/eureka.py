@@ -1,6 +1,10 @@
 """
-Enregistrement / desenregistrement Eureka pour le Recommandation-Service.
-Usage : appele depuis RecommandationConfig.ready() dans apps.py.
+Enregistrement / desenregistrement Eureka pour le Projet-Service.
+
+Usage : appele depuis ProjetConfig.ready() dans apps.py.
+- Compatible runserver (filtre RUN_MAIN pour eviter la double registration
+  causee par l'auto-reloader) ET gunicorn (pas de RUN_MAIN => toujours actif).
+- Ne crashe jamais : si Eureka est injoignable, log un warning et continue.
 """
 from __future__ import annotations
 
@@ -17,6 +21,7 @@ def _get_local_ip() -> str:
     host_ip = os.getenv("HOST_IP", "").strip()
     if host_ip:
         return host_ip
+    # Detection automatique : ouvre un socket UDP (sans envoi) pour trouver l'IP sortante
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.connect(("8.8.8.8", 80))
@@ -26,9 +31,21 @@ def _get_local_ip() -> str:
 
 
 def register():
-    """Enregistre le service dans Eureka via py_eureka_client."""
+    """
+    Enregistre le service dans Eureka via py_eureka_client.
+    Appele une seule fois au demarrage (guard RUN_MAIN + guard double-appel).
+    """
+    # --- Guard 1 : evite la double registration avec le reloader de runserver ---
+    # RUN_MAIN est defini par le reloader ; le vrai processus serveur ne l'a pas.
+    # Sous gunicorn il n'existe pas non plus, donc l'enregistrement se fait toujours.
+    # Ne pas tenter d'enregistrement lors des commandes manage.py ou si EUREKA_ENABLED=false
+    import sys
+    if os.getenv("EUREKA_ENABLED", "true").lower() in ("false", "0", "no"):
+        return
+    if any(arg in sys.argv for arg in ["makemigrations", "migrate", "collectstatic", "test", "seed"]):
+        return
     if os.environ.get("RUN_MAIN") == "true":
-        logger.debug("Eureka: reloader detecte (RUN_MAIN=true) — enregistrement ignore.")
+        logger.debug("Eureka: reloader detecte (RUN_MAIN=true) -> enregistrement ignore.")
         return
 
     try:
@@ -38,8 +55,8 @@ def register():
         return
 
     eureka_server = os.getenv("EUREKA_SERVER", "http://localhost:8761/eureka/")
-    app_name = os.getenv("APP_NAME", "recommandation-service").upper()
-    app_port = int(os.getenv("APP_PORT", "8007"))
+    app_name = os.getenv("APP_NAME", "projet-service").upper()   # Eureka enregistre en MAJUSCULES
+    app_port = int(os.getenv("APP_PORT", "8006"))
     host_ip = _get_local_ip()
     health_url = f"http://{host_ip}:{app_port}/api/ai/health/"
 
@@ -50,6 +67,7 @@ def register():
             instance_port=app_port,
             instance_host=host_ip,
             health_check_url=health_url,
+            # Reessaie automatiquement si Eureka est momentanement injoignable
             renewal_interval_in_secs=30,
             duration_in_secs=90,
         )
@@ -57,6 +75,7 @@ def register():
             "Eureka: service '%s' enregistre sur %s (IP=%s, port=%s, health=%s)",
             app_name, eureka_server, host_ip, app_port, health_url,
         )
+        # Desenregistrement propre a l'arret du processus
         atexit.register(_deregister)
     except Exception as exc:  # noqa: BLE001
         logger.warning(

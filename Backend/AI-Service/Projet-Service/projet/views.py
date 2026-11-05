@@ -117,14 +117,43 @@ class ProjetViewSet(viewsets.ModelViewSet):
         if resultat is None:
             resultat = regles.analyser_projet(projet, donnees_marche)
 
-        analyse = AnalyseProjet.objects.create(
-            projet=projet,
-            forces=resultat["forces"],
-            faiblesses=resultat["faiblesses"],
-            score_global=resultat["score_global"],
-            resume=resultat["resume"],
-            source=source,
-        )
+        from django.db import transaction
+        from .events.publisher import publier_evenement
+
+        with transaction.atomic():
+            analyse = AnalyseProjet.objects.create(
+                projet=projet,
+                forces=resultat["forces"],
+                faiblesses=resultat["faiblesses"],
+                score_global=resultat["score_global"],
+                resume=resultat["resume"],
+                source=source,
+            )
+
+            # Publication asynchrone RabbitMQ après le commit (garantie: jamais d'événement pour écriture annulée)
+            transaction.on_commit(
+                lambda: publier_evenement(
+                    event="diagnostic.termine",
+                    data={
+                        "projet_id": projet.pk,
+                        "analyse_id": analyse.pk,
+                        "score_global": analyse.score_global,
+                        "forces": analyse.forces,
+                        "faiblesses": analyse.faiblesses,
+                        "resume": analyse.resume,
+                        "source": analyse.source,
+                        "projet": {
+                            "id": projet.pk,
+                            "nom": projet.nom,
+                            "description": projet.description,
+                            "secteur": projet.secteur,
+                            "stade": projet.stade,
+                            "budget": float(projet.budget) if projet.budget is not None else None,
+                        },
+                    },
+                )
+            )
+
         return Response(AnalyseProjetSerializer(analyse).data, status=status.HTTP_201_CREATED)
 
 

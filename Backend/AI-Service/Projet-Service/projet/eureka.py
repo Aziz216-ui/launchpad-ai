@@ -38,8 +38,14 @@ def register():
     # --- Guard 1 : evite la double registration avec le reloader de runserver ---
     # RUN_MAIN est defini par le reloader ; le vrai processus serveur ne l'a pas.
     # Sous gunicorn il n'existe pas non plus, donc l'enregistrement se fait toujours.
+    # Ne pas tenter d'enregistrement lors des commandes manage.py ou si EUREKA_ENABLED=false
+    import sys
+    if os.getenv("EUREKA_ENABLED", "true").lower() in ("false", "0", "no"):
+        return
+    if any(arg in sys.argv for arg in ["makemigrations", "migrate", "collectstatic", "test", "seed"]):
+        return
     if os.environ.get("RUN_MAIN") == "true":
-        logger.debug("Eureka: reloader detecte (RUN_MAIN=true) — enregistrement ignore.")
+        logger.debug("Eureka: reloader detecte (RUN_MAIN=true) -> enregistrement ignore.")
         return
 
     try:
