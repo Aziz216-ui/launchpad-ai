@@ -59,8 +59,17 @@ class RoutesTest extends GatewayTestSupport {
                 Map.entry("legal-docs", "lb://LEGAL-SERVICE"),
                 Map.entry("legal-docs-json", "lb://LEGAL-SERVICE"),
                 Map.entry("ai-service", "lb://AI-SERVICE"),
-                Map.entry("finance-service", "lb://FINANCE-SERVICE"),
+                Map.entry("document-service", "lb://DOCUMENT-SERVICE"),
+                Map.entry("prevision-service", "lb://PREVISION-SERVICE"),
                 Map.entry("user-service", "lb://USER-SERVICE")));
+    }
+
+    /** Finance : la route Document-Service (chemins précis) doit passer avant /api/finance/** (Prevision-Service). */
+    @Test
+    void financeDocumentRouteIsEvaluatedBeforePrevisionCatchAll() {
+        List<String> ids = routes().stream().map(Route::getId).toList();
+        assertThat(ids.indexOf("document-service")).isNotNegative()
+                .isLessThan(ids.indexOf("prevision-service"));
     }
 
     @Test
@@ -79,7 +88,7 @@ class RoutesTest extends GatewayTestSupport {
         client.get().uri("/actuator/gateway/routes").exchange()
                 .expectStatus().isOk()
                 .expectBody()
-                .jsonPath("$.length()").isEqualTo(17)
+                .jsonPath("$.length()").isEqualTo(18)
                 .jsonPath("$[?(@.route_id == 'accounting-service')].uri").isEqualTo("lb://PROFESSIONAL-SERVICE")
                 .jsonPath("$[?(@.route_id == 'lawyer-service')].uri").isEqualTo("lb://lawyer-space");
     }

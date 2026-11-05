@@ -1,0 +1,172 @@
+﻿<div class="page">
+  <nav class="fil-ariane" aria-label="Fil d'Ariane">
+    <a routerLink="/etude-marche">Mon espace</a><span aria-hidden="true">ΓÇ║</span>
+    <a routerLink="/etude-marche">├ëtude de march├⌐</a><span aria-hidden="true">ΓÇ║</span>
+    @if (id()) {
+      <a [routerLink]="['/etude-marche', id(), 'apercu']">{{ titreInitial() || '├ëtude' }}</a><span aria-hidden="true">ΓÇ║</span>
+      <span class="courant">Modifier</span>
+    } @else {
+      <span class="courant">Cr├⌐er une ├⌐tude</span>
+    }
+  </nav>
+
+  <div class="entete-page">
+    <div class="titre">
+      <div class="titre-ligne">
+        <h1>{{ id() ? "Modifier l'├⌐tude" : 'Cr├⌐er une ├⌐tude' }}</h1>
+        <app-badge [variante]="statuts[statut()].variante">{{ statuts[statut()].libelle }}</app-badge>
+      </div>
+      <p>Posez les bases de votre march├⌐, puis affinez votre positionnement.</p>
+    </div>
+  </div>
+
+  @if (chargement()) {
+    <app-loader texte="Chargement de l'├⌐tudeΓÇª" />
+  } @else if (erreurChargement()) {
+    <p class="bandeau-erreur" role="alert">{{ erreurChargement() }} <a routerLink="/etude-marche">Retour ├á la liste</a></p>
+  } @else {
+    <ol class="etapes" aria-label="├ëtapes">
+      @for (libelle of etapes; track libelle; let i = $index) {
+        <li>
+          <button type="button" (click)="allerA(i + 1)" [attr.aria-current]="etapeCourante() === i + 1 ? 'step' : null">
+            <span class="pastille" [class.active]="i + 1 <= etapeCourante()">{{ i + 1 }}</span>
+            <span class="textes">
+              <span class="numero">├ëtape {{ i + 1 }}</span>
+              <span class="libelle" [class.active]="etapeCourante() === i + 1">{{ libelle }}</span>
+            </span>
+          </button>
+        </li>
+      }
+    </ol>
+
+    <div class="colonnes">
+      <form class="principale formulaire" [formGroup]="formulaire" (ngSubmit)="etapeCourante() < 3 ? suivant() : terminer()" novalidate>
+        @switch (etapeCourante()) {
+          @case (1) {
+            <div class="bloc">
+              <div class="intro"><h2>March├⌐ cible</h2><p>├Ç qui s'adresse votre projet ? D├⌐limitez le terrain de votre ├⌐tude.</p></div>
+              <div class="grille-champs">
+                <label class="champ" [class.en-erreur]="formulaire.controls.titre.touched && formulaire.controls.titre.invalid">
+                  Titre de l'├⌐tude *
+                  <input type="text" formControlName="titre" />
+                  <app-field-error [controle]="formulaire.controls.titre" />
+                </label>
+                <label class="champ" [class.en-erreur]="formulaire.controls.secteur.touched && formulaire.controls.secteur.invalid">
+                  Secteur *
+                  <select formControlName="secteur">
+                    <option [ngValue]="null" disabled>Choisir un secteur</option>
+                    @for (s of secteurs(); track s.id) {
+                      <option [ngValue]="s.id">{{ s.nom }}</option>
+                    }
+                  </select>
+                  <app-field-error [controle]="formulaire.controls.secteur" />
+                </label>
+                <label class="champ" [class.en-erreur]="formulaire.controls.cible.touched && formulaire.controls.cible.invalid">
+                  Cible *
+                  <input type="text" formControlName="cible" />
+                  <app-field-error [controle]="formulaire.controls.cible" />
+                </label>
+                <!-- div et non label : la carte du lieu choisi ne doit pas renvoyer le focus vers le champ -->
+                <div class="champ" [class.en-erreur]="formulaire.controls.zone_geographique.touched && formulaire.controls.zone_geographique.invalid">
+                  <label for="zone-geographique">Zone g├⌐ographique *</label>
+                  <app-recherche-lieu formControlName="zone_geographique" identifiant="zone-geographique"
+                    [invalide]="formulaire.controls.zone_geographique.touched && formulaire.controls.zone_geographique.invalid" />
+                  <app-field-error [controle]="formulaire.controls.zone_geographique" />
+                </div>
+                <label class="champ" [class.en-erreur]="formulaire.controls.taille_marche.touched && formulaire.controls.taille_marche.invalid">
+                  Taille du march├⌐ (Γé¼ / an) *
+                  <input type="text" inputmode="numeric" formControlName="taille_marche" />
+                  <span class="aide">{{ aideTailleMarche() }}</span>
+                  <app-field-error [controle]="formulaire.controls.taille_marche" />
+                </label>
+                <label class="champ" [class.en-erreur]="formulaire.controls.taux_croissance.touched && formulaire.controls.taux_croissance.invalid">
+                  Taux de croissance (% / an) *
+                  <input type="text" inputmode="decimal" formControlName="taux_croissance" />
+                  <span class="aide">Croissance annuelle estim├⌐e du march├⌐</span>
+                  <app-field-error [controle]="formulaire.controls.taux_croissance" />
+                </label>
+              </div>
+              @if (encadreMarche(); as encadre) {
+                <p class="encadre-marche"><strong>Un march├⌐ d├⌐limit├⌐, une analyse pr├⌐cise.</strong> {{ encadre }}</p>
+              }
+            </div>
+          }
+          @case (2) {
+            <div class="bloc">
+              <div class="intro"><h2>Mon offre</h2><p>D├⌐crivez la valeur que vous apportez et votre premier niveau de prix.</p></div>
+              <label class="champ" [class.en-erreur]="formulaire.controls.description_offre.touched && formulaire.controls.description_offre.invalid">
+                Description de l'offre *
+                <textarea rows="4" formControlName="description_offre"></textarea>
+                <app-field-error [controle]="formulaire.controls.description_offre" />
+              </label>
+              <label class="champ prix" [class.en-erreur]="formulaire.controls.prix_propose.touched && formulaire.controls.prix_propose.invalid">
+                Prix propos├⌐ (Γé¼) *
+                <input type="text" inputmode="decimal" formControlName="prix_propose" />
+                <span class="aide">Compar├⌐ au prix moyen des concurrents de l'├⌐tude</span>
+                <app-field-error [controle]="formulaire.controls.prix_propose" />
+              </label>
+              @if (encadrePrix(); as encadre) {
+                <p class="encadre-prix"><strong>{{ encadre.titre }}</strong> {{ encadre.texte }}</p>
+              }
+            </div>
+          }
+          @case (3) {
+            <div class="bloc">
+              <div class="intro"><h2>Hypoth├¿ses</h2><p>Rendez vos intuitions explicites pour mieux les confronter au march├⌐.</p></div>
+              <label class="champ" [class.en-erreur]="formulaire.controls.hypotheses.touched && formulaire.controls.hypotheses.invalid">
+                Vos hypoth├¿ses de march├⌐ *
+                <textarea rows="7" formControlName="hypotheses"></textarea>
+                <span class="aide">D├⌐crivez les besoins, les freins ou la disposition ├á payer que vous souhaitez v├⌐rifier.</span>
+                <app-field-error [controle]="formulaire.controls.hypotheses" />
+              </label>
+            </div>
+          }
+        }
+
+        <div class="pied">
+          @if (etapeCourante() > 1) {
+            <button type="button" class="btn-secondaire" (click)="precedent()">ΓåÉ Pr├⌐c├⌐dent</button>
+          }
+          <span class="mention">
+            * Champs obligatoires
+            @if (derniereSauvegarde()) {
+              ┬╖ Dernier enregistrement du brouillon ├á {{ derniereSauvegarde() | date: 'HH:mm' }}
+            }
+          </span>
+          <button type="button" class="btn-secondaire" (click)="enregistrerBrouillon()" [disabled]="enregistrement()">
+            Enregistrer le brouillon
+          </button>
+          @if (etapeCourante() < 3) {
+            <button type="submit" class="btn-primaire" [disabled]="enregistrement()">
+              {{ enregistrement() ? 'EnregistrementΓÇª' : 'Suivant ΓåÆ' }}
+            </button>
+          } @else {
+            <button type="submit" class="btn-primaire" [disabled]="enregistrement()">
+              {{ enregistrement() ? 'EnregistrementΓÇª' : id() ? 'Enregistrer et voir lΓÇÖ├⌐tude' : "Cr├⌐er l'├⌐tude" }}
+            </button>
+          }
+        </div>
+      </form>
+
+      <div class="laterale">
+        <div class="carte-conseil">
+          <h3>Le conseil LaunchPad</h3>
+          <p>{{ conseil() }}</p>
+          <a class="lien-fleche" routerLink="/co-fondateur-ia">Demander ├á mon Co-Fondateur IA ΓåÆ</a>
+        </div>
+        <div class="bref">
+          <strong>Votre ├⌐tude en bref</strong>
+          <dl>
+            <div><dt>Titre</dt><dd>{{ resume().titre }}</dd></div>
+            <div><dt>Secteur</dt><dd>{{ resume().secteur }}</dd></div>
+            <div><dt>Zone</dt><dd>{{ resume().zone }}</dd></div>
+            <div><dt>Taille du march├⌐</dt><dd>{{ resume().taille }}</dd></div>
+            <div><dt>Croissance</dt><dd>{{ resume().croissance }}</dd></div>
+            <div><dt>Prix propos├⌐</dt><dd>{{ resume().prix }}</dd></div>
+          </dl>
+        </div>
+        <p class="confidentialite">Vos donn├⌐es restent priv├⌐es. Vous d├⌐cidez quand partager votre ├⌐tude.</p>
+      </div>
+    </div>
+  }
+</div>
