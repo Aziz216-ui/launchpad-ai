@@ -27,12 +27,12 @@ features/finance/
 
 ## Brancher le backend
 
-- `environment.financeApiUrl` vaut `/api/finance` (chemin relatif).
-- En développement, `ng serve` redirige `/api/finance` vers le Prevision-Service (`http://localhost:8081`) et les
-  routes documents / notifications vers le Document-Service (`http://localhost:8082`) grâce à `proxy.conf.json`.
-  Pas de CORS à configurer.
-  Pour passer par l'API Gateway (qui répartit entre les deux services) : ne garder qu'une entrée `/api/finance`
-  avec `http://localhost:8090` comme `target`.
+- `environment.financeApiUrl` vaut `http://localhost:8090/api/finance` : comme le module Marché, Finance passe
+  par l'API Gateway, qui gère le CORS (origine `http://localhost:4200`) et répartit les appels :
+  documents, liste des documents et notifications vers le Document-Service (port 8083), le reste vers le
+  Prevision-Service (port 8081).
+- Pour tester en local : Eureka (8761), Prevision-Service, Document-Service, API Gateway (8090), puis `ng serve`.
+  PostgreSQL (bases `prevision_db` et `document_db`) et RabbitMQ doivent être démarrés.
 - Le projet courant est un **UUID** (les services Finance référencent le projet par identifiant uniquement).
   Il est conservé dans le navigateur ; le bouton « Nouveau projet » en génère un autre.
   À remplacer par le projet de l'utilisateur connecté quand le User-Service sera disponible.

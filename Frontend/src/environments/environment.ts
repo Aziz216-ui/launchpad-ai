@@ -10,8 +10,8 @@ export const environment = {
   marketApiUrl: 'http://localhost:8090/api/market',
   /** AI-Service (module Co-Fondateur IA, features/ai) : à remplir par le membre concerné. */
   aiApiUrl: '',
-  /** Finance-Service (module Finance, features/finance). Chemin relatif : proxy.conf.json en développement (ng serve), API Gateway en production. */
-  financeApiUrl: '/api/finance',
+  /** Finance : Prevision-Service et Document-Service, via l'API Gateway (module Finance, features/finance). */
+  financeApiUrl: 'http://localhost:8090/api/finance',
   /** Legal-Service (module Juridique, features/legal) : à remplir par le membre concerné. */
   legalApiUrl: '',
   /** Professional-Service (Comptabilité et Avocat, features/professional) : à remplir par le membre concerné. */
