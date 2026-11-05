@@ -52,6 +52,9 @@ class JwtSecurityTest extends GatewayTestSupport {
         for (String service : new String[] {"secteur", "concurrent", "etude", "swot"}) {
             registry.add("launchpad.services." + service + ".uri", keycloakAndMarket::url);
         }
+        for (String service : new String[] {"projet", "recommandation", "conversation"}) {
+            registry.add("launchpad.services." + service + ".uri", keycloakAndMarket::url);
+        }
         registry.add("launchpad.services.accounting.uri", keycloakAndMarket::url);
         registry.add("launchpad.services.legal.uri", keycloakAndMarket::url);
         registry.add("launchpad.services.user.uri", keycloakAndMarket::url);
@@ -108,9 +111,17 @@ class JwtSecurityTest extends GatewayTestSupport {
             "/docs/legal", "/docs/legal-json",
             "/api/market/secteurs/health/", "/api/market/concurrents/health/",
             "/api/market/etudes/health/", "/api/market/swot/health/", "/api/comptable/health",
+            "/api/ai/health/", "/api/ai/docs/", "/api/ai/schema/",
+            "/docs/ai/projet/docs/", "/docs/ai/recommandation/schema/", "/docs/ai/conversation/docs/",
     })
     void publicRoutesNeedNoToken(String path) {
         client.get().uri(path).exchange().expectStatus().isOk();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/api/ai/projets/", "/api/ai/recommandations/", "/api/ai/conversations/"})
+    void aiRoutesNeedAToken(String path) {
+        client.get().uri(path).exchange().expectStatus().isUnauthorized();
     }
 
     @Test

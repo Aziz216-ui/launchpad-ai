@@ -54,10 +54,10 @@ class ServiceUnavailableTest extends GatewayTestSupport {
 
     @Test
     void loadBalancedRouteWithoutInstanceGives503Json() {
-        // ai-service reste en lb://AI-SERVICE en profil local : aucune instance connue
-        client.post().uri("/api/ai/conversations").exchange()
+        // user-service reste en lb://USER-SERVICE en profil local : aucune instance connue
+        client.post().uri("/api/auth/login").exchange()
                 .expectStatus().isEqualTo(503)
-                .expectBody().json("{\"service\":\"AI-SERVICE\",\"message\":\"Service indisponible\"}", JsonCompareMode.STRICT);
+                .expectBody().json("{\"service\":\"USER-SERVICE\",\"message\":\"Service indisponible\"}", JsonCompareMode.STRICT);
     }
 
     @Test
