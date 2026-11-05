@@ -1,0 +1,77 @@
+spring:
+  application:
+    name: prevision-service
+  profiles:
+    default: dev
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/prevision_db}
+    username: ${DB_USERNAME:prevision}
+    password: ${DB_PASSWORD:prevision}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  http:
+    client:
+      # Borne les appels au LLM (le client Spring AI en hérite) : au-delà, l'IA est déclarée indisponible (503).
+      connect-timeout: 5s
+      read-timeout: 30s
+  ai:
+    # IA désactivée par défaut : sans clé, le service démarre et les endpoints IA répondent 503.
+    # Pour activer Grok (xAI, API compatible OpenAI) : SPRING_AI_MODEL_CHAT=openai et XAI_API_KEY=<clé>.
+    model:
+      chat: none
+      embedding: none
+      image: none
+      audio:
+        speech: none
+        transcription: none
+      moderation: none
+    openai:
+      api-key: ${XAI_API_KEY:}
+      base-url: ${XAI_BASE_URL:https://api.x.ai}
+      chat:
+        options:
+          model: ${XAI_MODEL:grok-4}
+          temperature: 0.2
+
+server:
+  port: ${SERVER_PORT:8081}
+  # Derrière l'API Gateway : les URL construites (en-tête Location) reprennent l'adresse publique
+  # transmise par la passerelle (X-Forwarded-Host / -Port / -Proto), et non localhost:8081.
+  forward-headers-strategy: framework
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    # Adresse annoncée aux autres services (même convention que l'API Gateway) : localhost en local,
+    # host.docker.internal en conteneur (voir docker-compose.yml). L'IP détectée automatiquement peut être celle
+    # d'une carte réseau virtuelle (VMware, Hyper-V…) injoignable depuis les autres services.
+    hostname: ${EUREKA_INSTANCE_HOST:localhost}
+    prefer-ip-address: false
+    instance-id: ${eureka.instance.hostname}:${spring.application.name}:${server.port}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+finance:
+  # Document-Service : résolu via Eureka (nom), avec repli sur l'URL (API Gateway ou adresse directe).
+  # Timeout court : un service éteint ne bloque pas l'assistant financier.
+  document-service:
+    nom: ${DOCUMENT_SERVICE_NOM:document-service}
+    url: ${DOCUMENT_SERVICE_URL:http://localhost:8083}
+    timeout: 5s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
