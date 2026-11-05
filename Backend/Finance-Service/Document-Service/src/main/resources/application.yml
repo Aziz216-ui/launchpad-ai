@@ -32,6 +32,9 @@ spring:
 
 server:
   port: ${SERVER_PORT:8083}
+  # Derrière l'API Gateway : les URL construites (en-tête Location) reprennent l'adresse publique
+  # transmise par la passerelle (X-Forwarded-Host / -Port / -Proto), et non localhost:8083.
+  forward-headers-strategy: framework
 
 eureka:
   client:

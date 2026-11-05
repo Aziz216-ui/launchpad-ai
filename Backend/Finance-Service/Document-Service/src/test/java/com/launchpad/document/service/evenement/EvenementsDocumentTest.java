@@ -121,8 +121,31 @@ class EvenementsDocumentTest {
         assertThat(json).contains("\"documentId\":\"" + evenement.documentId() + "\"")
                 .contains("\"projetId\":\"" + PROJET_ID + "\"")
                 .contains("\"type\":\"BUSINESS_PLAN\"")
-                .contains("\"titre\":\"Business plan - période 2026\"");
+                .contains("\"titre\":\"Business plan - période 2026\"")
+                // Date en texte ISO-8601, comme l'API REST (et non en nombre de secondes).
+                .contains("\"creeLe\":\"" + evenement.creeLe() + "\"");
         assertThat(convertisseur.fromMessage(message)).isEqualTo(evenement);
+    }
+
+    @Test
+    void un_message_ecrit_par_un_autre_langage_est_lu_par_le_consommateur() {
+        MessageConverter convertisseur = RabbitMQConfig.convertisseurJson();
+        // Pas d'en-tête __TypeId__ (propre à Java) et un champ que ce service ne connaît pas.
+        MessageProperties proprietes = new MessageProperties();
+        proprietes.setContentType("application/json");
+        proprietes.setInferredArgumentType(DocumentGenere.class); // type du paramètre du @RabbitListener
+        String json = """
+                {"documentId":"3b262c72-2222-4f01-9de3-6fb7669e7ce6","projetId":"%s","type":"COMPTE_RESULTAT",
+                 "titre":"Publié par un service Python","creeLe":"2026-11-05T13:00:36Z","champFutur":42}
+                """.formatted(PROJET_ID);
+
+        Object lu = convertisseur.fromMessage(new Message(json.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                proprietes));
+
+        assertThat(lu).isInstanceOf(DocumentGenere.class);
+        DocumentGenere evenement = (DocumentGenere) lu;
+        assertThat(evenement.titre()).isEqualTo("Publié par un service Python");
+        assertThat(evenement.creeLe()).isEqualTo(java.time.Instant.parse("2026-11-05T13:00:36Z"));
     }
 
     @Test

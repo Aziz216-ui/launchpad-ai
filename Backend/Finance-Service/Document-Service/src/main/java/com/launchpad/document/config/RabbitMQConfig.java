@@ -1,5 +1,9 @@
 package com.launchpad.document.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper;
 import org.springframework.amqp.support.converter.Jackson2JavaTypeMapper;
@@ -39,8 +43,21 @@ public class RabbitMQConfig {
         DefaultJackson2JavaTypeMapper typeMapper = new DefaultJackson2JavaTypeMapper();
         typeMapper.setTrustedPackages("com.launchpad.document.domain");
         typeMapper.setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence.INFERRED);
-        Jackson2JsonMessageConverter convertisseur = new Jackson2JsonMessageConverter();
+        Jackson2JsonMessageConverter convertisseur = new Jackson2JsonMessageConverter(jsonContrat());
         convertisseur.setJavaTypeMapper(typeMapper);
         return convertisseur;
+    }
+
+    /**
+     * Format du contrat d'événement (voir CONTRAT-API.md) : dates en texte ISO-8601 (« 2026-11-05T13:00:36Z »),
+     * comme l'API REST, et non en nombre de secondes ; champs inconnus ignorés à la lecture, pour qu'un producteur
+     * puisse ajouter un champ sans casser les consommateurs.
+     */
+    private static ObjectMapper jsonContrat() {
+        return JsonMapper.builder()
+                .findAndAddModules()
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
     }
 }
