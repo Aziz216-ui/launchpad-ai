@@ -58,7 +58,7 @@ def register():
     app_name = os.getenv("APP_NAME", "projet-service").upper()   # Eureka enregistre en MAJUSCULES
     app_port = int(os.getenv("APP_PORT", "8006"))
     host_ip = _get_local_ip()
-    health_url = f"http://{host_ip}:{app_port}/api/ai/health/"
+    health_url = f"http://{host_ip}:{app_port}/api/ai/projets/"
 
     try:
         eureka_client.init(
