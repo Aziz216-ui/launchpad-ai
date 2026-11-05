@@ -6,6 +6,7 @@ from .views import (
     LogoutView,
     UserProfileView,
     HealthCheckView,
+    LawyerListView,
 )
 
 urlpatterns = [
@@ -15,4 +16,5 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="auth-logout"),
     path("profile/", UserProfileView.as_view(), name="auth-profile"),
     path("health/", HealthCheckView.as_view(), name="auth-health"),
+    path("lawyers/", LawyerListView.as_view(), name="auth-lawyers"),
 ]

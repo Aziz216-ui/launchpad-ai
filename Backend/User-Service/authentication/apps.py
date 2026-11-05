@@ -17,12 +17,13 @@ class AuthenticationConfig(AppConfig):
         is_server = any(cmd in commands for cmd in ["runserver", "gunicorn", "uvicorn", "waitress"]) or ("runserver" in commands)
 
         # In runserver dev mode, only register from the reloader child process to avoid duplicate registration
-        is_reloader = os.environ.get("RUN_MAIN") == "true"
+        # If --noreload is used, is_reloader is False, so check if noreload is present
+        is_reloader = (os.environ.get("RUN_MAIN") == "true") or ("--noreload" in commands)
 
         from django.conf import settings
         eureka_enabled = getattr(settings, "EUREKA_ENABLED", True)
 
-        if eureka_enabled and (is_reloader or (is_server and not any("runserver" in c for c in commands))):
+        if eureka_enabled and is_server and is_reloader:
             def register_eureka():
                 try:
                     import py_eureka_client.eureka_client as eureka_client

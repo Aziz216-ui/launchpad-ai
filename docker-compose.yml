@@ -20,21 +20,6 @@ services:
     networks:
       - launchpad-net
 
-  postgres-appointment:
-    image: postgres:16-alpine
-    container_name: postgres-appointment
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: lawyer_appointment_db
-      POSTGRES_USER: app_user
-      POSTGRES_PASSWORD: '12345678'
-    ports:
-      - "5434:5432"
-    volumes:
-      - postgres_appointment_data:/var/lib/postgresql/data
-    networks:
-      - launchpad-net
-
   postgres-message:
     image: postgres:16-alpine
     container_name: postgres-message
@@ -159,32 +144,6 @@ services:
     profiles:
       - full-stack
 
-  lawyer-appointment-service:
-    build:
-      context: ./Backend/Lawyer-Appointment-Service
-      dockerfile: Dockerfile
-    container_name: lawyer-appointment-service
-    restart: unless-stopped
-    environment:
-      DB_HOST: postgres-appointment
-      DB_PORT: 5432
-      DB_NAME: lawyer_appointment_db
-      DB_USER: app_user
-      DB_PASSWORD: '12345678'
-      RABBITMQ_HOST: rabbitmq
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
-      CLIENT_SERVICE_URL: http://lawyer-client-service:8082
-    ports:
-      - "8083:8083"
-    depends_on:
-      - postgres-appointment
-      - rabbitmq
-      - lawyer-client-service
-    networks:
-      - launchpad-net
-    profiles:
-      - full-stack
-
   lawyer-message-service:
     build:
       context: ./Backend/Lawyer-Message-Service
@@ -266,7 +225,6 @@ services:
 volumes:
   postgres_data:
   postgres_client_data:
-  postgres_appointment_data:
   postgres_message_data:
   postgres_inforequest_data:
   postgres_docreview_data:

@@ -277,3 +277,14 @@ class HealthCheckView(APIView):
             },
             status=status.HTTP_200_OK if (db_ok and keycloak_ok) else status.HTTP_503_SERVICE_UNAVAILABLE
         )
+
+
+class LawyerListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        lawyers = User.objects.filter(role=User.Role.LAWYER).values(
+            "id", "username", "email", "first_name", "last_name", "phone_number", "role"
+        )
+        return Response(list(lawyers), status=status.HTTP_200_OK)
+
