@@ -53,8 +53,15 @@ class RoutesTest extends GatewayTestSupport {
                 Map.entry("market-swot-service", "lb://SWOT-SERVICE"),
                 Map.entry("market-etude-service", "lb://ETUDE-SERVICE"),
                 Map.entry("accounting-service", "lb://PROFESSIONAL-SERVICE"),
-                Map.entry("lawyer-service", "lb://lawyer-space"),
-                Map.entry("lawyer-docs", "lb://lawyer-space"),
+                Map.entry("lawyer-client-service", "lb://lawyer-client-service"),
+                Map.entry("lawyer-message-service", "lb://lawyer-message-service"),
+                Map.entry("lawyer-docreview-service", "lb://lawyer-docreview-service"),
+                Map.entry("lawyer-client-docs", "lb://lawyer-client-service"),
+                Map.entry("lawyer-message-docs", "lb://lawyer-message-service"),
+                Map.entry("lawyer-docreview-docs", "lb://lawyer-docreview-service"),
+                Map.entry("lawyer-client-schema", "lb://lawyer-client-service"),
+                Map.entry("lawyer-message-schema", "lb://lawyer-message-service"),
+                Map.entry("lawyer-docreview-schema", "lb://lawyer-docreview-service"),
                 Map.entry("legal-service", "lb://LEGAL-SERVICE"),
                 Map.entry("legal-docs", "lb://LEGAL-SERVICE"),
                 Map.entry("legal-docs-json", "lb://LEGAL-SERVICE"),
@@ -68,7 +75,9 @@ class RoutesTest extends GatewayTestSupport {
                 Map.entry("ai-conversation-service", "lb://CONVERSATION-SERVICE"),
                 Map.entry("document-service", "lb://DOCUMENT-SERVICE"),
                 Map.entry("prevision-service", "lb://PREVISION-SERVICE"),
-                Map.entry("user-service", "lb://USER-SERVICE")));
+                Map.entry("user-service", "lb://user-service"),
+                Map.entry("user-docs", "lb://user-service"),
+                Map.entry("user-schema", "lb://user-service")));
     }
 
     /** Finance : la route Document-Service (chemins précis) doit passer avant /api/finance/** (Prevision-Service). */
@@ -96,10 +105,12 @@ class RoutesTest extends GatewayTestSupport {
         assertThat(services).containsEntry("accounting-service", "PROFESSIONAL-SERVICE")
                 .containsEntry("market-swot-service", "SWOT-SERVICE")
                 .containsEntry("market-etude-docs", "ETUDE-SERVICE")
-                .containsEntry("lawyer-docs", "lawyer-space")
+                .containsEntry("lawyer-client-docs", "lawyer-client-service")
+                .containsEntry("lawyer-docreview-schema", "lawyer-docreview-service")
                 .containsEntry("ai-recommandation-service", "RECOMMANDATION-SERVICE")
                 .containsEntry("ai-conversation-docs", "CONVERSATION-SERVICE")
-                .containsEntry("user-service", "USER-SERVICE");
+                .containsEntry("user-service", "user-service")
+                .containsEntry("user-schema", "user-service");
     }
 
     @Test
@@ -107,9 +118,9 @@ class RoutesTest extends GatewayTestSupport {
         client.get().uri("/actuator/gateway/routes").exchange()
                 .expectStatus().isOk()
                 .expectBody()
-                .jsonPath("$.length()").isEqualTo(25)
+                .jsonPath("$.length()").isEqualTo(34)
                 .jsonPath("$[?(@.route_id == 'accounting-service')].uri").isEqualTo("lb://PROFESSIONAL-SERVICE")
-                .jsonPath("$[?(@.route_id == 'lawyer-service')].uri").isEqualTo("lb://lawyer-space");
+                .jsonPath("$[?(@.route_id == 'lawyer-message-service')].uri").isEqualTo("lb://lawyer-message-service");
     }
 
     @Test

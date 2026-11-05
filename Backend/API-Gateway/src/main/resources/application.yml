@@ -128,25 +128,85 @@ spring:
               metadata:
                 service: PROFESSIONAL-SERVICE
 
-            # --- Avocat : lawyer-space (nom Eureka en minuscules), port 8082 ------
-            - id: lawyer-service
-              uri: ${launchpad.services.lawyer.uri}
-              predicates:
-                - Path=/api/lawyer/**
-              metadata:
-                service: lawyer-space
+            # --- Avocat : 3 microservices Spring Boot (Backend/Lawyer-*-Service) ----
+            # Noms Eureka en minuscules. Tous sous /api/lawyer/, découpés par ressource.
 
-            # Docs avocat, servies hors préfixe par le service (springdoc) :
-            #   /docs/lawyer/swagger-ui/**   -> /swagger-ui/**
-            #   /docs/lawyer/v3/api-docs/**  -> /v3/api-docs/**
-            - id: lawyer-docs
-              uri: ${launchpad.services.lawyer.uri}
+            # lawyer-client-service, port 8082 : clients de l'avocat
+            - id: lawyer-client-service
+              uri: ${launchpad.services.lawyer-client.uri}
               predicates:
-                - Path=/docs/lawyer/swagger-ui/**, /docs/lawyer/v3/api-docs/**
-              filters:
-                - RewritePath=/docs/lawyer/(?<segment>.*), /$\{segment}
+                - Path=/api/lawyer/clients/**
               metadata:
-                service: lawyer-space
+                service: lawyer-client-service
+
+            # lawyer-message-service, port 8084 : messages avocat <-> client
+            - id: lawyer-message-service
+              uri: ${launchpad.services.lawyer-message.uri}
+              predicates:
+                - Path=/api/lawyer/messages/**, /api/lawyer/communication/messages/**
+              metadata:
+                service: lawyer-message-service
+
+            # lawyer-docreview-service, port 8086 : revue de documents
+            - id: lawyer-docreview-service
+              uri: ${launchpad.services.lawyer-docreview.uri}
+              predicates:
+                - Path=/api/lawyer/reviews/**, /api/lawyer/document-reviews/**
+              metadata:
+                service: lawyer-docreview-service
+
+            # Docs avocat (springdoc), servies hors préfixe et au MÊME chemin par les 3 services :
+            # exposées sous /docs/lawyer/<service>/.
+            #   /docs/lawyer/<service>/swagger-ui/**  -> /swagger-ui/**
+            #   /docs/lawyer/<service>/v3/api-docs/** -> /v3/api-docs/**
+            - id: lawyer-client-docs
+              uri: ${launchpad.services.lawyer-client.uri}
+              predicates:
+                - Path=/docs/lawyer/client/swagger-ui/**, /docs/lawyer/client/v3/api-docs/**
+              filters:
+                - RewritePath=/docs/lawyer/client/(?<segment>.*), /$\{segment}
+              metadata:
+                service: lawyer-client-service
+            - id: lawyer-message-docs
+              uri: ${launchpad.services.lawyer-message.uri}
+              predicates:
+                - Path=/docs/lawyer/message/swagger-ui/**, /docs/lawyer/message/v3/api-docs/**
+              filters:
+                - RewritePath=/docs/lawyer/message/(?<segment>.*), /$\{segment}
+              metadata:
+                service: lawyer-message-service
+            - id: lawyer-docreview-docs
+              uri: ${launchpad.services.lawyer-docreview.uri}
+              predicates:
+                - Path=/docs/lawyer/docreview/swagger-ui/**, /docs/lawyer/docreview/v3/api-docs/**
+              filters:
+                - RewritePath=/docs/lawyer/docreview/(?<segment>.*), /$\{segment}
+              metadata:
+                service: lawyer-docreview-service
+
+            # La page Swagger UI charge sa configuration et son schéma à l'adresse absolue
+            # /v3/api-docs/** : on l'envoie au service dont la page fait la demande (Referer).
+            - id: lawyer-client-schema
+              uri: ${launchpad.services.lawyer-client.uri}
+              predicates:
+                - Path=/v3/api-docs/**
+                - Header=Referer, .*/docs/lawyer/client/.*
+              metadata:
+                service: lawyer-client-service
+            - id: lawyer-message-schema
+              uri: ${launchpad.services.lawyer-message.uri}
+              predicates:
+                - Path=/v3/api-docs/**
+                - Header=Referer, .*/docs/lawyer/message/.*
+              metadata:
+                service: lawyer-message-service
+            - id: lawyer-docreview-schema
+              uri: ${launchpad.services.lawyer-docreview.uri}
+              predicates:
+                - Path=/v3/api-docs/**
+                - Header=Referer, .*/docs/lawyer/docreview/.*
+              metadata:
+                service: lawyer-docreview-service
 
             # --- Juridique : Legal-Service, port 3003 ----------------------------
             - id: legal-service
@@ -266,13 +326,38 @@ spring:
               metadata:
                 service: PREVISION-SERVICE
 
-            # --- Utilisateurs : User-Service (nom Eureka et port À CONFIRMER) -----
+            # --- Utilisateurs : User-Service Django + Keycloak (Backend/User-Service) --
+            # Nom Eureka en minuscules, port 8001 : inscription, connexion, refresh, logout,
+            # profil, health, liste des avocats (/api/auth/lawyers/).
             - id: user-service
               uri: ${launchpad.services.user.uri}
               predicates:
-                - Path=/api/auth/**, /api/users/**
+                - Path=/api/auth/**
               metadata:
-                service: USER-SERVICE
+                service: user-service
+
+            # Docs utilisateurs (drf-spectacular), servies hors préfixe par le service :
+            #   /docs/user/docs/   -> /api/docs/   (Swagger UI)
+            #   /docs/user/redoc/  -> /api/redoc/  (ReDoc)
+            #   /docs/user/schema/ -> /api/schema/ (définition OpenAPI)
+            - id: user-docs
+              uri: ${launchpad.services.user.uri}
+              predicates:
+                - Path=/docs/user/docs/**, /docs/user/redoc/**, /docs/user/schema/**
+              filters:
+                - RewritePath=/docs/user/(?<segment>.*), /api/$\{segment}
+              metadata:
+                service: user-service
+
+            # Les pages Swagger UI et ReDoc chargent leur schéma à l'adresse absolue /api/schema/ :
+            # on l'envoie au User-Service quand la demande vient de ces pages (Referer).
+            - id: user-schema
+              uri: ${launchpad.services.user.uri}
+              predicates:
+                - Path=/api/schema/**
+                - Header=Referer, .*/docs/user/.*
+              metadata:
+                service: user-service
 
   # Keycloak : validation des JWT RS256 avec les clés publiques du realm (JWKS).
   # Utilisé seulement si JWT_ENABLED=true (voir SecurityConfig).
@@ -299,8 +384,12 @@ launchpad:
       uri: ${SWOT_SERVICE_URI:lb://SWOT-SERVICE}
     accounting:
       uri: ${ACCOUNTING_SERVICE_URI:lb://PROFESSIONAL-SERVICE}
-    lawyer:
-      uri: ${LAWYER_SERVICE_URI:lb://lawyer-space}
+    lawyer-client:
+      uri: ${LAWYER_CLIENT_SERVICE_URI:lb://lawyer-client-service}
+    lawyer-message:
+      uri: ${LAWYER_MESSAGE_SERVICE_URI:lb://lawyer-message-service}
+    lawyer-docreview:
+      uri: ${LAWYER_DOCREVIEW_SERVICE_URI:lb://lawyer-docreview-service}
     legal:
       uri: ${LEGAL_SERVICE_URI:lb://LEGAL-SERVICE}
     projet:
@@ -314,7 +403,7 @@ launchpad:
     document:
       uri: ${DOCUMENT_SERVICE_URI:lb://DOCUMENT-SERVICE}
     user:
-      uri: ${USER_SERVICE_URI:lb://USER-SERVICE}        # À CONFIRMER
+      uri: ${USER_SERVICE_URI:lb://user-service}
 
 # Actuator : /actuator/health et /actuator/gateway/routes
 management:

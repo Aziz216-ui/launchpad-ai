@@ -35,7 +35,7 @@ OAuth2 Resource Server (JWT Keycloak).
                           ┌────────────────────────┐          ┌──────────────────────────────────────┐
                           │ Eureka :8761           │◄─────────│ Market : 4 services :8010-8013        │
                           │ registre des services  │ enregis- │ Professional-Service :8085            │
-                          └────────────────────────┘ trement  │ lawyer-space :8082 · Legal :3003 …    │
+                          └────────────────────────┘ trement  │ Lawyer :8082/8084-8086 · Legal :3003… │
                                                               └──────────────────────────────────────┘
 ```
 
@@ -66,14 +66,16 @@ Fonctionnalités transverses (aucun service n'a à les refaire) :
 | Market : SWOT | `SWOT-SERVICE` | 8013 | `/api/market/etudes/*/generer-swot/**`, `/api/market/swot/**` | `market-swot-service` | `SWOT_SERVICE_URI` | `/api/market/swot/docs/`, `/api/market/swot/schema/` |
 | Market : études, personas | `ETUDE-SERVICE` | 8012 | `/api/market/etudes/**`, `/api/market/personas/**`, `/api/market/analyse/projet/**` | `market-etude-service` | `ETUDE_SERVICE_URI` | `/api/market/etudes/docs/`, `/api/market/etudes/schema/` |
 | Comptable | `PROFESSIONAL-SERVICE` | 8085 | `/api/comptable/**` | `accounting-service` | `ACCOUNTING_SERVICE_URI` | `/api/comptable/docs`, `/api/comptable/docs.json` |
-| Avocat | `lawyer-space` (minuscules) | 8082 | `/api/lawyer/**` | `lawyer-service` | `LAWYER_SERVICE_URI` | `/swagger-ui/**`, `/v3/api-docs/**` (hors préfixe) |
+| Avocat : clients | `lawyer-client-service` (minuscules) | 8082 | `/api/lawyer/clients/**` | `lawyer-client-service` | `LAWYER_CLIENT_SERVICE_URI` | `/swagger-ui/**`, `/v3/api-docs/**` (hors préfixe) |
+| Avocat : messages | `lawyer-message-service` | 8084 | `/api/lawyer/messages/**`, `/api/lawyer/communication/messages/**` | `lawyer-message-service` | `LAWYER_MESSAGE_SERVICE_URI` | `/swagger-ui/**`, `/v3/api-docs/**` (même chemin) |
+| Avocat : revue de documents | `lawyer-docreview-service` | 8086 | `/api/lawyer/reviews/**`, `/api/lawyer/document-reviews/**` | `lawyer-docreview-service` | `LAWYER_DOCREVIEW_SERVICE_URI` | `/swagger-ui/**`, `/v3/api-docs/**` (même chemin) |
 | Juridique | `LEGAL-SERVICE` | 3003 | `/api/legal/**` | `legal-service` | `LEGAL_SERVICE_URI` | `/api/docs`, `/api/docs-json` (hors préfixe) |
 | IA : projets, analyses | `PROJET-SERVICE` | 8006 | `/api/ai/projets/**`, `/api/ai/analyses/**`, `/api/ai/health/**` (+ `/api/ai/docs/`, `/api/ai/schema/` par défaut) | `ai-projet-service` | `PROJET_SERVICE_URI` | `/api/ai/docs/`, `/api/ai/schema/` |
 | IA : recommandations | `RECOMMANDATION-SERVICE` | 8007 | `/api/ai/recommandations/**` | `ai-recommandation-service` | `RECOMMANDATION_SERVICE_URI` | `/api/ai/docs/`, `/api/ai/schema/` (même chemin) |
 | IA : conversations | `CONVERSATION-SERVICE` | 8008 | `/api/ai/conversations/**` | `ai-conversation-service` | `CONVERSATION_SERVICE_URI` | `/api/ai/docs/`, `/api/ai/schema/` (même chemin) |
 | Finance : documents | `DOCUMENT-SERVICE` | 8083 | `/api/finance/documents/**`, `/api/finance/projets/*/documents`, `/api/finance/projets/*/notifications` | `document-service` | `DOCUMENT_SERVICE_URI` | `/swagger-ui.html`, `/v3/api-docs` (hors préfixe, accès direct sur 8083) |
 | Finance : prévisions | `PREVISION-SERVICE` | 8081 | `/api/finance/**` (après `document-service`) | `prevision-service` | `PREVISION_SERVICE_URI` | `/swagger-ui.html`, `/v3/api-docs` (hors préfixe, accès direct sur 8081) |
-| Utilisateurs | ⚠️ `USER-SERVICE` **à confirmer** | ⚠️ **à confirmer** | `/api/auth/**`, `/api/users/**` | `user-service` | `USER_SERVICE_URI` | ⚠️ **à confirmer** |
+| Utilisateurs (Django + Keycloak) | `user-service` (minuscules) | 8001 | `/api/auth/**` | `user-service` | `USER_SERVICE_URI` | `/api/docs/`, `/api/redoc/`, `/api/schema/` (hors préfixe) |
 
 Les 4 routes Market sont déclarées **dans cet ordre** : la SWOT passe avant les études, sinon
 `/api/market/etudes/5/generer-swot/` partirait vers ETUDE-SERVICE. Chaque service Market a aussi
@@ -92,12 +94,29 @@ Les 3 services IA (Co-Fondateur IA, [Backend/AI-Service](../AI-Service)) partage
   demande (en-tête `Referer` contenant `/docs/ai/recommandation/` ou `/docs/ai/conversation/`).
   Elles sont déclarées avant `ai-projet-service`.
 
+Les 3 services avocat ([Backend/Lawyer-*-Service](..)) partagent le préfixe `/api/lawyer/`, découpé
+par ressource (les chemins arrivent inchangés). Ils servent tous leurs docs springdoc aux **mêmes
+chemins** (`/swagger-ui/**`, `/v3/api-docs/**`) :
+- les docs de chaque service sont exposées sous `/docs/lawyer/<service>/swagger-ui/**` et
+  `/docs/lawyer/<service>/v3/api-docs/**` (routes `lawyer-<service>-docs`, réécrites vers `/swagger-ui/**`
+  et `/v3/api-docs/**`), avec `<service>` = `client`, `message` ou `docreview` ;
+- la page Swagger UI charge sa configuration et son schéma à l'adresse absolue `/v3/api-docs/**` :
+  les routes `lawyer-<service>-schema` l'envoient au service dont la page fait la demande (en-tête
+  `Referer` contenant `/docs/lawyer/<service>/`). Sans ce Referer, `/v3/api-docs` n'est pas routé (404).
+
+Le User-Service ([Backend/User-Service](../User-Service)) sert `/api/auth/**` (register, login,
+refresh, logout, profile, health, lawyers). Ses docs drf-spectacular sont hors préfixe : elles sont
+exposées sous `/docs/user/docs/`, `/docs/user/redoc/` et `/docs/user/schema/` (route `user-docs`,
+réécrite vers `/api/...`). Les pages Swagger UI et ReDoc chargent leur schéma à l'adresse absolue
+`/api/schema/` : la route `user-schema` l'envoie au User-Service quand le `Referer` contient `/docs/user/`.
+
 Routes de documentation supplémentaires (réécriture, pour les docs servies hors préfixe) :
 
 | Route id | Chemin gateway | Chemin envoyé au service |
 |---|---|---|
-| `lawyer-docs` | `/docs/lawyer/swagger-ui/**` | `/swagger-ui/**` |
-| `lawyer-docs` | `/docs/lawyer/v3/api-docs/**` | `/v3/api-docs/**` |
+| `lawyer-<service>-docs` | `/docs/lawyer/<service>/swagger-ui/**` | `/swagger-ui/**` |
+| `lawyer-<service>-docs` | `/docs/lawyer/<service>/v3/api-docs/**` | `/v3/api-docs/**` |
+| `user-docs` | `/docs/user/{docs,redoc,schema}/**` | `/api/{docs,redoc,schema}/**` |
 | `legal-docs` | `/docs/legal/**` | `/api/docs/**` |
 | `legal-docs-json` | `/docs/legal-json` | `/api/docs-json` |
 
@@ -113,19 +132,19 @@ Les routes juridiques `/docs/legal…` sont à supprimer si le Legal-Service pas
 | Market : études, personas | http://localhost:8090/api/market/etudes/docs/ | http://localhost:8090/api/market/etudes/schema/ |
 | Market : SWOT | http://localhost:8090/api/market/swot/docs/ | http://localhost:8090/api/market/swot/schema/ |
 | Comptable | http://localhost:8090/api/comptable/docs | http://localhost:8090/api/comptable/docs.json |
-| Avocat | http://localhost:8090/docs/lawyer/swagger-ui/index.html | http://localhost:8090/docs/lawyer/v3/api-docs |
+| Avocat : clients | http://localhost:8090/docs/lawyer/client/swagger-ui/index.html | http://localhost:8090/docs/lawyer/client/v3/api-docs |
+| Avocat : messages | http://localhost:8090/docs/lawyer/message/swagger-ui/index.html | http://localhost:8090/docs/lawyer/message/v3/api-docs |
+| Avocat : revue de documents | http://localhost:8090/docs/lawyer/docreview/swagger-ui/index.html | http://localhost:8090/docs/lawyer/docreview/v3/api-docs |
 | Juridique | http://localhost:8090/docs/legal | http://localhost:8090/docs/legal-json |
 | IA : projets, analyses | http://localhost:8090/docs/ai/projet/docs/ | http://localhost:8090/docs/ai/projet/schema/ |
 | IA : recommandations | http://localhost:8090/docs/ai/recommandation/docs/ | http://localhost:8090/docs/ai/recommandation/schema/ |
 | IA : conversations | http://localhost:8090/docs/ai/conversation/docs/ | http://localhost:8090/docs/ai/conversation/schema/ |
 | Finance (documents) | http://localhost:8083/swagger-ui.html (direct) | http://localhost:8083/v3/api-docs (direct) |
 | Finance (prévisions) | http://localhost:8081/swagger-ui.html (direct) | http://localhost:8081/v3/api-docs (direct) |
-| Utilisateurs | ⚠️ à confirmer | ⚠️ à confirmer |
+| Utilisateurs | http://localhost:8090/docs/user/docs/ (ReDoc : http://localhost:8090/docs/user/redoc/) | http://localhost:8090/docs/user/schema/ |
 
-> Avocat (springdoc) : la page Swagger UI charge sa configuration à une adresse absolue
-> (`/v3/api-docs/swagger-config`). Si la page reste vide via la gateway, ouvrir la définition
-> directement (`/docs/lawyer/v3/api-docs`) ; la solution durable est de servir les docs sous
-> `/api/lawyer/…` (`springdoc.swagger-ui.path` et `springdoc.api-docs.path`).
+> Avocat (springdoc) : ouvrir directement `.../swagger-ui/index.html` (et non `/swagger-ui.html`,
+> qui redirige vers une adresse absolue hors gateway).
 
 Toutes ces docs sont **publiques**, même quand le JWT est activé.
 
@@ -154,10 +173,9 @@ Tout est dans `src/main/resources/` :
 - **eureka** (par défaut) : la gateway s'enregistre dans Eureka et route en `lb://<NOM-EUREKA>`.
   Le registre est relu toutes les 5 s : un service qui démarre est joignable quelques secondes après.
 - **local** : sans Eureka, URL directes `http://localhost:<port>` pour Market (8010 à 8013),
-  Comptable (8085), Avocat (8082), Juridique (3003), Finance prévisions (8081), Finance
-  documents (8083) et IA (projets 8006, recommandations 8007, conversations 8008).
-  Utilisateurs n'a pas encore de port confirmé : il répond 503 tant que `USER_SERVICE_URI`
-  n'est pas défini.
+  Comptable (8085), Avocat (8082, 8084, 8086), Juridique (3003), Finance prévisions (8081), Finance
+  documents (8083), IA (projets 8006, recommandations 8007, conversations 8008) et
+  Utilisateurs (8001).
 
 Dans les deux profils, `<NOM>_SERVICE_URI` bascule un service en URL directe, par exemple pour
 tester le service d'un autre membre sur son PC : `LEGAL_SERVICE_URI=http://192.168.1.20:3003`.
@@ -239,7 +257,7 @@ Avec `JWT_ENABLED=false` (défaut), tout est ouvert : pratique pour tester sans 
    (`/api/comptable/…`, `/api/legal/…`). La gateway ne le retire pas : votre service reçoit
    `/api/comptable/factures` tel quel. Idéalement, servez aussi vos docs sous ce préfixe.
 2. **Nom Eureka** : enregistrez votre service dans Eureka (`http://localhost:8761/eureka/`)
-   sous **exactement** le nom du tableau (`PROFESSIONAL-SERVICE`, `lawyer-space`, `LEGAL-SERVICE`…).
+   sous **exactement** le nom du tableau (`PROFESSIONAL-SERVICE`, `lawyer-client-service`, `LEGAL-SERVICE`…).
    Spring Boot : `spring.application.name` + `spring-cloud-starter-netflix-eureka-client` ;
    Node.js : `eureka-js-client` ; Python : `py-eureka-client` (voir Backend/Market).
 3. **Port** : gardez le port du tableau ; s'il change, prévenez pour mettre à jour le profil local.
@@ -276,7 +294,7 @@ curl -i -H "X-Request-Id: test-123" http://localhost:8090/api/market/etudes/heal
 
 # Service absent d'Eureka -> 503 {"service":"PROFESSIONAL-SERVICE","message":"Service indisponible"}
 curl -i http://localhost:8090/api/comptable/factures
-curl -i http://localhost:8090/api/lawyer/dossiers
+curl -i http://localhost:8090/api/lawyer/clients
 curl -i http://localhost:8090/api/legal/contrats
 
 # Préflight CORS du frontend
@@ -308,7 +326,9 @@ Tests d'intégration (`@SpringBootTest` sur un port aléatoire, faux services Mo
 | `AiRoutesTest` | chaque chemin `/api/ai/...` arrive au bon des 3 services IA, réécriture des docs `/docs/ai/<service>/…`, schéma `/api/ai/schema/` envoyé selon le `Referer` ; l'ancienne route unique `/api/ai/**` n'existe plus |
 | `ProxyTest` | relais vers un faux etude-service (profil local) : chemin et query inchangés, `Authorization` transmis, `X-Request-Id`, CORS (en-tête unique, préflight, origine refusée) |
 | `ServiceUnavailableTest` | 503 JSON pour un service éteint (URL directe), un `lb://` sans instance et une connexion coupée avant réponse (conteneur Docker en cours d'arrêt), CORS sur le 503 |
-| `DocsRewriteTest` | réécriture des docs avocat (`/docs/lawyer/…`) et juridique (`/docs/legal…`) |
+| `DocsRewriteTest` | réécriture des docs juridique (`/docs/legal…`) |
+| `UserRoutesTest` | User-Service : `/api/auth/**`, docs `/docs/user/…`, schéma choisi par Referer |
+| `LawyerRoutesTest` | les 3 services avocat : routage par ressource, docs `/docs/lawyer/<service>/…`, schéma choisi par Referer |
 | `JwtSecurityTest` | `JWT_ENABLED=true` avec un faux Keycloak (JWKS) et de vrais JWT RS256 : 401 sans token / token invalide / expiré, accès avec un token valide (transmis tel quel), routes publiques, préflight |
 
 ## Structure

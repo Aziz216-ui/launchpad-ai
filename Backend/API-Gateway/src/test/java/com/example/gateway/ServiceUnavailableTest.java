@@ -26,8 +26,10 @@ class ServiceUnavailableTest extends GatewayTestSupport {
     static void services(DynamicPropertyRegistry registry) {
         String closed = MockService.closedPortUrl();
         registry.add("launchpad.services.legal.uri", () -> closed);
-        registry.add("launchpad.services.lawyer.uri", () -> closed);
+        registry.add("launchpad.services.lawyer-client.uri", () -> closed);
         registry.add("launchpad.services.secteur.uri", stopping::url);
+        // Route en lb:// alors qu'Eureka est coupé (profil local) : aucune instance connue
+        registry.add("launchpad.services.user.uri", () -> "lb://user-service");
     }
 
     @Test
@@ -47,17 +49,16 @@ class ServiceUnavailableTest extends GatewayTestSupport {
 
     @Test
     void lowercaseEurekaNameIsKeptInTheMessage() {
-        client.get().uri("/api/lawyer/dossiers").exchange()
+        client.get().uri("/api/lawyer/clients").exchange()
                 .expectStatus().isEqualTo(503)
-                .expectBody().jsonPath("$.service").isEqualTo("lawyer-space");
+                .expectBody().jsonPath("$.service").isEqualTo("lawyer-client-service");
     }
 
     @Test
     void loadBalancedRouteWithoutInstanceGives503Json() {
-        // user-service reste en lb://USER-SERVICE en profil local : aucune instance connue
         client.post().uri("/api/auth/login").exchange()
                 .expectStatus().isEqualTo(503)
-                .expectBody().json("{\"service\":\"USER-SERVICE\",\"message\":\"Service indisponible\"}", JsonCompareMode.STRICT);
+                .expectBody().json("{\"service\":\"user-service\",\"message\":\"Service indisponible\"}", JsonCompareMode.STRICT);
     }
 
     @Test

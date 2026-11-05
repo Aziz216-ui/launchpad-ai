@@ -22,7 +22,10 @@ services:
       ETUDE_SERVICE_URI: http://host.docker.internal:8012
       SWOT_SERVICE_URI: http://host.docker.internal:8013
       # ACCOUNTING_SERVICE_URI: http://host.docker.internal:8085
-      # LAWYER_SERVICE_URI: http://host.docker.internal:8082
+      # LAWYER_CLIENT_SERVICE_URI: http://host.docker.internal:8082
+      # LAWYER_MESSAGE_SERVICE_URI: http://host.docker.internal:8084
+      # LAWYER_DOCREVIEW_SERVICE_URI: http://host.docker.internal:8086
       # LEGAL_SERVICE_URI: http://host.docker.internal:3003
+      # USER_SERVICE_URI: http://host.docker.internal:8001
     extra_hosts:
       - "host.docker.internal:host-gateway"  # nécessaire sous Linux, sans effet sous Docker Desktop
