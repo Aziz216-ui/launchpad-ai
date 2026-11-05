@@ -26,6 +26,8 @@ services:
       DB_USERNAME: ${DB_USERNAME:-prevision}
       DB_PASSWORD: ${DB_PASSWORD:-prevision}
       EUREKA_SERVER_URL: ${EUREKA_SERVER_URL:-http://host.docker.internal:8761/eureka/}
+      # Adresse annoncée dans Eureka : joignable depuis l'hôte et les autres conteneurs (port publié ci-dessous).
+      EUREKA_INSTANCE_HOST: ${EUREKA_INSTANCE_HOST:-host.docker.internal}
       DOCUMENT_SERVICE_URL: ${DOCUMENT_SERVICE_URL:-http://host.docker.internal:8082}
       SPRING_AI_MODEL_CHAT: ${SPRING_AI_MODEL_CHAT:-none}
       XAI_API_KEY: ${XAI_API_KEY:-}

@@ -48,7 +48,12 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
   instance:
-    prefer-ip-address: true
+    # Adresse annoncée aux autres services (même convention que l'API Gateway) : localhost en local,
+    # host.docker.internal en conteneur (voir docker-compose.yml). L'IP détectée automatiquement peut être celle
+    # d'une carte réseau virtuelle (VMware, Hyper-V…) injoignable depuis les autres services.
+    hostname: ${EUREKA_INSTANCE_HOST:localhost}
+    prefer-ip-address: false
+    instance-id: ${eureka.instance.hostname}:${spring.application.name}:${server.port}
 
 springdoc:
   swagger-ui:

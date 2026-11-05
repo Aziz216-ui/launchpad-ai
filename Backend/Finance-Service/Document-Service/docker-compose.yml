@@ -26,6 +26,8 @@ services:
       DB_USERNAME: ${DB_USERNAME:-document}
       DB_PASSWORD: ${DB_PASSWORD:-document}
       EUREKA_SERVER_URL: ${EUREKA_SERVER_URL:-http://host.docker.internal:8761/eureka/}
+      # Adresse annoncée dans Eureka : joignable depuis l'hôte et les autres conteneurs (port publié ci-dessous).
+      EUREKA_INSTANCE_HOST: ${EUREKA_INSTANCE_HOST:-host.docker.internal}
       PREVISION_SERVICE_URL: ${PREVISION_SERVICE_URL:-http://host.docker.internal:8081}
       RABBITMQ_HOST: ${RABBITMQ_HOST:-host.docker.internal}
     ports:
