@@ -15,8 +15,10 @@ export const environment = {
   legalApiUrl: '',
   /** Professional-Service (Comptabilité et Avocat, features/professional) : à remplir par le membre concerné. */
   professionalApiUrl: '',
-  /** User-Service (comptes, authentification, features/auth) : à remplir par le membre concerné. */
-  userApiUrl: '',
+  /** Espace avocat : 3 microservices (clients, messages, revue de documents), via l'API Gateway. */
+  lawyerApiUrl: 'http://localhost:8090/api/lawyer',
+  /** User-Service (comptes, authentification Keycloak, features/auth), via l'API Gateway. */
+  userApiUrl: 'http://localhost:8090/api/auth',
 
   /** Utilisateur provisoire, en attendant le User-Service et son token JWT. */
   utilisateur: {

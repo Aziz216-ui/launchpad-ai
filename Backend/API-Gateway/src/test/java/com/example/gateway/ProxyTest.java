@@ -87,6 +87,19 @@ class ProxyTest extends GatewayTestSupport {
         assertThat(market.lastRequest()).as("le préflight ne doit pas atteindre le service").isNull();
     }
 
+    /** Les services avocat lisent l'en-tête X-Lawyer-Id envoyé par le frontend. */
+    @Test
+    void corsPreflightAcceptsTheLawyerIdHeader() {
+        client.options().uri("/api/lawyer/clients")
+                .header(HttpHeaders.ORIGIN, "http://localhost:4200")
+                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET")
+                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization, Content-Type, X-Lawyer-Id")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().value(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
+                        h -> assertThat(h.toLowerCase()).contains("x-lawyer-id"));
+    }
+
     @Test
     void otherOriginsAreRejected() {
         client.get().uri("/api/market/etudes/")

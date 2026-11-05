@@ -47,7 +47,7 @@ OAuth2 Resource Server (JWT Keycloak).
 
 Fonctionnalités transverses (aucun service n'a à les refaire) :
 - **CORS** : uniquement ici (origine `http://localhost:4200`, configurable par `CORS_ALLOWED_ORIGINS`) ;
-  méthodes GET/POST/PUT/PATCH/DELETE/OPTIONS, en-têtes `Authorization` et `Content-Type`.
+  méthodes GET/POST/PUT/PATCH/DELETE/OPTIONS, en-têtes `Authorization`, `Content-Type` et `X-Lawyer-Id` (services avocat).
   Les en-têtes CORS sont aussi présents sur les 401 et 503. `DedupeResponseHeader` supprime les
   doublons si un service en envoie quand même.
 - **Logs** : une ligne par requête `GET /api/market/etudes/ -> 200 (12 ms) [<X-Request-Id>]`.
