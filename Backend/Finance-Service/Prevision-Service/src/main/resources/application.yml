@@ -64,7 +64,7 @@ finance:
   # Timeout court : un service éteint ne bloque pas l'assistant financier.
   document-service:
     nom: ${DOCUMENT_SERVICE_NOM:document-service}
-    url: ${DOCUMENT_SERVICE_URL:http://localhost:8082}
+    url: ${DOCUMENT_SERVICE_URL:http://localhost:8083}
     timeout: 5s
 
 management:

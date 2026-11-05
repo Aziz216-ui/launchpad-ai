@@ -65,7 +65,8 @@ Fonctionnalités transverses (aucun service n'a à les refaire) :
 | Avocat | `lawyer-space` (minuscules) | 8082 | `/api/lawyer/**` | `lawyer-service` | `LAWYER_SERVICE_URI` | `/swagger-ui/**`, `/v3/api-docs/**` (hors préfixe) |
 | Juridique | `LEGAL-SERVICE` | 3003 | `/api/legal/**` | `legal-service` | `LEGAL_SERVICE_URI` | `/api/docs`, `/api/docs-json` (hors préfixe) |
 | IA | ⚠️ `AI-SERVICE` **à confirmer** | ⚠️ **à confirmer** | `/api/ai/**` | `ai-service` | `AI_SERVICE_URI` | ⚠️ **à confirmer** |
-| Finance | ⚠️ `FINANCE-SERVICE` **à confirmer** | ⚠️ **à confirmer** | `/api/finance/**` | `finance-service` | `FINANCE_SERVICE_URI` | ⚠️ **à confirmer** |
+| Finance : documents | `DOCUMENT-SERVICE` | 8083 | `/api/finance/documents/**`, `/api/finance/projets/*/documents`, `/api/finance/projets/*/notifications` | `document-service` | `DOCUMENT_SERVICE_URI` | `/swagger-ui.html`, `/v3/api-docs` (hors préfixe, accès direct sur 8083) |
+| Finance : prévisions | `PREVISION-SERVICE` | 8081 | `/api/finance/**` (après `document-service`) | `prevision-service` | `PREVISION_SERVICE_URI` | `/swagger-ui.html`, `/v3/api-docs` (hors préfixe, accès direct sur 8081) |
 | Utilisateurs | ⚠️ `USER-SERVICE` **à confirmer** | ⚠️ **à confirmer** | `/api/auth/**`, `/api/users/**` | `user-service` | `USER_SERVICE_URI` | ⚠️ **à confirmer** |
 
 Routes de documentation supplémentaires (réécriture, pour les docs servies hors préfixe) :
@@ -89,7 +90,8 @@ Les routes juridiques `/docs/legal…` sont à supprimer si le Legal-Service pas
 | Avocat | http://localhost:8090/docs/lawyer/swagger-ui/index.html | http://localhost:8090/docs/lawyer/v3/api-docs |
 | Juridique | http://localhost:8090/docs/legal | http://localhost:8090/docs/legal-json |
 | IA | ⚠️ à confirmer | ⚠️ à confirmer |
-| Finance | ⚠️ à confirmer | ⚠️ à confirmer |
+| Finance (documents) | http://localhost:8083/swagger-ui.html (direct) | http://localhost:8083/v3/api-docs (direct) |
+| Finance (prévisions) | http://localhost:8081/swagger-ui.html (direct) | http://localhost:8081/v3/api-docs (direct) |
 | Utilisateurs | ⚠️ à confirmer | ⚠️ à confirmer |
 
 > Avocat (springdoc) : la page Swagger UI charge sa configuration à une adresse absolue
@@ -124,9 +126,9 @@ Tout est dans `src/main/resources/` :
 - **eureka** (par défaut) : la gateway s'enregistre dans Eureka et route en `lb://<NOM-EUREKA>`.
   Le registre est relu toutes les 5 s : un service qui démarre est joignable quelques secondes après.
 - **local** : sans Eureka, URL directes `http://localhost:<port>` pour Market (8005),
-  Comptable (8085), Avocat (8082) et Juridique (3003). IA, Finance et Utilisateurs n'ont pas
-  encore de port confirmé : ils répondent 503 tant que `AI_SERVICE_URI`, `FINANCE_SERVICE_URI`
-  ou `USER_SERVICE_URI` n'est pas défini.
+  Comptable (8085), Avocat (8082), Juridique (3003), Finance prévisions (8081) et Finance
+  documents (8083). IA et Utilisateurs n'ont pas encore de port confirmé : ils répondent 503
+  tant que `AI_SERVICE_URI` ou `USER_SERVICE_URI` n'est pas défini.
 
 Dans les deux profils, `<NOM>_SERVICE_URI` bascule un service en URL directe, par exemple pour
 tester le service d'un autre membre sur son PC : `LEGAL_SERVICE_URI=http://192.168.1.20:3003`.

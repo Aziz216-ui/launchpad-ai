@@ -43,17 +43,26 @@ class RoutesTest extends GatewayTestSupport {
         Map<String, String> uris = routes().stream()
                 .collect(Collectors.toMap(Route::getId, r -> r.getUri().toString()));
 
-        assertThat(uris).containsExactlyInAnyOrderEntriesOf(Map.of(
-                "market-service", "lb://MARKET-SERVICE",
-                "accounting-service", "lb://PROFESSIONAL-SERVICE",
-                "lawyer-service", "lb://lawyer-space",
-                "lawyer-docs", "lb://lawyer-space",
-                "legal-service", "lb://LEGAL-SERVICE",
-                "legal-docs", "lb://LEGAL-SERVICE",
-                "legal-docs-json", "lb://LEGAL-SERVICE",
-                "ai-service", "lb://AI-SERVICE",
-                "finance-service", "lb://FINANCE-SERVICE",
-                "user-service", "lb://USER-SERVICE"));
+        assertThat(uris).containsExactlyInAnyOrderEntriesOf(Map.ofEntries(
+                Map.entry("market-service", "lb://MARKET-SERVICE"),
+                Map.entry("accounting-service", "lb://PROFESSIONAL-SERVICE"),
+                Map.entry("lawyer-service", "lb://lawyer-space"),
+                Map.entry("lawyer-docs", "lb://lawyer-space"),
+                Map.entry("legal-service", "lb://LEGAL-SERVICE"),
+                Map.entry("legal-docs", "lb://LEGAL-SERVICE"),
+                Map.entry("legal-docs-json", "lb://LEGAL-SERVICE"),
+                Map.entry("ai-service", "lb://AI-SERVICE"),
+                Map.entry("document-service", "lb://DOCUMENT-SERVICE"),
+                Map.entry("prevision-service", "lb://PREVISION-SERVICE"),
+                Map.entry("user-service", "lb://USER-SERVICE")));
+    }
+
+    /** Finance : la route Document-Service (chemins précis) doit passer avant /api/finance/** (Prevision-Service). */
+    @Test
+    void financeDocumentRouteIsEvaluatedBeforePrevisionCatchAll() {
+        List<String> ids = routes().stream().map(Route::getId).toList();
+        assertThat(ids.indexOf("document-service")).isNotNegative()
+                .isLessThan(ids.indexOf("prevision-service"));
     }
 
     @Test
@@ -70,7 +79,7 @@ class RoutesTest extends GatewayTestSupport {
         client.get().uri("/actuator/gateway/routes").exchange()
                 .expectStatus().isOk()
                 .expectBody()
-                .jsonPath("$.length()").isEqualTo(10)
+                .jsonPath("$.length()").isEqualTo(11)
                 .jsonPath("$[?(@.route_id == 'accounting-service')].uri").isEqualTo("lb://PROFESSIONAL-SERVICE")
                 .jsonPath("$[?(@.route_id == 'lawyer-service')].uri").isEqualTo("lb://lawyer-space");
     }

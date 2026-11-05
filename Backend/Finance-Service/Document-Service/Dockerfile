@@ -13,5 +13,5 @@ WORKDIR /app
 RUN useradd --system --uid 1001 document && mkdir -p /app/data/documents && chown -R document /app
 COPY --from=build /build/target/document-service.jar app.jar
 USER document
-EXPOSE 8082
+EXPOSE 8083
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

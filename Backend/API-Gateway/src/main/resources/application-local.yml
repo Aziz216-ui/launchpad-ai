@@ -21,3 +21,7 @@ launchpad:
       uri: ${LAWYER_SERVICE_URI:http://localhost:8082}
     legal:
       uri: ${LEGAL_SERVICE_URI:http://localhost:3003}
+    prevision:
+      uri: ${PREVISION_SERVICE_URI:http://localhost:8081}
+    document:
+      uri: ${DOCUMENT_SERVICE_URI:http://localhost:8083}
