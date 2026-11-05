@@ -18,20 +18,21 @@ import os
 import time
 
 import pika
+from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from recommandation.events.handlers import handle_diagnostic_termine
 
 logger = logging.getLogger(__name__)
 
-EXCHANGE_NAME = os.getenv("RABBITMQ_EXCHANGE", "ai.events")
+EXCHANGE_NAME = getattr(settings, "RABBITMQ_EXCHANGE", os.getenv("RABBITMQ_EXCHANGE", "ai.events"))
 QUEUE_NAME = "recommandation.diagnostic-termine"
 ROUTING_KEY = "diagnostic.termine"
 
-RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
-RABBITMQ_PORT = int(os.getenv("RABBITMQ_PORT", "5672"))
-RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
-RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "guest")
+RABBITMQ_HOST = getattr(settings, "RABBITMQ_HOST", os.getenv("RABBITMQ_HOST", "localhost"))
+RABBITMQ_PORT = int(getattr(settings, "RABBITMQ_PORT", os.getenv("RABBITMQ_PORT", "5672")))
+RABBITMQ_USER = getattr(settings, "RABBITMQ_USER", os.getenv("RABBITMQ_USER", "market"))
+RABBITMQ_PASSWORD = getattr(settings, "RABBITMQ_PASSWORD", os.getenv("RABBITMQ_PASSWORD", "market"))
 
 
 class Command(BaseCommand):

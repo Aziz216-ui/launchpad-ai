@@ -20,14 +20,15 @@ import uuid
 from datetime import datetime, timezone
 
 import pika
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-EXCHANGE_NAME = os.getenv("RABBITMQ_EXCHANGE", "ai.events")
-RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
-RABBITMQ_PORT = int(os.getenv("RABBITMQ_PORT", "5672"))
-RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
-RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "guest")
+EXCHANGE_NAME = getattr(settings, "RABBITMQ_EXCHANGE", os.getenv("RABBITMQ_EXCHANGE", "ai.events"))
+RABBITMQ_HOST = getattr(settings, "RABBITMQ_HOST", os.getenv("RABBITMQ_HOST", "localhost"))
+RABBITMQ_PORT = int(getattr(settings, "RABBITMQ_PORT", os.getenv("RABBITMQ_PORT", "5672")))
+RABBITMQ_USER = getattr(settings, "RABBITMQ_USER", os.getenv("RABBITMQ_USER", "market"))
+RABBITMQ_PASSWORD = getattr(settings, "RABBITMQ_PASSWORD", os.getenv("RABBITMQ_PASSWORD", "market"))
 
 
 def _get_connection():
