@@ -8,8 +8,8 @@ export const environment = {
 
   /** Market-Service (module Étude de marché, features/market). */
   marketApiUrl: 'http://localhost:8090/api/market',
-  /** AI-Service (module Co-Fondateur IA, features/ai) : à remplir par le membre concerné. */
-  aiApiUrl: '',
+  /** AI-Service (module Co-Fondateur IA, features/ai). Exposé via l'API Gateway (port 8090). */
+  aiApiUrl: 'http://localhost:8090/api/ai',
   /** Finance-Service (module Finance, features/finance) : à remplir par le membre concerné. */
   financeApiUrl: '',
   /** Legal-Service (module Juridique, features/legal) : à remplir par le membre concerné. */
