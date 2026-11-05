@@ -42,10 +42,11 @@ public class SecurityConfig {
     /** Routes accessibles sans token : authentification, documentations, health checks. */
     public static final List<String> PUBLIC_PATHS = List.of(
             "/api/auth/**",
-            "/api/market/docs/**", "/api/market/schema/**",
+            // Docs des 4 services de l'étude de marché : /api/market/<ressource>/docs/ et /schema/
+            "/api/market/*/docs/**", "/api/market/*/schema/**",
             "/api/comptable/docs", "/api/comptable/docs/**", "/api/comptable/docs.json",
             "/docs/**",
-            "/api/market/health", "/api/market/health/",
+            "/api/market/*/health", "/api/market/*/health/",
             "/api/comptable/health",
             "/actuator/health", "/actuator/health/**");
 

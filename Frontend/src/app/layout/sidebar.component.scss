@@ -1,4 +1,4 @@
-﻿@use 'variables' as *;
+@use 'variables' as *;
 
 :host {
   flex: 1 1 232px;
@@ -161,11 +161,11 @@ nav {
   justify-content: center;
 }
 
-// Mobile : la barre passe au-dessus du contenu et le menu d├⌐file horizontalement
+// Mobile : la barre passe au-dessus du contenu et le menu défile horizontalement
 @media (max-width: $mobile) {
   :host {
     flex-basis: 100%;
-    // Sans min-width: 0, le menu horizontal ├⌐largirait toute la page
+    // Sans min-width: 0, le menu horizontal élargirait toute la page
     min-width: 0;
     border-right: 0;
     border-bottom: 1px solid $bordure;

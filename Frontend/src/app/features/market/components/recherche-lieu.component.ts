@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, DestroyRef, computed, forwardRef, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, forwardRef, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Subject, catchError, debounceTime, distinctUntilChanged, filter, from, map, of, switchMap, tap } from 'rxjs';
@@ -6,17 +6,17 @@ import { Subject, catchError, debounceTime, distinctUntilChanged, filter, from, 
 import { CarteLieuxComponent } from './carte-lieux.component';
 import { GeocodageService, Lieu } from '../services/geocodage.service';
 
-/** Debounce et longueur minimale : au plus une requ├¬te Nominatim par seconde, et pas pour 1 ou 2 lettres. */
+/** Debounce et longueur minimale : au plus une requête Nominatim par seconde, et pas pour 1 ou 2 lettres. */
 const DEBOUNCE_MS = 600;
 const LONGUEUR_MIN = 3;
 
 let compteur = 0;
 
 /**
- * Champ ┬½ lieu ┬╗ avec suggestions OpenStreetMap (Nominatim) et petite carte.
- * Le lieu se choisit au clavier (suggestions) ou sur la carte (clic ou d├⌐placement du marqueur,
- * puis reverse geocoding). La valeur du formulaire reste un simple texte (ex. ┬½ Sfax, Tunisie ┬╗) :
- * la saisie libre est toujours accept├⌐e, y compris quand Nominatim ne r├⌐pond pas.
+ * Champ « lieu » avec suggestions OpenStreetMap (Nominatim) et petite carte.
+ * Le lieu se choisit au clavier (suggestions) ou sur la carte (clic ou déplacement du marqueur,
+ * puis reverse geocoding). La valeur du formulaire reste un simple texte (ex. « Sfax, Tunisie ») :
+ * la saisie libre est toujours acceptée, y compris quand Nominatim ne répond pas.
  */
 @Component({
   selector: 'app-recherche-lieu',
@@ -40,11 +40,11 @@ export class RechercheLieuComponent implements ControlValueAccessor {
   protected readonly recherche = signal(false);
   protected readonly indisponible = signal(false);
   protected readonly desactive = signal(false);
-  /** Lieu affich├⌐ sur la carte : suggestion choisie, point cliqu├⌐, ou texte saisi g├⌐ocod├⌐ ├á la sortie du champ. */
+  /** Lieu affiché sur la carte : suggestion choisie, point cliqué, ou texte saisi géocodé à la sortie du champ. */
   protected readonly lieu = signal<Lieu | null>(null);
   /** Reverse geocoding d'un point choisi sur la carte. */
   protected readonly lieuCarte = signal<'aucun' | 'recherche' | 'introuvable'>('aucun');
-  /** Num├⌐ro de la derni├¿re demande de placement : une r├⌐ponse plus ancienne est ignor├⌐e. */
+  /** Numéro de la dernière demande de placement : une réponse plus ancienne est ignorée. */
   private placement = 0;
 
   protected readonly listeId = computed(() => `${this.identifiant()}-suggestions`);
@@ -79,7 +79,7 @@ export class RechercheLieuComponent implements ControlValueAccessor {
       .subscribe(({ texte, lieux, erreur }) => {
         this.recherche.set(false);
         this.indisponible.set(erreur);
-        // R├⌐ponse arriv├⌐e apr├¿s que le texte a encore chang├⌐ : ignor├⌐e
+        // Réponse arrivée après que le texte a encore changé : ignorée
         if (texte !== this.texte().trim()) return;
         this.suggestions.set(lieux);
         this.actif.set(-1);
@@ -124,10 +124,10 @@ export class RechercheLieuComponent implements ControlValueAccessor {
     this.fermer();
   }
 
-  /** Clic sur la carte ou fin du d├⌐placement du marqueur : le champ prend le nom du lieu. */
+  /** Clic sur la carte ou fin du déplacement du marqueur : le champ prend le nom du lieu. */
   protected choisirSurCarte({ lat, lon }: { lat: number; lon: number }): void {
     const demande = ++this.placement;
-    // Le marqueur suit tout de suite le clic ; le nom arrive avec la r├⌐ponse de Nominatim
+    // Le marqueur suit tout de suite le clic ; le nom arrive avec la réponse de Nominatim
     this.lieu.set({ libelle: this.texte(), detail: '', lat, lon });
     this.lieuCarte.set('recherche');
     this.fermer();

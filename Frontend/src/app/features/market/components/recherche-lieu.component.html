@@ -1,4 +1,4 @@
-﻿<div class="recherche">
+<div class="recherche">
   <input
     type="text"
     role="combobox"
@@ -16,7 +16,7 @@
     (keydown)="clavier($event)"
     (blur)="sortie()" />
   @if (ouvert()) {
-    <ul class="suggestions" role="listbox" [id]="listeId()" aria-label="Lieux sugg├⌐r├⌐s">
+    <ul class="suggestions" role="listbox" [id]="listeId()" aria-label="Lieux suggérés">
       @for (s of suggestions(); track s.detail; let i = $index) {
         <!-- mousedown : choisit avant que le champ ne perde le focus -->
         <li role="option" [id]="listeId() + '-' + i" [attr.aria-selected]="actif() === i" [class.actif]="actif() === i"
@@ -29,11 +29,11 @@
   }
 </div>
 @if (lieuCarte() === 'recherche') {
-  <span class="aide" role="status">Recherche du lieuΓÇª</span>
+  <span class="aide" role="status">Recherche du lieu…</span>
 } @else if (lieuCarte() === 'introuvable') {
-  <span class="aide" role="status">Lieu introuvable, saisissez-le ├á la main</span>
+  <span class="aide" role="status">Lieu introuvable, saisissez-le à la main</span>
 } @else if (recherche()) {
-  <span class="aide">Recherche de lieuxΓÇª</span>
+  <span class="aide">Recherche de lieux…</span>
 } @else if (indisponible()) {
   <span class="aide">Suggestions indisponibles pour le moment : saisissez la zone librement.</span>
 } @else {
@@ -41,4 +41,4 @@
 }
 <app-carte-lieux class="mini-carte" [points]="points()" [hauteur]="200" [zoom]="9" [selectionnable]="true"
   [libelle]="lieu() ? 'Carte de la zone : ' + lieu()!.libelle : 'Carte pour choisir la zone'" (choisi)="choisirSurCarte($event)" />
-<span class="aide">Cliquez sur la carte ou d├⌐placez le marqueur pour choisir la zone.</span>
+<span class="aide">Cliquez sur la carte ou déplacez le marqueur pour choisir la zone.</span>

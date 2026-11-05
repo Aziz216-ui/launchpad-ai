@@ -1,15 +1,15 @@
-﻿import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { EtudeStore } from '../services/etude-store.service';
 
-/** Barre d'onglets d'une ├⌐tude (les compteurs viennent de l'API). */
+/** Barre d'onglets d'une étude (les compteurs viennent de l'API). */
 @Component({
   selector: 'app-etude-onglets',
   imports: [RouterLink, RouterLinkActive],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <nav aria-label="Sections de l'├⌐tude">
+    <nav aria-label="Sections de l'étude">
       @for (onglet of onglets(); track onglet.route) {
         <a [routerLink]="onglet.route" routerLinkActive="actif" ariaCurrentWhenActive="page">{{ onglet.libelle }}</a>
       }
@@ -48,7 +48,7 @@ export class EtudeOngletsComponent {
     const nbConcurrents = etude?.concurrents.length ?? 0;
     const nbPersonas = etude?.personas.length ?? 0;
     return [
-      { route: 'apercu', libelle: 'Aper├ºu' },
+      { route: 'apercu', libelle: 'Aperçu' },
       { route: 'concurrents', libelle: `Concurrents ${nbConcurrents}` },
       { route: 'tendances', libelle: 'Tendances' },
       { route: 'prix', libelle: 'Comparaison des offres et des prix' },

@@ -1,0 +1,12 @@
+# Secrets locaux (copier .env.example en .env, ne jamais commiter .env)
+.env
+# Fichiers générés
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+venv/
+.venv/
+db.sqlite3
+staticfiles/

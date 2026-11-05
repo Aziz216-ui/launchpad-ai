@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, OnInit, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input, output, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { NotificationService } from '../../../core/notifications/notification.service';
@@ -9,16 +9,16 @@ import { TYPES_SWOT } from '../models/libelles';
 import { ElementSwot, TypeSwot } from '../models/market.models';
 import { MarketApiService } from '../services/market-api.service';
 
-/** Ajout ou modification d'un ├⌐l├⌐ment SWOT saisi ├á la main. */
+/** Ajout ou modification d'un élément SWOT saisi à la main. */
 @Component({
   selector: 'app-swot-modal',
   imports: [ReactiveFormsModule, ModalComponent, FieldErrorComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-modal [titre]="element() ? 'Modifier lΓÇÖ├⌐l├⌐ment' : 'Ajouter un ├⌐l├⌐ment'" [largeur]="520" (fermer)="fermer.emit()">
+    <app-modal [titre]="element() ? 'Modifier l’élément' : 'Ajouter un élément'" [largeur]="520" (fermer)="fermer.emit()">
       <form class="pile" [formGroup]="formulaire" (ngSubmit)="enregistrer()" novalidate>
         <label class="champ" [class.en-erreur]="formulaire.controls.type.touched && formulaire.controls.type.invalid">
-          Cat├⌐gorie *
+          Catégorie *
           <select formControlName="type">
             @for (t of types; track t.type) {
               <option [value]="t.type">{{ t.libelle }} ({{ t.nature }})</option>
@@ -28,18 +28,18 @@ import { MarketApiService } from '../services/market-api.service';
         </label>
         <label class="champ" [class.en-erreur]="formulaire.controls.description.touched && formulaire.controls.description.invalid">
           Description *
-          <textarea rows="3" formControlName="description" placeholder="Ex. ├ëquipe fondatrice issue du secteur"></textarea>
+          <textarea rows="3" formControlName="description" placeholder="Ex. Équipe fondatrice issue du secteur"></textarea>
           <app-field-error [controle]="formulaire.controls.description" />
         </label>
         @if (element()?.genere_automatiquement) {
-          <p class="avertissement">Cet ├⌐l├⌐ment a ├⌐t├⌐ g├⌐n├⌐r├⌐ automatiquement : il sera remplac├⌐ ├á la prochaine
-            g├⌐n├⌐ration de la SWOT. Pour le conserver, ajoutez-le plut├┤t comme nouvel ├⌐l├⌐ment.</p>
+          <p class="avertissement">Cet élément a été généré automatiquement : il sera remplacé à la prochaine
+            génération de la SWOT. Pour le conserver, ajoutez-le plutôt comme nouvel élément.</p>
         }
       </form>
       <ng-container pied>
         <button type="button" class="btn-secondaire" (click)="fermer.emit()" [disabled]="enCours()">Annuler</button>
         <button type="button" class="btn-primaire" (click)="enregistrer()" [disabled]="enCours()">
-          {{ enCours() ? 'EnregistrementΓÇª' : 'Enregistrer' }}
+          {{ enCours() ? 'Enregistrement…' : 'Enregistrer' }}
         </button>
       </ng-container>
     </app-modal>
@@ -67,7 +67,7 @@ export class SwotModalComponent implements OnInit {
 
   readonly etudeId = input.required<number>();
   readonly element = input<ElementSwot | null>(null);
-  /** Cat├⌐gorie pr├⌐s├⌐lectionn├⌐e en cr├⌐ation. */
+  /** Catégorie présélectionnée en création. */
   readonly typeInitial = input<TypeSwot>('force');
   readonly fermer = output<void>();
   readonly enregistre = output<void>();
@@ -101,13 +101,13 @@ export class SwotModalComponent implements OnInit {
     requete.subscribe({
       next: () => {
         this.enCours.set(false);
-        this.notifications.succes(existant ? '├ël├⌐ment mis ├á jour.' : '├ël├⌐ment ajout├⌐ ├á la SWOT.');
+        this.notifications.succes(existant ? 'Élément mis à jour.' : 'Élément ajouté à la SWOT.');
         this.enregistre.emit();
       },
       error: (e: unknown) => {
         this.enCours.set(false);
         appliquerErreursServeur(this.formulaire, e);
-        this.notifications.erreur(messageErreur(e, "Impossible d'enregistrer l'├⌐l├⌐ment."));
+        this.notifications.erreur(messageErreur(e, "Impossible d'enregistrer l'élément."));
       },
     });
   }

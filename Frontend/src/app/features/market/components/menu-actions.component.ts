@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, ElementRef, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, input, signal } from '@angular/core';
 
 import { IconComponent } from '../../../shared/components/icon.component';
 
@@ -6,8 +6,8 @@ import { IconComponent } from '../../../shared/components/icon.component';
 const HAUTEUR_MENU = 150;
 
 /**
- * Bouton ┬½ Γï« ┬╗ des maquettes ouvrant un petit menu.
- * Les boutons du menu sont projet├⌐s ; un clic sur l'un d'eux referme le menu.
+ * Bouton « ⋮ » des maquettes ouvrant un petit menu.
+ * Les boutons du menu sont projetés ; un clic sur l'un d'eux referme le menu.
  */
 @Component({
   selector: 'app-menu-actions',
@@ -66,7 +66,7 @@ const HAUTEUR_MENU = 150;
       top: auto;
       bottom: calc(100% + 4px);
     }
-    /* Les boutons sont projet├⌐s depuis les pages : ::ng-deep limit├⌐ ├á ce menu */
+    /* Les boutons sont projetés depuis les pages : ::ng-deep limité à ce menu */
     .menu ::ng-deep button {
       min-height: 40px;
       padding: 0 12px;
@@ -90,7 +90,7 @@ const HAUTEUR_MENU = 150;
 export class MenuActionsComponent {
   readonly libelle = input('Actions');
   protected readonly ouvert = signal(false);
-  /** Ouvre le menu vers le haut s'il manque de place en dessous (derni├¿res lignes d'un tableau). */
+  /** Ouvre le menu vers le haut s'il manque de place en dessous (dernières lignes d'un tableau). */
   protected readonly versLeHaut = signal(false);
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
 

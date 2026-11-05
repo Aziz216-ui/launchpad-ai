@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { BadgeComponent } from '../../../../shared/components/badge.component';
@@ -13,7 +13,7 @@ import { MarketApiService } from '../../services/market-api.service';
 /** Longueur de l'arc de la jauge (demi-cercle de rayon 70). */
 const LONGUEUR_ARC = 220;
 
-/** Onglet ┬½ Aper├ºu ┬╗ (maquette Apercu.dc.html). */
+/** Onglet « Aperçu » (maquette Apercu.dc.html). */
 @Component({
   selector: 'app-apercu',
   imports: [RouterLink, BadgeComponent, LoaderComponent, MontantPipe, PourcentagePipe, LignesPipe, NomSecteurPipe],
@@ -30,7 +30,7 @@ export class ApercuPage {
   protected readonly potentiels = POTENTIELS;
   protected readonly longueurArc = LONGUEUR_ARC;
 
-  /** Le potentiel commercial n'est calcul├⌐ que dans le rapport. */
+  /** Le potentiel commercial n'est calculé que dans le rapport. */
   protected readonly rapport = signal<RapportEtude | null>(null);
   protected readonly chargementRapport = signal(true);
 
@@ -42,7 +42,7 @@ export class ApercuPage {
     return Math.max(0, Math.min(1, p.score / p.score_max)) * LONGUEUR_ARC;
   });
 
-  /** Texte ┬½ Votre opportunit├⌐ ┬╗, construit ├á partir de la comparaison des prix. */
+  /** Texte « Votre opportunité », construit à partir de la comparaison des prix. */
   protected readonly opportunite = computed(() => {
     const c = this.store.comparaison();
     const etude = this.store.etude();
@@ -53,11 +53,11 @@ export class ApercuPage {
     const position =
       ecart < 0 ? 'sous la moyenne' : ecart > 0 ? 'au-dessus de la moyenne' : 'exactement dans la moyenne';
     const valeur = ecart === 0 ? '' : `${formatPourcentage(Math.abs(ecart))} `;
-    return `├Ç ${formatMontant(c.prix_propose)}, ${etude.titre} se place ${valeur}${position} des ${c.nombre_concurrents} concurrents analys├⌐s (${formatMontant(c.prix_moyen)}).`;
+    return `À ${formatMontant(c.prix_propose)}, ${etude.titre} se place ${valeur}${position} des ${c.nombre_concurrents} concurrents analysés (${formatMontant(c.prix_moyen)}).`;
   });
 
   constructor() {
-    // Recharge le potentiel quand l'├⌐tude change (apr├¿s une modification)
+    // Recharge le potentiel quand l'étude change (après une modification)
     effect(() => {
       const etude = this.store.etude();
       if (!etude) return;

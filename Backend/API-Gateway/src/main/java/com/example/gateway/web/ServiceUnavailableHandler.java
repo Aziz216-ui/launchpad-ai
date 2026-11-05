@@ -1,6 +1,7 @@
 package com.example.gateway.web;
 
 import java.net.ConnectException;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -18,12 +19,14 @@ import org.springframework.web.server.WebExceptionHandler;
 
 import io.netty.channel.ConnectTimeoutException;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.PrematureCloseException;
 
 /**
  * Service absent ou injoignable : 503 {"service": "<NOM>", "message": "Service indisponible"}.
  *
- * Deux cas : aucune instance dans Eureka pour une route lb:// (NotFoundException 503 de
- * la gateway), ou connexion refusée / hôte inconnu pour une URL directe.
+ * Trois cas : aucune instance dans Eureka pour une route lb:// (NotFoundException 503 de
+ * la gateway), connexion refusée / hôte inconnu pour une URL directe, ou connexion coupée
+ * avant toute réponse (service en cours d'arrêt).
  * Le nom affiché vient de metadata.service de la route (application.yml).
  * Les autres erreurs sont laissées au gestionnaire par défaut de Spring Boot.
  */
@@ -54,11 +57,22 @@ public class ServiceUnavailableHandler implements WebExceptionHandler {
         }
         for (Throwable t = ex; t != null; t = t.getCause()) {
             if (t instanceof ConnectException || t instanceof UnknownHostException
-                    || t instanceof ConnectTimeoutException) {
+                    || t instanceof ConnectTimeoutException || closedBeforeResponse(t)) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Connexion acceptée puis fermée sans réponse : sous Docker Desktop, le port publié d'un
+     * conteneur arrêté accepte encore la connexion puis la coupe ("Connection reset").
+     */
+    private static boolean closedBeforeResponse(Throwable t) {
+        if (t instanceof PrematureCloseException) {
+            return String.valueOf(t.getMessage()).contains("BEFORE response");
+        }
+        return t instanceof SocketException && "Connection reset".equals(t.getMessage());
     }
 
     private static String serviceName(ServerWebExchange exchange) {

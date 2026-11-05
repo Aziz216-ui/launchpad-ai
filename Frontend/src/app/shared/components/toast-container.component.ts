@@ -1,9 +1,9 @@
-﻿import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import { NotificationService } from '../../core/notifications/notification.service';
 import { IconComponent } from './icon.component';
 
-/** Affiche les toasts du NotificationService (en haut ├á droite). */
+/** Affiche les toasts du NotificationService (en haut à droite). */
 @Component({
   selector: 'app-toast-container',
   imports: [IconComponent],

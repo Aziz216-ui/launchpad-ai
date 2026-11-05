@@ -1,4 +1,4 @@
-﻿import { DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 
 import { EmptyStateComponent } from '../../../../shared/components/empty-state.component';
@@ -13,8 +13,8 @@ import { EtudeStore } from '../../services/etude-store.service';
 import { MarketApiService } from '../../services/market-api.service';
 
 const SECTIONS = [
-  'March├⌐ cible',
-  'Hypoth├¿ses',
+  'Marché cible',
+  'Hypothèses',
   'Concurrents',
   'Comparaison des prix',
   'Personas',
@@ -22,7 +22,7 @@ const SECTIONS = [
   'Conclusion',
 ];
 
-/** Onglet ┬½ Rapport ┬╗ (maquette Rapport.dc.html), aliment├⌐ par GET /etudes/<id>/rapport/. */
+/** Onglet « Rapport » (maquette Rapport.dc.html), alimenté par GET /etudes/<id>/rapport/. */
 @Component({
   selector: 'app-rapport',
   imports: [DatePipe, EmptyStateComponent, IconComponent, LoaderComponent, LignesPipe, MontantPipe, NomSecteurPipe, PourcentagePipe],
@@ -41,7 +41,7 @@ export class RapportPage {
   protected readonly rapport = signal<RapportEtude | null>(null);
   protected readonly chargement = signal(true);
   protected readonly erreur = signal<string | null>(null);
-  /** Heure de g├⌐n├⌐ration du rapport affich├⌐. */
+  /** Heure de génération du rapport affiché. */
   protected readonly genereLe = signal(new Date());
 
   protected readonly pourcentagePotentiel = computed(() => {
@@ -49,28 +49,28 @@ export class RapportPage {
     return p ? Math.max(0, Math.min(100, (p.score / p.score_max) * 100)) : 0;
   });
 
-  /** Nombre de pages A4 du PDF g├⌐n├⌐r├⌐ par le serveur (null tant qu'il n'est pas connu). */
+  /** Nombre de pages A4 du PDF généré par le serveur (null tant qu'il n'est pas connu). */
   protected readonly pagesPdf = signal<number | null>(null);
 
   /**
-   * Conclusion r├⌐dig├⌐e en paragraphe : conclusion du serveur, puis les facteurs du score.
-   * Ex. ┬½ Potentiel commercial moyen (score 3/7). Il s'appuie sur : forte croissanceΓÇª ; ΓÇª ┬╗
+   * Conclusion rédigée en paragraphe : conclusion du serveur, puis les facteurs du score.
+   * Ex. « Potentiel commercial moyen (score 3/7). Il s'appuie sur : forte croissance… ; … »
    */
   protected readonly conclusion = computed(() => {
     const p = this.rapport()?.potentiel_commercial;
     if (!p) return '';
     const facteurs = p.justification.map((j) => j.charAt(0).toLowerCase() + j.slice(1)).join(' ; ');
-    return facteurs ? `${p.conclusion} Ce score s'appuie sur les ├⌐l├⌐ments suivants : ${facteurs}.` : p.conclusion;
+    return facteurs ? `${p.conclusion} Ce score s'appuie sur les éléments suivants : ${facteurs}.` : p.conclusion;
   });
 
-  /** ├ëchelle des barres de prix : le prix le plus ├⌐lev├⌐ occupe toute la largeur. */
+  /** Échelle des barres de prix : le prix le plus élevé occupe toute la largeur. */
   protected readonly prixMax = computed(() => {
     const c = this.rapport()?.comparaison_prix;
     return Math.max(c?.prix_max ?? 0, c?.prix_propose ?? 0) || 1;
   });
 
   constructor() {
-    // Recharge le rapport quand l'├⌐tude a ├⌐t├⌐ modifi├⌐e
+    // Recharge le rapport quand l'étude a été modifiée
     effect(() => {
       const etude = this.store.etude();
       if (!etude) return;
@@ -87,15 +87,15 @@ export class RapportPage {
         this.compterPagesPdf(id);
       },
       error: (e: unknown) => {
-        this.erreur.set(messageErreur(e, 'Impossible de g├⌐n├⌐rer le rapport.'));
+        this.erreur.set(messageErreur(e, 'Impossible de générer le rapport.'));
         this.chargement.set(false);
       },
     });
   }
 
   /**
-   * ┬½ environ N pages A4 ┬╗ : lit le PDF g├⌐n├⌐r├⌐ par le serveur et compte ses pages
-   * (objets /Type /Page). En cas d'├⌐chec, l'information n'est simplement pas affich├⌐e.
+   * « environ N pages A4 » : lit le PDF généré par le serveur et compte ses pages
+   * (objets /Type /Page). En cas d'échec, l'information n'est simplement pas affichée.
    */
   private compterPagesPdf(id: number): void {
     this.api.rapportPdf(id).subscribe({
@@ -108,18 +108,18 @@ export class RapportPage {
     });
   }
 
-  /** ┬½ 25 ΓÇô 34 ans, Lyon ┬╗ : ├óge et localisation renseign├⌐s. */
+  /** « 25 – 34 ans, Lyon » : âge et localisation renseignés. */
   protected infosPersona(p: { tranche_age: string; localisation: string }): string {
     return [p.tranche_age, p.localisation].filter((v) => !!v).join(', ');
   }
 
-  /** R├⌐sum├⌐ d'un persona pour le rapport : premier besoin exprim├⌐. */
+  /** Résumé d'un persona pour le rapport : premier besoin exprimé. */
   protected besoinPrincipal(besoins: string): string {
     // Sans point final : le gabarit en ajoute un
     return (lignes(besoins)[0] ?? '').replace(/[.\s]+$/, '');
   }
 
-  /** Le sommaire fait d├⌐filer la page sans changer de route. */
+  /** Le sommaire fait défiler la page sans changer de route. */
   protected allerA(index: number): void {
     document.getElementById(`s${index + 1}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }

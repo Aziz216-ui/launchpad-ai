@@ -1,4 +1,4 @@
-﻿@use 'variables' as *;
+@use 'variables' as *;
 
 :host {
   display: flex;
@@ -6,7 +6,7 @@
   gap: 20px;
 }
 
-// 3 colonnes fixes comme la maquette (une carte seule ne s'├⌐tire pas sur toute la largeur)
+// 3 colonnes fixes comme la maquette (une carte seule ne s'étire pas sur toute la largeur)
 .cartes {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

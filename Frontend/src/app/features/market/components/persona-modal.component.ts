@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { NotificationService } from '../../../core/notifications/notification.service';
@@ -9,9 +9,9 @@ import { appliquerErreursServeur, messageErreur, nombreValidator } from '../util
 import { Persona, PersonaSaisie } from '../models/market.models';
 import { MarketApiService } from '../services/market-api.service';
 
-const TRANCHES_AGE = ['18 ΓÇô 24 ans', '25 ΓÇô 34 ans', '35 ΓÇô 44 ans', '45 ΓÇô 54 ans', '55 ΓÇô 64 ans', '65 ans et plus'];
+const TRANCHES_AGE = ['18 – 24 ans', '25 – 34 ans', '35 – 44 ans', '45 – 54 ans', '55 – 64 ans', '65 ans et plus'];
 
-/** Modale ┬½ Ajouter un persona ┬╗ / ┬½ Modifier le persona ┬╗ (maquette Modales.dc.html). */
+/** Modale « Ajouter un persona » / « Modifier le persona » (maquette Modales.dc.html). */
 @Component({
   selector: 'app-persona-modal',
   imports: [ReactiveFormsModule, ModalComponent, FieldErrorComponent],
@@ -21,13 +21,13 @@ const TRANCHES_AGE = ['18 ΓÇô 24 ans', '25 ΓÇô 34 ans', '35 ΓÇô 44 ans'
       <form class="grille" [formGroup]="formulaire" (ngSubmit)="enregistrer()" novalidate>
         <label class="champ large" [class.en-erreur]="formulaire.controls.nom.touched && formulaire.controls.nom.invalid">
           Nom du persona *
-          <input type="text" formControlName="nom" placeholder="Ex. Claire, la lib├⌐rale d├⌐bord├⌐e" />
+          <input type="text" formControlName="nom" placeholder="Ex. Claire, la libérale débordée" />
           <app-field-error [controle]="formulaire.controls.nom" />
         </label>
         <label class="champ">
-          Tranche d'├óge
+          Tranche d'âge
           <select formControlName="tranche_age">
-            <option value="">Non pr├⌐cis├⌐e</option>
+            <option value="">Non précisée</option>
             @for (t of tranches(); track t) {
               <option [value]="t">{{ t }}</option>
             }
@@ -35,7 +35,7 @@ const TRANCHES_AGE = ['18 ΓÇô 24 ans', '25 ΓÇô 34 ans', '35 ΓÇô 44 ans'
         </label>
         <label class="champ" [class.en-erreur]="formulaire.controls.profession.touched && formulaire.controls.profession.invalid">
           Profession
-          <input type="text" formControlName="profession" placeholder="Ex. Di├⌐t├⌐ticienne lib├⌐rale" />
+          <input type="text" formControlName="profession" placeholder="Ex. Diététicienne libérale" />
           <app-field-error [controle]="formulaire.controls.profession" />
         </label>
         <label class="champ" [class.en-erreur]="formulaire.controls.localisation.touched && formulaire.controls.localisation.invalid">
@@ -44,7 +44,7 @@ const TRANCHES_AGE = ['18 ΓÇô 24 ans', '25 ΓÇô 34 ans', '35 ΓÇô 44 ans'
           <app-field-error [controle]="formulaire.controls.localisation" />
         </label>
         <label class="champ" [class.en-erreur]="formulaire.controls.revenu_estime.touched && formulaire.controls.revenu_estime.invalid">
-          Revenu estim├⌐ (Γé¼ / mois)
+          Revenu estimé (€ / mois)
           <input type="text" inputmode="numeric" formControlName="revenu_estime" placeholder="Ex. 2 800" />
           <app-field-error [controle]="formulaire.controls.revenu_estime" />
         </label>
@@ -64,7 +64,7 @@ const TRANCHES_AGE = ['18 ΓÇô 24 ans', '25 ΓÇô 34 ans', '35 ΓÇô 44 ans'
       <ng-container pied>
         <button type="button" class="btn-secondaire" (click)="fermer.emit()" [disabled]="enCours()">Annuler</button>
         <button type="button" class="btn-primaire" (click)="enregistrer()" [disabled]="enCours()">
-          {{ enCours() ? 'EnregistrementΓÇª' : 'Enregistrer le persona' }}
+          {{ enCours() ? 'Enregistrement…' : 'Enregistrer le persona' }}
         </button>
       </ng-container>
     </app-modal>
@@ -93,7 +93,7 @@ export class PersonaModalComponent implements OnInit {
   private readonly notifications = inject(NotificationService);
 
   readonly etudeId = input.required<number>();
-  /** Persona ├á modifier ; absent en cr├⌐ation. */
+  /** Persona à modifier ; absent en création. */
   readonly persona = input<Persona | null>(null);
   readonly fermer = output<void>();
   readonly enregistre = output<void>();
@@ -111,7 +111,7 @@ export class PersonaModalComponent implements OnInit {
     comportement_achat: [''],
   });
 
-  /** Tranches propos├⌐es, plus la valeur existante si elle n'en fait pas partie. */
+  /** Tranches proposées, plus la valeur existante si elle n'en fait pas partie. */
   protected readonly tranches = computed(() => {
     const actuelle = this.persona()?.tranche_age;
     return actuelle && !TRANCHES_AGE.includes(actuelle) ? [actuelle, ...TRANCHES_AGE] : TRANCHES_AGE;
@@ -157,7 +157,7 @@ export class PersonaModalComponent implements OnInit {
     requete.subscribe({
       next: () => {
         this.enCours.set(false);
-        this.notifications.succes(existant ? 'Persona mis ├á jour.' : 'Persona ajout├⌐.');
+        this.notifications.succes(existant ? 'Persona mis à jour.' : 'Persona ajouté.');
         this.enregistre.emit();
       },
       error: (e: unknown) => {

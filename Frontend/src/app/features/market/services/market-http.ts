@@ -1,4 +1,4 @@
-﻿import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 
@@ -7,13 +7,13 @@ import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notifications/notification.service';
 
 /**
- * Intercepteur du module ┬½ ├ëtude de march├⌐ ┬╗ (HttpClient fourni par market.routes.ts).
+ * Intercepteur du module « Étude de marché » (HttpClient fourni par market.routes.ts).
  *
- * M├¬me r├┤le que l'intercepteur commun (token JWT, ApiError, toast des erreurs serveur),
- * avec des messages adapt├⌐s aux 4 microservices du march├⌐ derri├¿re l'API Gateway :
- * - 404 : ┬½ <ressource> introuvable ┬╗ ;
+ * Même rôle que l'intercepteur commun (token JWT, ApiError, toast des erreurs serveur),
+ * avec des messages adaptés aux 4 microservices du marché derrière l'API Gateway :
+ * - 404 : « <ressource> introuvable » ;
  * - 503 {"service": "SECTEUR-SERVICE", "message": "Service indisponible"} :
- *   ┬½ Le service <nom> est momentan├⌐ment indisponible, r├⌐essayez plus tard ┬╗.
+ *   « Le service <nom> est momentanément indisponible, réessayez plus tard ».
  */
 export const marketInterceptor: HttpInterceptorFn = (requete, suivant) => {
   const token = inject(TokenService).lire();
@@ -31,38 +31,38 @@ export const marketInterceptor: HttpInterceptorFn = (requete, suivant) => {
   );
 };
 
-/** Ressource vis├⌐e par l'URL, pour le message 404. */
+/** Ressource visée par l'URL, pour le message 404. */
 const RESSOURCES: [RegExp, string][] = [
-  [/\/generer-swot\//, '├ëtude'],
-  [/\/etudes\//, '├ëtude'],
+  [/\/generer-swot\//, 'Étude'],
+  [/\/etudes\//, 'Étude'],
   [/\/concurrents\//, 'Concurrent'],
   [/\/tendances\//, 'Tendance'],
   [/\/personas\//, 'Persona'],
-  [/\/swot\//, '├ël├⌐ment SWOT'],
+  [/\/swot\//, 'Élément SWOT'],
   [/\/secteurs\//, 'Secteur'],
 ];
 
-/** Noms lisibles des services du march├⌐ (champ "service" des 503). */
+/** Noms lisibles des services du marché (champ "service" des 503). */
 const SERVICES: Record<string, string> = {
   'SECTEUR-SERVICE': 'Secteurs',
   'CONCURRENT-SERVICE': 'Concurrents',
-  'ETUDE-SERVICE': '├ëtudes',
+  'ETUDE-SERVICE': 'Études',
   'SWOT-SERVICE': 'SWOT',
 };
 
 export function ressourceDeLUrl(url: string | null): string {
-  return RESSOURCES.find(([motif]) => motif.test(url ?? ''))?.[1] ?? '├ël├⌐ment';
+  return RESSOURCES.find(([motif]) => motif.test(url ?? ''))?.[1] ?? 'Élément';
 }
 
 export function nomService(service: string): string {
   return SERVICES[service] ?? service;
 }
 
-/** Traduit une r├⌐ponse d'erreur de la gateway en ApiError avec un message clair. */
+/** Traduit une réponse d'erreur de la gateway en ApiError avec un message clair. */
 export function erreurMarket(reponse: HttpErrorResponse): ApiError {
   if (reponse.status === 503) {
-    const service = typeof reponse.error?.service === 'string' ? reponse.error.service : 'demand├⌐';
-    return new ApiError(503, `Le service ${nomService(service)} est momentan├⌐ment indisponible, r├⌐essayez plus tard.`);
+    const service = typeof reponse.error?.service === 'string' ? reponse.error.service : 'demandé';
+    return new ApiError(503, `Le service ${nomService(service)} est momentanément indisponible, réessayez plus tard.`);
   }
   const apiError = ApiError.depuis(reponse);
   if (reponse.status === 404) {

@@ -1,4 +1,4 @@
-﻿import {
+import {
   ChangeDetectionStrategy,
   Component,
   ViewEncapsulation,
@@ -20,19 +20,19 @@ type Leaflet = typeof import('leaflet');
 
 const TUILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
-/** Vue par d├⌐faut sans marqueur : la Tunisie. */
+/** Vue par défaut sans marqueur : la Tunisie. */
 const CENTRE_DEFAUT: [number, number] = [34, 9.5];
 
 let leaflet: Promise<Leaflet> | null = null;
 
 /**
- * Charge Leaflet et sa feuille de style une seule fois, ├á la premi├¿re carte affich├⌐e.
- * La feuille de style est un bundle s├⌐par├⌐ (angular.json, ┬½ inject: false ┬╗) : elle ne p├¿se
+ * Charge Leaflet et sa feuille de style une seule fois, à la première carte affichée.
+ * La feuille de style est un bundle séparé (angular.json, « inject: false ») : elle ne pèse
  * pas sur les autres modules.
  */
 function chargerLeaflet(): Promise<Leaflet> {
   leaflet ??= Promise.all([
-    // Build ESM du paquet (le point d'entr├⌐e ┬½ leaflet ┬╗ est en UMD, moins bien optimis├⌐)
+    // Build ESM du paquet (le point d'entrée « leaflet » est en UMD, moins bien optimisé)
     import('leaflet/dist/leaflet-src.esm.js') as Promise<Leaflet>,
     new Promise<void>((ok, echec) => {
       const lien = document.createElement('link');
@@ -53,8 +53,8 @@ function chargerLeaflet(): Promise<Leaflet> {
 
 /**
  * Carte OpenStreetMap (Leaflet) avec un marqueur par point et une infobulle.
- * En mode `selectionnable`, un clic sur la carte ou le d├⌐placement du marqueur ├⌐met `choisi`
- * (le parent met alors ├á jour `points`).
+ * En mode `selectionnable`, un clic sur la carte ou le déplacement du marqueur émet `choisi`
+ * (le parent met alors à jour `points`).
  * Si Leaflet ou le fond de carte ne se chargent pas, un message remplace la carte
  * et le reste de la page fonctionne normalement.
  */
@@ -90,7 +90,7 @@ export class CarteLieuxComponent {
   private carte: CarteLeaflet | null = null;
   private marqueurs: LayerGroup | null = null;
   /**
-   * Dernier point plac├⌐ ├á la main : tant que le marqueur y reste (y compris quand le parent
+   * Dernier point placé à la main : tant que le marqueur y reste (y compris quand le parent
    * renvoie ce point avec son nom), la vue ne bouge pas sous le curseur.
    */
   private positionChoisie: string | null = null;
@@ -112,13 +112,13 @@ export class CarteLieuxComponent {
           this.carte.on('click', (e) => {
             if (this.selectionnable()) this.choisir(e.latlng.lat, e.latlng.lng);
           });
-          // Le conteneur peut changer de taille (mise en page, mobile) : la carte reste cadr├⌐e sur ses points
+          // Le conteneur peut changer de taille (mise en page, mobile) : la carte reste cadrée sur ses points
           observateur = new ResizeObserver(() => {
             this.carte?.invalidateSize({ pan: false });
             this.cadrer();
           });
           observateur.observe(element);
-          // L'effet ci-dessous dessine les marqueurs d├¿s que la carte est pr├¬te
+          // L'effet ci-dessous dessine les marqueurs dès que la carte est prête
           this.etat.set('pret');
         },
         () => this.etat.set('erreur'),
@@ -140,7 +140,7 @@ export class CarteLieuxComponent {
     const { L, carte, marqueurs } = this;
     if (!L || !carte || !marqueurs) return;
     marqueurs.clearLayers();
-    // Marqueur dessin├⌐ en CSS : aucune image ├á copier, il s'affiche aussi en production
+    // Marqueur dessiné en CSS : aucune image à copier, il s'affiche aussi en production
     const icone = L.divIcon({ className: 'carte-lieux-marqueur', html: '<span></span>', iconSize: [24, 24], iconAnchor: [12, 29], popupAnchor: [0, -26] });
     const selectionnable = this.selectionnable();
     for (const point of points) {
@@ -182,7 +182,7 @@ export class CarteLieuxComponent {
 
 const cle = (lat: number, lon: number) => `${lat.toFixed(6)},${lon.toFixed(6)}`;
 
-/** Contenu de l'infobulle construit en DOM (textContent) : les noms saisis ne sont jamais interpr├⌐t├⌐s en HTML. */
+/** Contenu de l'infobulle construit en DOM (textContent) : les noms saisis ne sont jamais interprétés en HTML. */
 function infobulle(point: PointCarte): HTMLElement {
   const bloc = document.createElement('div');
   const titre = document.createElement('strong');

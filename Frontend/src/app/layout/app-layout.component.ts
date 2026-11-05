@@ -1,11 +1,11 @@
-﻿import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
 import { HeaderComponent } from './header.component';
 import { SidebarComponent } from './sidebar.component';
 
 /**
- * Mise en page commune : barre lat├⌐rale + en-t├¬te + contenu du module.
+ * Mise en page commune : barre latérale + en-tête + contenu du module.
  * Le `flex-wrap` des maquettes fait passer la barre au-dessus du contenu sur mobile.
  */
 @Component({

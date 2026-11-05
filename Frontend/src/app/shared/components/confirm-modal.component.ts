@@ -1,10 +1,10 @@
-﻿import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 import { IconComponent } from './icon.component';
 
 /**
- * Confirmation avant une action irr├⌐versible (maquette ┬½ Supprimer cette ├⌐tude ? ┬╗).
- * Le message est d├⌐coup├⌐ en avant / nom en gras / apr├¿s.
+ * Confirmation avant une action irréversible (maquette « Supprimer cette étude ? »).
+ * Le message est découpé en avant / nom en gras / après.
  */
 @Component({
   selector: 'app-confirm-modal',
@@ -18,12 +18,12 @@ import { IconComponent } from './icon.component';
       <span class="icone"><app-icon nom="corbeille" [taille]="22" /></span>
       <h2 id="titre-confirmation">{{ titre() }}</h2>
       <p id="texte-confirmation">
-        {{ avant() }}@if (nom()) {<strong>┬½ {{ nom() }} ┬╗</strong>}{{ apres() }}
+        {{ avant() }}@if (nom()) {<strong>« {{ nom() }} »</strong>}{{ apres() }}
       </p>
       <div class="boutons">
         <button type="button" class="secondaire" (click)="annuler.emit()" [disabled]="enCours()">Annuler</button>
         <button type="button" class="danger" (click)="confirmer.emit()" [disabled]="enCours()">
-          {{ enCours() ? 'SuppressionΓÇª' : libelleConfirmer() }}
+          {{ enCours() ? 'Suppression…' : libelleConfirmer() }}
         </button>
       </div>
     </div>

@@ -1,13 +1,13 @@
-﻿<div class="marque">
+<div class="marque">
   <span class="logo"><app-icon nom="logo" [taille]="16" /></span>
   <span>LaunchPad AI</span>
 </div>
 
 <!-- Le nom du projet viendra du service des projets : seul l'identifiant est connu pour l'instant -->
-<button type="button" class="projet" title="Changement de projet bient├┤t disponible">
+<button type="button" class="projet" title="Changement de projet bientôt disponible">
   <span class="initiale">P</span>
   <span class="textes">
-    <span class="nom">Projet n┬░{{ utilisateur.projetId }}</span>
+    <span class="nom">Projet n°{{ utilisateur.projetId }}</span>
     <span class="sous-titre">Mon projet startup</span>
   </span>
   <app-icon nom="selecteur" [taille]="14" />
@@ -25,15 +25,15 @@
 <div class="espaceur"></div>
 
 <div class="encart">
-  <span class="titre">Un cap, ├á chaque ├⌐tape.</span>
-  <span class="texte">Votre Co-Fondateur IA vous aide ├á structurer votre projet.</span>
-  <a routerLink="/co-fondateur-ia">├ëchanger avec mon IA ΓåÆ</a>
+  <span class="titre">Un cap, à chaque étape.</span>
+  <span class="texte">Votre Co-Fondateur IA vous aide à structurer votre projet.</span>
+  <a routerLink="/co-fondateur-ia">Échanger avec mon IA →</a>
 </div>
 
 <div class="compte">
   <span class="avatar">E</span>
   <span class="textes">
     <span class="nom">Entrepreneur</span>
-    <span class="sous-titre">Compte n┬░{{ utilisateur.entrepreneurId }}</span>
+    <span class="sous-titre">Compte n°{{ utilisateur.entrepreneurId }}</span>
   </span>
 </div>

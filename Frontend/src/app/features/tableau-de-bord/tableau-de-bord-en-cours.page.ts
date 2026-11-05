@@ -1,11 +1,11 @@
-﻿import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { EmptyStateComponent } from '../../shared/components/empty-state.component';
 
 /**
- * Page provisoire du module ┬½ Tableau de bord ┬╗.
- * ├Ç remplacer par les vraies pages du module (voir README.md de ce dossier).
+ * Page provisoire du module « Tableau de bord ».
+ * À remplacer par les vraies pages du module (voir README.md de ce dossier).
  */
 @Component({
   selector: 'app-tableau-de-bord-en-cours',
@@ -14,12 +14,12 @@ import { EmptyStateComponent } from '../../shared/components/empty-state.compone
   template: `
     <div class="page">
       <nav class="fil-ariane" aria-label="Fil d'Ariane">
-        <a routerLink="/">Mon espace</a><span aria-hidden="true">ΓÇ║</span><span class="courant">Tableau de bord</span>
+        <a routerLink="/">Mon espace</a><span aria-hidden="true">›</span><span class="courant">Tableau de bord</span>
       </nav>
       <h1>Tableau de bord</h1>
       <app-empty-state
-        titre="Module en cours de d├⌐veloppement"
-        texte="Ce module est d├⌐velopp├⌐ par un autre membre de l'├⌐quipe LaunchPad AI. Il sera disponible prochainement." />
+        titre="Module en cours de développement"
+        texte="Ce module est développé par un autre membre de l'équipe LaunchPad AI. Il sera disponible prochainement." />
     </div>
   `,
   styles: `

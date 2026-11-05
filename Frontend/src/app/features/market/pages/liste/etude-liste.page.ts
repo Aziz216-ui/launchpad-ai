@@ -1,4 +1,4 @@
-﻿import { DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { catchError, forkJoin, map, of } from 'rxjs';
@@ -18,7 +18,7 @@ import { NomSecteurPipe } from '../../pipes/format.pipes';
 type Filtre = 'toutes' | 'brouillon' | 'finalisee';
 type Tri = 'recent' | 'nom' | 'niveau';
 
-/** Liste des ├⌐tudes de march├⌐ (maquettes Liste.dc.html et Liste-vide.dc.html). */
+/** Liste des études de marché (maquettes Liste.dc.html et Liste-vide.dc.html). */
 @Component({
   selector: 'app-etude-liste',
   imports: [
@@ -39,14 +39,14 @@ export class EtudeListePage {
   private readonly api = inject(MarketApiService);
   private readonly notifications = inject(NotificationService);
 
-  /** Recherche saisie dans l'en-t├¬te (?q=). */
+  /** Recherche saisie dans l'en-tête (?q=). */
   readonly q = input<string>();
 
   protected readonly statuts = STATUTS;
   protected readonly niveauxLibelles = NIVEAUX;
 
   protected readonly etudes = signal<EtudeMarche[]>([]);
-  /** Niveau de concurrence de chaque ├⌐tude (charg├⌐ apr├¿s la liste). */
+  /** Niveau de concurrence de chaque étude (chargé après la liste). */
   protected readonly niveaux = signal<Record<number, NiveauConcurrence>>({});
   protected readonly chargement = signal(true);
   protected readonly erreur = signal<string | null>(null);
@@ -59,9 +59,9 @@ export class EtudeListePage {
   protected readonly nbBrouillons = computed(() => this.etudes().filter((e) => e.statut === 'brouillon').length);
 
   protected readonly filtres = computed(() => [
-    { id: 'toutes' as Filtre, libelle: `Toutes ┬╖ ${this.etudes().length}` },
-    { id: 'brouillon' as Filtre, libelle: `Brouillon ┬╖ ${this.nbBrouillons()}` },
-    { id: 'finalisee' as Filtre, libelle: `Finalis├⌐e ┬╖ ${this.nbFinalisees()}` },
+    { id: 'toutes' as Filtre, libelle: `Toutes · ${this.etudes().length}` },
+    { id: 'brouillon' as Filtre, libelle: `Brouillon · ${this.nbBrouillons()}` },
+    { id: 'finalisee' as Filtre, libelle: `Finalisée · ${this.nbFinalisees()}` },
   ]);
 
   protected readonly visibles = computed(() => {
@@ -82,7 +82,7 @@ export class EtudeListePage {
   });
 
   constructor() {
-    // Recharge ├á chaque changement de la recherche
+    // Recharge à chaque changement de la recherche
     effect(() => {
       const recherche = this.q();
       untracked(() => this.charger(recherche));
@@ -99,13 +99,13 @@ export class EtudeListePage {
         this.chargerNiveaux(etudes);
       },
       error: (e: unknown) => {
-        this.erreur.set(messageErreur(e, 'Impossible de charger vos ├⌐tudes de march├⌐.'));
+        this.erreur.set(messageErreur(e, 'Impossible de charger vos études de marché.'));
         this.chargement.set(false);
       },
     });
   }
 
-  /** L'API ne renvoie pas le niveau dans la liste : une requ├¬te l├⌐g├¿re par ├⌐tude. */
+  /** L'API ne renvoie pas le niveau dans la liste : une requête légère par étude. */
   private chargerNiveaux(etudes: EtudeMarche[]): void {
     if (!etudes.length) return;
     forkJoin(
@@ -136,11 +136,11 @@ export class EtudeListePage {
         this.suppressionEnCours.set(false);
         this.aSupprimer.set(null);
         this.etudes.update((liste) => liste.filter((e) => e.id !== etude.id));
-        this.notifications.succes(`L'├⌐tude ┬½ ${etude.titre} ┬╗ a ├⌐t├⌐ supprim├⌐e.`);
+        this.notifications.succes(`L'étude « ${etude.titre} » a été supprimée.`);
       },
       error: (e: unknown) => {
         this.suppressionEnCours.set(false);
-        this.notifications.erreur(messageErreur(e, "Impossible de supprimer l'├⌐tude."));
+        this.notifications.erreur(messageErreur(e, "Impossible de supprimer l'étude."));
       },
     });
   }

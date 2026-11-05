@@ -1,48 +1,48 @@
-﻿<div class="page">
+<div class="page">
   <nav class="fil-ariane" aria-label="Fil d'Ariane">
-    <a routerLink="/etude-marche">Mon espace</a><span aria-hidden="true">ΓÇ║</span>
-    <span class="courant">├ëtude de march├⌐</span>
+    <a routerLink="/etude-marche">Mon espace</a><span aria-hidden="true">›</span>
+    <span class="courant">Étude de marché</span>
   </nav>
 
   <div class="entete-page">
     <div class="titre">
-      <h1>Mes ├⌐tudes de march├⌐</h1>
-      <p>Explorez vos march├⌐s et transformez vos intuitions en d├⌐cisions.</p>
+      <h1>Mes études de marché</h1>
+      <p>Explorez vos marchés et transformez vos intuitions en décisions.</p>
     </div>
     @if (etudes().length || q()) {
-      <a class="btn-primaire" routerLink="/etude-marche/nouvelle"><app-icon nom="plus" [taille]="16" />Nouvelle ├⌐tude</a>
+      <a class="btn-primaire" routerLink="/etude-marche/nouvelle"><app-icon nom="plus" [taille]="16" />Nouvelle étude</a>
     }
   </div>
 
   @if (chargement()) {
-    <app-loader texte="Chargement de vos ├⌐tudesΓÇª" />
+    <app-loader texte="Chargement de vos études…" />
   } @else if (erreur()) {
-    <app-empty-state titre="Impossible d'afficher vos ├⌐tudes" [texte]="erreur()!">
-      <button type="button" class="btn-primaire" (click)="charger()">R├⌐essayer</button>
+    <app-empty-state titre="Impossible d'afficher vos études" [texte]="erreur()!">
+      <button type="button" class="btn-primaire" (click)="charger()">Réessayer</button>
     </app-empty-state>
   } @else if (!etudes().length && !q()) {
-    <!-- ├ëtat vide : maquette Liste-vide.dc.html -->
+    <!-- État vide : maquette Liste-vide.dc.html -->
     <app-empty-state
-      titre="Aucune ├⌐tude de march├⌐ pour le moment"
-      texte="Commencez par d├⌐crire votre march├⌐ cible. Vous pourrez ensuite ajouter vos concurrents, vos personas et g├⌐n├⌐rer votre analyse SWOT.">
-      <a class="btn-primaire cta" routerLink="/etude-marche/nouvelle"><app-icon nom="plus" [taille]="16" />Cr├⌐er ma premi├¿re ├⌐tude</a>
-      <a class="lien-aide" routerLink="/co-fondateur-ia">Demander de l'aide ├á mon Co-Fondateur IA</a>
+      titre="Aucune étude de marché pour le moment"
+      texte="Commencez par décrire votre marché cible. Vous pourrez ensuite ajouter vos concurrents, vos personas et générer votre analyse SWOT.">
+      <a class="btn-primaire cta" routerLink="/etude-marche/nouvelle"><app-icon nom="plus" [taille]="16" />Créer ma première étude</a>
+      <a class="lien-aide" routerLink="/co-fondateur-ia">Demander de l'aide à mon Co-Fondateur IA</a>
     </app-empty-state>
 
     <div class="etapes">
-      <div><span>├ëtape 1</span><strong>D├⌐finir le march├⌐ cible</strong><small>Secteur, cible, zone, taille et croissance.</small></div>
-      <div><span>├ëtape 2</span><strong>├ëtudier la concurrence</strong><small>Concurrents, prix et tendances du march├⌐.</small></div>
-      <div><span>├ëtape 3</span><strong>Obtenir votre rapport</strong><small>Personas, SWOT et rapport PDF.</small></div>
+      <div><span>Étape 1</span><strong>Définir le marché cible</strong><small>Secteur, cible, zone, taille et croissance.</small></div>
+      <div><span>Étape 2</span><strong>Étudier la concurrence</strong><small>Concurrents, prix et tendances du marché.</small></div>
+      <div><span>Étape 3</span><strong>Obtenir votre rapport</strong><small>Personas, SWOT et rapport PDF.</small></div>
     </div>
   } @else {
     <div class="stats">
       <div class="stat">
         <span class="icone info"><app-icon nom="document" /></span>
-        <span class="nombre">{{ etudes().length }}</span><span class="libelle">├ëtudes au total</span>
+        <span class="nombre">{{ etudes().length }}</span><span class="libelle">Études au total</span>
       </div>
       <div class="stat">
         <span class="icone succes"><app-icon nom="cercle-valide" /></span>
-        <span class="nombre">{{ nbFinalisees() }}</span><span class="libelle">├ëtudes finalis├⌐es</span>
+        <span class="nombre">{{ nbFinalisees() }}</span><span class="libelle">Études finalisées</span>
       </div>
       <div class="stat">
         <span class="icone attention"><app-icon nom="crayon" /></span>
@@ -59,7 +59,7 @@
       </div>
       <label class="tri">Trier par
         <select [value]="tri()" (change)="changerTri($any($event.target).value)">
-          <option value="recent">Modification r├⌐cente</option>
+          <option value="recent">Modification récente</option>
           <option value="nom">Nom</option>
           <option value="niveau">Niveau de concurrence</option>
         </select>
@@ -67,7 +67,7 @@
     </div>
 
     @if (q()) {
-      <p class="recherche">R├⌐sultats pour ┬½ {{ q() }} ┬╗ ┬╖ <a routerLink="/etude-marche">Effacer la recherche</a></p>
+      <p class="recherche">Résultats pour « {{ q() }} » · <a routerLink="/etude-marche">Effacer la recherche</a></p>
     }
 
     @if (visibles().length) {
@@ -93,10 +93,10 @@
                   <span [style.height.px]="10" [style.background]="barre(niveaux()[etude.id], 2)"></span>
                   <span [style.height.px]="14" [style.background]="barre(niveaux()[etude.id], 3)"></span>
                 </span>
-                {{ niveaux()[etude.id] ? niveauxLibelles[niveaux()[etude.id]].libelle : 'ΓÇª' }}
+                {{ niveaux()[etude.id] ? niveauxLibelles[niveaux()[etude.id]].libelle : '…' }}
               </span>
             </div>
-            <span class="date">Mise ├á jour le {{ etude.date_mise_a_jour | date: 'd MMM y' }}</span>
+            <span class="date">Mise à jour le {{ etude.date_mise_a_jour | date: 'd MMM y' }}</span>
             <div class="liens">
               <a [routerLink]="['/etude-marche', etude.id, 'apercu']" class="voir">Voir</a>
               <span class="espaceur"></span>
@@ -107,20 +107,20 @@
         }
       </div>
     } @else {
-      <app-empty-state [compact]="true" titre="Aucune ├⌐tude ne correspond"
-        texte="Modifiez le filtre ou la recherche pour afficher d'autres ├⌐tudes." />
+      <app-empty-state [compact]="true" titre="Aucune étude ne correspond"
+        texte="Modifiez le filtre ou la recherche pour afficher d'autres études." />
     }
 
-    <p class="compteur">{{ visibles().length }} ├⌐tude(s) affich├⌐e(s) sur {{ etudes().length }}</p>
+    <p class="compteur">{{ visibles().length }} étude(s) affichée(s) sur {{ etudes().length }}</p>
   }
 </div>
 
 @if (aSupprimer(); as etude) {
   <app-confirm-modal
-    titre="Supprimer cette ├⌐tude ?"
-    avant="L'├⌐tude "
+    titre="Supprimer cette étude ?"
+    avant="L'étude "
     [nom]="etude.titre"
-    apres=", ses personas, sa SWOT et son rapport seront supprim├⌐s d├⌐finitivement. Cette action est irr├⌐versible."
+    apres=", ses personas, sa SWOT et son rapport seront supprimés définitivement. Cette action est irréversible."
     [enCours]="suppressionEnCours()"
     (confirmer)="supprimer()"
     (annuler)="aSupprimer.set(null)" />

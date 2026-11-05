@@ -10,16 +10,24 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.json.JsonCompareMode;
 
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.SocketPolicy;
+
 /** Service éteint ou absent d'Eureka : 503 {"service": "<NOM>", "message": "Service indisponible"}. */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("local")
 class ServiceUnavailableTest extends GatewayTestSupport {
+
+    /** Accepte la connexion puis la coupe sans répondre (port publié d'un conteneur Docker arrêté). */
+    static final MockService stopping = new MockService(
+            request -> new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST));
 
     @DynamicPropertySource
     static void services(DynamicPropertyRegistry registry) {
         String closed = MockService.closedPortUrl();
         registry.add("launchpad.services.legal.uri", () -> closed);
         registry.add("launchpad.services.lawyer.uri", () -> closed);
+        registry.add("launchpad.services.secteur.uri", stopping::url);
     }
 
     @Test
@@ -28,6 +36,13 @@ class ServiceUnavailableTest extends GatewayTestSupport {
                 .expectStatus().isEqualTo(503)
                 .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
                 .expectBody().json("{\"service\":\"LEGAL-SERVICE\",\"message\":\"Service indisponible\"}", JsonCompareMode.STRICT);
+    }
+
+    @Test
+    void connectionClosedBeforeAnyResponseGives503Json() {
+        client.get().uri("/api/market/secteurs/").exchange()
+                .expectStatus().isEqualTo(503)
+                .expectBody().json("{\"service\":\"SECTEUR-SERVICE\",\"message\":\"Service indisponible\"}", JsonCompareMode.STRICT);
     }
 
     @Test

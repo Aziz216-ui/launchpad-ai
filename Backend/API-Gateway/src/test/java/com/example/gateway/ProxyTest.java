@@ -13,7 +13,7 @@ import org.springframework.test.context.DynamicPropertySource;
 
 import okhttp3.mockwebserver.RecordedRequest;
 
-/** Profil local : relais vers un faux Market-Service, sans réécriture du chemin. */
+/** Profil local : relais vers un faux etude-service (marché), sans réécriture du chemin. */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("local")
 class ProxyTest extends GatewayTestSupport {
@@ -25,7 +25,7 @@ class ProxyTest extends GatewayTestSupport {
 
     @DynamicPropertySource
     static void services(DynamicPropertyRegistry registry) {
-        registry.add("launchpad.services.market.uri", market::url);
+        registry.add("launchpad.services.etude.uri", market::url);
     }
 
     @BeforeEach

@@ -1,7 +1,7 @@
-﻿<div class="entete-section">
+<div class="entete-section">
   <div class="titre">
     <h2>Vos clients cibles</h2>
-    <p>{{ personas().length }} profil(s) de clients cibles pour votre ├⌐tude.</p>
+    <p>{{ personas().length }} profil(s) de clients cibles pour votre étude.</p>
   </div>
   <button type="button" class="btn-primaire" (click)="modal.set({ persona: null })">
     <app-icon nom="plus" [taille]="16" />Ajouter un persona
@@ -11,9 +11,9 @@
 @if (personas().length) {
   @if (localisations().size) {
     <section class="carte carte-geo">
-      <h3>O├╣ vivent vos personas</h3>
+      <h3>Où vivent vos personas</h3>
       <app-carte-lieux [points]="pointsPersonas()" [hauteur]="260" [zoom]="9" libelle="Carte des localisations des personas"
-        [messageVide]="localisationEnCours() ? 'Localisation des personasΓÇª' : 'Les localisations des personas nΓÇÖont pas pu ├¬tre trouv├⌐es.'" />
+        [messageVide]="localisationEnCours() ? 'Localisation des personas…' : 'Les localisations des personas n’ont pas pu être trouvées.'" />
     </section>
   }
   <div class="cartes">
@@ -33,7 +33,7 @@
           <div class="puces">
             @if (p.tranche_age) {<span class="puce">{{ p.tranche_age }}</span>}
             @if (p.localisation) {<span class="puce">{{ p.localisation }}</span>}
-            @if (p.revenu_estime !== null) {<span class="puce">Γëê {{ p.revenu_estime | montant }} / mois</span>}
+            @if (p.revenu_estime !== null) {<span class="puce">≈ {{ p.revenu_estime | montant }} / mois</span>}
           </div>
         }
 
@@ -74,12 +74,12 @@
       <div class="puces">
         @for (b of besoinsCommuns(); track b) {<span class="puce commun">{{ b }}</span>}
       </div>
-      <a class="lien-fleche" routerLink="../swot">Voir l'impact dans la SWOT ΓåÆ</a>
+      <a class="lien-fleche" routerLink="../swot">Voir l'impact dans la SWOT →</a>
     </section>
   }
 } @else {
-  <app-empty-state [compact]="true" titre="Aucun persona d├⌐fini"
-    texte="D├⌐crivez vos clients types : leurs besoins, leurs frustrations et leur fa├ºon d'acheter. Ils renforcent votre SWOT et votre potentiel commercial.">
+  <app-empty-state [compact]="true" titre="Aucun persona défini"
+    texte="Décrivez vos clients types : leurs besoins, leurs frustrations et leur façon d'acheter. Ils renforcent votre SWOT et votre potentiel commercial.">
     <button type="button" class="btn-primaire" (click)="modal.set({ persona: null })">
       <app-icon nom="plus" [taille]="16" />Ajouter un persona
     </button>
@@ -95,7 +95,7 @@
     titre="Supprimer ce persona ?"
     avant="Le persona "
     [nom]="p.nom"
-    apres=" sera supprim├⌐ d├⌐finitivement de l'├⌐tude."
+    apres=" sera supprimé définitivement de l'étude."
     [enCours]="suppressionEnCours()"
     (confirmer)="supprimer()"
     (annuler)="aSupprimer.set(null)" />

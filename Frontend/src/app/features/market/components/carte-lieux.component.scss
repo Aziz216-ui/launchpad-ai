@@ -1,5 +1,5 @@
-﻿// Non encapsul├⌐ : Leaflet cr├⌐e lui-m├¬me les marqueurs et infobulles (sans attribut de port├⌐e).
-// Toutes les r├¿gles restent limit├⌐es ├á .carte-lieux.
+// Non encapsulé : Leaflet crée lui-même les marqueurs et infobulles (sans attribut de portée).
+// Toutes les règles restent limitées à .carte-lieux.
 @use 'variables' as *;
 
 .carte-lieux {
@@ -12,7 +12,7 @@
     border: 1px solid $bordure;
     background: $fond-neutre;
     overflow: hidden;
-    // Garde les contr├┤les de Leaflet (z-index 1000) sous les modales et menus du module
+    // Garde les contrôles de Leaflet (z-index 1000) sous les modales et menus du module
     isolation: isolate;
     z-index: 0;
     font-family: $police;
@@ -41,7 +41,7 @@
     }
   }
 
-  // Choix d'un lieu : curseur de vis├⌐e sur la carte, main sur le marqueur d├⌐pla├ºable
+  // Choix d'un lieu : curseur de visée sur la carte, main sur le marqueur déplaçable
   &.selectionnable .leaflet-container {
     cursor: crosshair;
   }
@@ -49,7 +49,7 @@
     cursor: grab;
   }
 
-  // ├ëpingle aux couleurs du module (dans un span : Leaflet positionne l'├⌐l├⌐ment avec transform)
+  // Épingle aux couleurs du module (dans un span : Leaflet positionne l'élément avec transform)
   .carte-lieux-marqueur span {
     display: block;
     width: 24px;

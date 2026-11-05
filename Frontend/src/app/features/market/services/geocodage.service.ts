@@ -1,6 +1,6 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 
-/** Lieu trouv├⌐ par Nominatim : libell├⌐ court enregistr├⌐ (┬½ Sfax, Tunisie ┬╗) et coordonn├⌐es. */
+/** Lieu trouvé par Nominatim : libellé court enregistré (« Sfax, Tunisie ») et coordonnées. */
 export interface Lieu {
   libelle: string;
   detail: string;
@@ -8,7 +8,7 @@ export interface Lieu {
   lon: number;
 }
 
-/** Marqueur ├á placer sur une carte : un lieu et les noms qui s'y rattachent (infobulle). */
+/** Marqueur à placer sur une carte : un lieu et les noms qui s'y rattachent (infobulle). */
 export interface PointCarte {
   titre: string;
   lignes: string[];
@@ -35,11 +35,11 @@ interface AdresseNominatim {
   country?: string;
 }
 
-/** R├⌐ponse de /reverse : un lieu, ou { error } quand rien n'est trouv├⌐ (mer, d├⌐sertΓÇª). */
+/** Réponse de /reverse : un lieu, ou { error } quand rien n'est trouvé (mer, désert…). */
 type ReponseInverse = (ResultatNominatim & { error?: undefined }) | { error: string };
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org';
-/** Politique d'usage de Nominatim : au plus une requ├¬te par seconde. */
+/** Politique d'usage de Nominatim : au plus une requête par seconde. */
 const INTERVALLE_MIN_MS = 1000;
 const DELAI_MAX_MS = 8000;
 /** Emprise de la Tunisie (lon/lat) : favorise ses lieux sans exclure le reste du monde (bounded=0). */
@@ -48,12 +48,12 @@ const EMPRISE_TUNISIE = '7.5,37.6,11.7,30.2';
 const attendre = (ms: number) => new Promise<void>((ok) => setTimeout(ok, Math.max(0, ms)));
 
 /**
- * G├⌐ocodage OpenStreetMap (Nominatim), sans cl├⌐ API.
+ * Géocodage OpenStreetMap (Nominatim), sans clé API.
  *
- * Appel├⌐ avec fetch et non HttpClient : l'intercepteur du module ajouterait le jeton
- * de l'utilisateur et afficherait un toast d'erreur, ce qui n'a pas lieu d'├¬tre pour un
- * service externe facultatif. Les requ├¬tes sont espac├⌐es d'au moins une seconde et leurs
- * r├⌐sultats gard├⌐s en m├⌐moire ; une erreur rejette la promesse (l'appelant reste en saisie libre).
+ * Appelé avec fetch et non HttpClient : l'intercepteur du module ajouterait le jeton
+ * de l'utilisateur et afficherait un toast d'erreur, ce qui n'a pas lieu d'être pour un
+ * service externe facultatif. Les requêtes sont espacées d'au moins une seconde et leurs
+ * résultats gardés en mémoire ; une erreur rejette la promesse (l'appelant reste en saisie libre).
  */
 @Injectable({ providedIn: 'root' })
 export class GeocodageService {
@@ -61,25 +61,25 @@ export class GeocodageService {
   private file: Promise<void> = Promise.resolve();
   private derniereRequete = 0;
 
-  /** Suggestions pour un texte saisi (5 au plus, en fran├ºais, Tunisie en priorit├⌐). */
+  /** Suggestions pour un texte saisi (5 au plus, en français, Tunisie en priorité). */
   rechercher(texte: string): Promise<Lieu[]> {
     return this.chercher({ q: texte.trim(), limit: '5', viewbox: EMPRISE_TUNISIE, bounded: '0' });
   }
 
-  /** Lieu le plus probable pour un texte libre (m├¬me requ├¬te que les suggestions : cache partag├⌐). */
+  /** Lieu le plus probable pour un texte libre (même requête que les suggestions : cache partagé). */
   localiser(texte: string): Promise<Lieu | null> {
     return this.rechercher(texte).then((lieux) => lieux[0] ?? null);
   }
 
-  /** Coordonn├⌐es d'un pays (recherche structur├⌐e par pays). */
+  /** Coordonnées d'un pays (recherche structurée par pays). */
   localiserPays(pays: string): Promise<Lieu | null> {
     return this.chercher({ country: pays.trim(), limit: '1' }).then((lieux) => lieux[0] ?? null);
   }
 
   /**
-   * Lieu aux coordonn├⌐es d'un clic sur la carte (reverse geocoding, niveau ville) :
-   * ┬½ Ville, Pays ┬╗, ou ┬½ R├⌐gion, Pays ┬╗ sans ville ; null si rien n'est trouv├⌐.
-   * Les coordonn├⌐es sont arrondies ├á environ 100 m pour profiter du cache.
+   * Lieu aux coordonnées d'un clic sur la carte (reverse geocoding, niveau ville) :
+   * « Ville, Pays », ou « Région, Pays » sans ville ; null si rien n'est trouvé.
+   * Les coordonnées sont arrondies à environ 100 m pour profiter du cache.
    */
   lieuAuxCoordonnees(lat: number, lon: number): Promise<Lieu | null> {
     const parametres = { lat: lat.toFixed(3), lon: lon.toFixed(3), zoom: '10' };
@@ -95,7 +95,7 @@ export class GeocodageService {
 
   /**
    * Un marqueur par lieu : `groupes` associe chaque lieu (pays ou localisation) aux noms
-   * ├á afficher dans l'infobulle. Les lieux introuvables ou en erreur sont ignor├⌐s.
+   * à afficher dans l'infobulle. Les lieux introuvables ou en erreur sont ignorés.
    */
   async placer(groupes: Map<string, string[]>, type: 'pays' | 'lieu'): Promise<PointCarte[]> {
     const resultats = await Promise.allSettled(
@@ -127,13 +127,13 @@ export class GeocodageService {
         if (!reponse.ok) throw new Error(`Nominatim : ${reponse.status}`);
         return reponse.json() as Promise<T>;
       });
-    // Une erreur n'est pas gard├⌐e : la m├¬me recherche pourra ├¬tre retent├⌐e plus tard
+    // Une erreur n'est pas gardée : la même recherche pourra être retentée plus tard
     promesse.catch(() => this.cache.delete(url));
     this.cache.set(url, promesse);
     return promesse;
   }
 
-  /** R├⌐serve le prochain cr├⌐neau libre (une requ├¬te par seconde au plus). */
+  /** Réserve le prochain créneau libre (une requête par seconde au plus). */
   private planifier(): Promise<void> {
     const creneau = this.file.then(async () => {
       await attendre(this.derniereRequete + INTERVALLE_MIN_MS - Date.now());
@@ -145,12 +145,12 @@ export class GeocodageService {
 }
 
 /**
- * ┬½ Gouvernorat Sfax ┬╗ ΓåÆ ┬½ Sfax ┬╗, ┬½ R├⌐gion de Normandie ┬╗ ΓåÆ ┬½ Normandie ┬╗ : libell├⌐ court.
- * En Tunisie, une partie des villes n'a pas de contour ┬½ ville ┬╗ dans OpenStreetMap :
+ * « Gouvernorat Sfax » → « Sfax », « Région de Normandie » → « Normandie » : libellé court.
+ * En Tunisie, une partie des villes n'a pas de contour « ville » dans OpenStreetMap :
  * un clic en ville ne renvoie alors que le gouvernorat.
  */
 function sansPrefixeAdministratif(nom: string): string {
-  return nom.replace(/^(gouvernorat|d├⌐l├⌐gation|wilaya|province|r├⌐gion|pr├⌐fecture)\s+(de\s+la\s+|de\s+l['ΓÇÖ]|de\s+|d['ΓÇÖ]|du\s+|des\s+)?/i, '').trim();
+  return nom.replace(/^(gouvernorat|délégation|wilaya|province|région|préfecture)\s+(de\s+la\s+|de\s+l['’]|de\s+|d['’]|du\s+|des\s+)?/i, '').trim();
 }
 
 function versLieu(r: ResultatNominatim): Lieu {
@@ -164,7 +164,7 @@ function versLieu(r: ResultatNominatim): Lieu {
   };
 }
 
-/** Regroupe des ├⌐l├⌐ments par lieu (texte non vide, sans tenir compte de la casse) : lieu ΓåÆ noms. */
+/** Regroupe des éléments par lieu (texte non vide, sans tenir compte de la casse) : lieu → noms. */
 export function regrouperParLieu<T>(elements: T[], lieu: (e: T) => string, nom: (e: T) => string): Map<string, string[]> {
   const groupes = new Map<string, { titre: string; noms: string[] }>();
   for (const element of elements) {

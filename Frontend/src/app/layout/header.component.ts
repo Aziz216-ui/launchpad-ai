@@ -1,9 +1,9 @@
-﻿import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { IconComponent } from '../shared/components/icon.component';
 
-/** En-t├¬te commun : recherche, espace, notifications et avatar. */
+/** En-tête commun : recherche, espace, notifications et avatar. */
 @Component({
   selector: 'app-header',
   imports: [IconComponent],
@@ -12,12 +12,12 @@ import { IconComponent } from '../shared/components/icon.component';
     <form class="recherche" role="search" (submit)="rechercher($event, champ.value)">
       <app-icon nom="recherche" [taille]="16" />
       <label for="recherche-globale" class="masque">Rechercher</label>
-      <input #champ id="recherche-globale" type="search" placeholder="Rechercher dans mon espaceΓÇª" />
+      <input #champ id="recherche-globale" type="search" placeholder="Rechercher dans mon espace…" />
     </form>
     <span class="espaceur"></span>
     <span class="espace">Espace entrepreneur</span>
-    <button type="button" class="notifications" aria-label="Notifications (bient├┤t disponibles)"
-      title="Notifications bient├┤t disponibles">
+    <button type="button" class="notifications" aria-label="Notifications (bientôt disponibles)"
+      title="Notifications bientôt disponibles">
       <app-icon nom="cloche" />
     </button>
     <span class="avatar" aria-hidden="true">E</span>
@@ -112,8 +112,8 @@ export class HeaderComponent {
   private readonly router = inject(Router);
 
   /**
-   * Ajoute ?q=<texte> ├á l'URL de la page courante. Chaque module d├⌐cide s'il
-   * l'utilise (ex. la liste des ├⌐tudes de march├⌐ filtre par titre) ou l'ignore.
+   * Ajoute ?q=<texte> à l'URL de la page courante. Chaque module décide s'il
+   * l'utilise (ex. la liste des études de marché filtre par titre) ou l'ignore.
    */
   protected rechercher(evenement: Event, texte: string): void {
     evenement.preventDefault();

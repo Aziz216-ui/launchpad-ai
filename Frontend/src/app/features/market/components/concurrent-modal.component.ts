@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Observable, switchMap } from 'rxjs';
 
@@ -15,9 +15,9 @@ import { MarketApiService } from '../services/market-api.service';
 type Mode = 'associer' | 'creer' | 'modifier';
 
 /**
- * Modale des concurrents d'une ├⌐tude :
+ * Modale des concurrents d'une étude :
  * - associer : cocher des concurrents existants du secteur ;
- * - creer : cr├⌐er un concurrent puis l'associer ├á l'├⌐tude ;
+ * - creer : créer un concurrent puis l'associer à l'étude ;
  * - modifier : modifier la fiche d'un concurrent.
  */
 @Component({
@@ -98,12 +98,12 @@ export class ConcurrentModalComponent implements OnInit {
   private readonly notifications = inject(NotificationService);
 
   readonly etude = input.required<EtudeMarcheDetail>();
-  /** Concurrent ├á modifier (mode ┬½ modifier ┬╗). */
+  /** Concurrent à modifier (mode « modifier »). */
   readonly concurrent = input<Concurrent | null>(null);
   readonly modeInitial = input<Mode>('associer');
 
   readonly fermer = output<void>();
-  /** ├ëmis apr├¿s un enregistrement r├⌐ussi : la page recharge l'├⌐tude. */
+  /** Émis après un enregistrement réussi : la page recharge l'étude. */
   readonly enregistre = output<void>();
 
   protected readonly mode = signal<Mode>('associer');
@@ -143,11 +143,11 @@ export class ConcurrentModalComponent implements OnInit {
     if (this.mode() === 'associer') this.chargerDisponibles();
   }
 
-  /** Concurrents du secteur de l'├⌐tude qui ne lui sont pas encore associ├⌐s. */
+  /** Concurrents du secteur de l'étude qui ne lui sont pas encore associés. */
   private chargerDisponibles(): void {
     const etude = this.etude();
     if (etude.secteur === null) {
-      // Secteur supprim├⌐ (├⌐v├⌐nement secteur.supprime) : rien ├á proposer
+      // Secteur supprimé (événement secteur.supprime) : rien à proposer
       this.disponibles.set([]);
       this.chargement.set(false);
       return;
@@ -182,13 +182,13 @@ export class ConcurrentModalComponent implements OnInit {
   private associer(): void {
     const ids = [...this.selection()];
     if (!ids.length) {
-      this.notifications.info('Cochez au moins un concurrent ├á associer.');
+      this.notifications.info('Cochez au moins un concurrent à associer.');
       return;
     }
     const etude = this.etude();
     this.executer(
       this.api.modifierEtude(etude.id, { concurrents: [...etude.concurrents, ...ids] }),
-      ids.length > 1 ? `${ids.length} concurrents associ├⌐s ├á l'├⌐tude.` : 'Concurrent associ├⌐ ├á lΓÇÖ├⌐tude.',
+      ids.length > 1 ? `${ids.length} concurrents associés à l'étude.` : 'Concurrent associé à l’étude.',
     );
   }
 
@@ -211,13 +211,13 @@ export class ConcurrentModalComponent implements OnInit {
     const existant = this.concurrent();
 
     if (this.mode() === 'modifier' && existant) {
-      this.executer(this.api.modifierConcurrent(existant.id, saisie), 'Concurrent mis ├á jour.');
+      this.executer(this.api.modifierConcurrent(existant.id, saisie), 'Concurrent mis à jour.');
     } else {
       this.executer(
         this.api
           .creerConcurrent({ ...saisie, secteur: etude.secteur })
           .pipe(switchMap((cree) => this.api.modifierEtude(etude.id, { concurrents: [...etude.concurrents, cree.id] }))),
-        'Concurrent cr├⌐├⌐ et associ├⌐ ├á lΓÇÖ├⌐tude.',
+        'Concurrent créé et associé à l’étude.',
       );
     }
   }
@@ -233,7 +233,7 @@ export class ConcurrentModalComponent implements OnInit {
       error: (e: unknown) => {
         this.enCours.set(false);
         appliquerErreursServeur(this.formulaire, e);
-        this.notifications.erreur(messageErreur(e, "L'enregistrement a ├⌐chou├⌐."));
+        this.notifications.erreur(messageErreur(e, "L'enregistrement a échoué."));
       },
     });
   }

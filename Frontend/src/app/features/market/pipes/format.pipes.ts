@@ -1,8 +1,8 @@
-﻿import { Pipe, PipeTransform } from '@angular/core';
+import { Pipe, PipeTransform } from '@angular/core';
 
 import { formatMontant, formatPourcentage, initiales, lignes } from '../utils/format';
 
-/** {{ 29 | montant }} -> "29 Γé¼" ; {{ 24000000 | montant: true }} -> "24 MΓé¼" */
+/** {{ 29 | montant }} -> "29 €" ; {{ 24000000 | montant: true }} -> "24 M€" */
 @Pipe({ name: 'montant' })
 export class MontantPipe implements PipeTransform {
   transform(valeur: number | null | undefined, compact = false): string {
@@ -25,11 +25,11 @@ export class InitialesPipe implements PipeTransform {
   }
 }
 
-/** Nom du secteur ; null (secteur supprim├⌐ dans SECTEUR-SERVICE) -> ┬½ Secteur supprim├⌐ ┬╗. */
+/** Nom du secteur ; null (secteur supprimé dans SECTEUR-SERVICE) -> « Secteur supprimé ». */
 @Pipe({ name: 'nomSecteur' })
 export class NomSecteurPipe implements PipeTransform {
   transform(nom: string | null | undefined): string {
-    return nom || 'Secteur supprim├⌐';
+    return nom || 'Secteur supprimé';
   }
 }
 

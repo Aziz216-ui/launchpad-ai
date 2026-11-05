@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, OnInit, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input, output, signal } from '@angular/core';
 
 import { NotificationService } from '../../../core/notifications/notification.service';
 import { BadgeComponent } from '../../../shared/components/badge.component';
@@ -10,7 +10,7 @@ import { EtudeMarcheDetail, Tendance } from '../models/market.models';
 import { MarketApiService } from '../services/market-api.service';
 import { NomSecteurPipe } from '../pipes/format.pipes';
 
-/** Modale ┬½ Associer une tendance ┬╗ : tendances du secteur pas encore retenues pour l'├⌐tude. */
+/** Modale « Associer une tendance » : tendances du secteur pas encore retenues pour l'étude. */
 @Component({
   selector: 'app-tendance-modal',
   imports: [ModalComponent, LoaderComponent, BadgeComponent, NomSecteurPipe],
@@ -18,11 +18,11 @@ import { NomSecteurPipe } from '../pipes/format.pipes';
   template: `
     <app-modal titre="Associer une tendance" (fermer)="fermer.emit()">
       @if (chargement()) {
-        <app-loader texte="Chargement des tendancesΓÇª" />
+        <app-loader texte="Chargement des tendances…" />
       } @else if (etude().secteur === null) {
-        <p class="aide">Le secteur de cette ├⌐tude a ├⌐t├⌐ supprim├⌐ : modifiez l'├⌐tude pour choisir un nouveau secteur.</p>
+        <p class="aide">Le secteur de cette étude a été supprimé : modifiez l'étude pour choisir un nouveau secteur.</p>
       } @else if (disponibles().length) {
-        <p class="aide">Tendances du secteur {{ etude().secteur_nom | nomSecteur }} pas encore associ├⌐es ├á cette ├⌐tude :</p>
+        <p class="aide">Tendances du secteur {{ etude().secteur_nom | nomSecteur }} pas encore associées à cette étude :</p>
         <ul>
           @for (t of disponibles(); track t.id) {
             <li>
@@ -37,13 +37,13 @@ import { NomSecteurPipe } from '../pipes/format.pipes';
           }
         </ul>
       } @else {
-        <p class="aide">Toutes les tendances du secteur {{ etude().secteur_nom | nomSecteur }} sont d├⌐j├á associ├⌐es ├á l'├⌐tude.
+        <p class="aide">Toutes les tendances du secteur {{ etude().secteur_nom | nomSecteur }} sont déjà associées à l'étude.
           Un administrateur peut en ajouter depuis l'admin du secteur-service.</p>
       }
       <ng-container pied>
         <button type="button" class="btn-secondaire" (click)="fermer.emit()" [disabled]="enCours()">Annuler</button>
         <button type="button" class="btn-primaire" (click)="associer()" [disabled]="enCours() || !selection().size">
-          {{ enCours() ? 'EnregistrementΓÇª' : 'Associer' }}
+          {{ enCours() ? 'Enregistrement…' : 'Associer' }}
         </button>
       </ng-container>
     </app-modal>
@@ -109,7 +109,7 @@ export class TendanceModalComponent implements OnInit {
   ngOnInit(): void {
     const etude = this.etude();
     if (etude.secteur === null) {
-      // Secteur supprim├⌐ (├⌐v├⌐nement secteur.supprime) : rien ├á proposer
+      // Secteur supprimé (événement secteur.supprime) : rien à proposer
       this.chargement.set(false);
       return;
     }
@@ -141,12 +141,12 @@ export class TendanceModalComponent implements OnInit {
     this.api.modifierEtude(etude.id, { tendances: [...etude.tendances, ...ids] }).subscribe({
       next: () => {
         this.enCours.set(false);
-        this.notifications.succes(ids.length > 1 ? `${ids.length} tendances associ├⌐es.` : 'Tendance associ├⌐e.');
+        this.notifications.succes(ids.length > 1 ? `${ids.length} tendances associées.` : 'Tendance associée.');
         this.enregistre.emit();
       },
       error: (e: unknown) => {
         this.enCours.set(false);
-        this.notifications.erreur(messageErreur(e, 'Impossible dΓÇÖassocier ces tendances.'));
+        this.notifications.erreur(messageErreur(e, 'Impossible d’associer ces tendances.'));
       },
     });
   }

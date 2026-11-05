@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /** Indicateur de chargement. */
 @Component({
@@ -36,5 +36,5 @@
   `,
 })
 export class LoaderComponent {
-  readonly texte = input('ChargementΓÇª');
+  readonly texte = input('Chargement…');
 }

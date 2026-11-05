@@ -1,4 +1,4 @@
-﻿/** R├⌐glages propres au module ┬½ ├ëtude de march├⌐ ┬╗. */
+/** Réglages propres au module « Étude de marché ». */
 
-/** Devise affich├⌐e ├á c├┤t├⌐ des montants : le Market-Service ne fournit pas de devise. */
-export const DEVISE = 'Γé¼';
+/** Devise affichée à côté des montants : le Market-Service ne fournit pas de devise. */
+export const DEVISE = '€';

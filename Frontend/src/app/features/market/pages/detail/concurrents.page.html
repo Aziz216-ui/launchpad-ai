@@ -1,7 +1,7 @@
-﻿<div class="entete-section">
+<div class="entete-section">
   <div class="titre">
     <h2>Votre paysage concurrentiel</h2>
-    <p>{{ concurrents().length }} concurrent(s) associ├⌐(s) ├á votre ├⌐tude ┬╖ secteur {{ store.etude()?.secteur_nom | nomSecteur }}.</p>
+    <p>{{ concurrents().length }} concurrent(s) associé(s) à votre étude · secteur {{ store.etude()?.secteur_nom | nomSecteur }}.</p>
   </div>
   <button type="button" class="btn-primaire" (click)="modal.set({ mode: 'associer', concurrent: null })">
     <app-icon nom="plus" [taille]="16" />Associer un concurrent
@@ -11,9 +11,9 @@
 @if (concurrents().length) {
   @if (pays().size) {
     <section class="carte carte-geo">
-      <h3>O├╣ sont vos concurrents</h3>
+      <h3>Où sont vos concurrents</h3>
       <app-carte-lieux [points]="pointsPays()" [hauteur]="280" [zoom]="5" libelle="Carte des pays des concurrents"
-        [messageVide]="localisationEnCours() ? 'Localisation des paysΓÇª' : 'Les pays des concurrents nΓÇÖont pas pu ├¬tre localis├⌐s.'" />
+        [messageVide]="localisationEnCours() ? 'Localisation des pays…' : 'Les pays des concurrents n’ont pas pu être localisés.'" />
     </section>
   }
   <div class="tableau-conteneur">
@@ -23,7 +23,7 @@
           <th scope="col">Nom</th>
           <th scope="col">Pays</th>
           <th scope="col">Prix moyen</th>
-          <th scope="col" class="secondaire">Part de march├⌐</th>
+          <th scope="col" class="secondaire">Part de marché</th>
           <th scope="col" class="secondaire">Forces</th>
           <th scope="col" class="secondaire">Faiblesses</th>
           <th scope="col"><span class="visually-hidden">Actions</span></th>
@@ -41,7 +41,7 @@
                 </span>
               </span>
             </td>
-            <td>{{ c.pays || 'ΓÇö' }}</td>
+            <td>{{ c.pays || '—' }}</td>
             <td>{{ c.prix_moyen | montant }}</td>
             <td class="secondaire">
               <span class="part">
@@ -50,16 +50,16 @@
               </span>
             </td>
             <td class="force secondaire">
-              @if (c.forces) {Γ£ô {{ c.forces }}} @else {ΓÇö}
+              @if (c.forces) {✓ {{ c.forces }}} @else {—}
             </td>
             <td class="faiblesse secondaire">
-              @if (c.faiblesses) {Γ£ò {{ c.faiblesses }}} @else {ΓÇö}
+              @if (c.faiblesses) {✕ {{ c.faiblesses }}} @else {—}
             </td>
             <td class="actions-ligne">
               <app-menu-actions [libelle]="'Actions pour ' + c.nom">
                 <button type="button" role="menuitem" (click)="modal.set({ mode: 'modifier', concurrent: c })">Modifier la fiche</button>
-                <button type="button" role="menuitem" (click)="retirer(c)">Retirer de l'├⌐tude</button>
-                <button type="button" role="menuitem" class="danger" (click)="aSupprimer.set(c)">Supprimer d├⌐finitivement</button>
+                <button type="button" role="menuitem" (click)="retirer(c)">Retirer de l'étude</button>
+                <button type="button" role="menuitem" class="danger" (click)="aSupprimer.set(c)">Supprimer définitivement</button>
               </app-menu-actions>
             </td>
           </tr>
@@ -73,23 +73,23 @@
     <div class="grille-2">
       @if (differenciation(); as d) {
         <section class="carte">
-          <h3>Votre angle de diff├⌐renciation</h3>
+          <h3>Votre angle de différenciation</h3>
           <p>{{ d }}</p>
-          <span class="badge-opportunite">Opportunit├⌐</span>
+          <span class="badge-opportunite">Opportunité</span>
         </section>
       }
       @if (positionnement(); as p) {
       <section class="carte">
         <h3>{{ p.titre }}</h3>
         <p>{{ p.texte }}</p>
-        <a class="lien-fleche" routerLink="../prix">Voir la comparaison des offres et des prix ΓåÆ</a>
+        <a class="lien-fleche" routerLink="../prix">Voir la comparaison des offres et des prix →</a>
       </section>
       }
     </div>
   }
 } @else {
-  <app-empty-state [compact]="true" titre="Aucun concurrent associ├⌐"
-    texte="Associez les concurrents de votre secteur pour ├⌐valuer le niveau de concurrence et comparer vos prix.">
+  <app-empty-state [compact]="true" titre="Aucun concurrent associé"
+    texte="Associez les concurrents de votre secteur pour évaluer le niveau de concurrence et comparer vos prix.">
     <button type="button" class="btn-primaire" (click)="modal.set({ mode: 'associer', concurrent: null })">
       <app-icon nom="plus" [taille]="16" />Associer un concurrent
     </button>
@@ -110,7 +110,7 @@
     titre="Supprimer ce concurrent ?"
     avant="Le concurrent "
     [nom]="c.nom"
-    apres=" sera supprim├⌐ de la base et retir├⌐ de toutes les ├⌐tudes qui l'utilisent. Pour le retirer seulement de cette ├⌐tude, utilisez ┬½ Retirer de l'├⌐tude ┬╗."
+    apres=" sera supprimé de la base et retiré de toutes les études qui l'utilisent. Pour le retirer seulement de cette étude, utilisez « Retirer de l'étude »."
     [enCours]="suppressionEnCours()"
     (confirmer)="supprimer()"
     (annuler)="aSupprimer.set(null)" />

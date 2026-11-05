@@ -1,11 +1,11 @@
-﻿import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { environment } from '../../environments/environment';
 import { IconComponent } from '../shared/components/icon.component';
 import { MENU } from './menu';
 
-/** Barre lat├⌐rale commune : la liste des modules vient de layout/menu.ts. */
+/** Barre latérale commune : la liste des modules vient de layout/menu.ts. */
 @Component({
   selector: 'app-sidebar',
   imports: [RouterLink, RouterLinkActive, IconComponent],

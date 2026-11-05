@@ -44,7 +44,14 @@ class RoutesTest extends GatewayTestSupport {
                 .collect(Collectors.toMap(Route::getId, r -> r.getUri().toString()));
 
         assertThat(uris).containsExactlyInAnyOrderEntriesOf(Map.ofEntries(
-                Map.entry("market-service", "lb://MARKET-SERVICE"),
+                Map.entry("market-secteur-docs", "lb://SECTEUR-SERVICE"),
+                Map.entry("market-concurrent-docs", "lb://CONCURRENT-SERVICE"),
+                Map.entry("market-swot-docs", "lb://SWOT-SERVICE"),
+                Map.entry("market-etude-docs", "lb://ETUDE-SERVICE"),
+                Map.entry("market-secteur-service", "lb://SECTEUR-SERVICE"),
+                Map.entry("market-concurrent-service", "lb://CONCURRENT-SERVICE"),
+                Map.entry("market-swot-service", "lb://SWOT-SERVICE"),
+                Map.entry("market-etude-service", "lb://ETUDE-SERVICE"),
                 Map.entry("accounting-service", "lb://PROFESSIONAL-SERVICE"),
                 Map.entry("lawyer-service", "lb://lawyer-space"),
                 Map.entry("lawyer-docs", "lb://lawyer-space"),
@@ -70,6 +77,8 @@ class RoutesTest extends GatewayTestSupport {
         Map<String, Object> services = routes().stream()
                 .collect(Collectors.toMap(Route::getId, r -> r.getMetadata().get("service")));
         assertThat(services).containsEntry("accounting-service", "PROFESSIONAL-SERVICE")
+                .containsEntry("market-swot-service", "SWOT-SERVICE")
+                .containsEntry("market-etude-docs", "ETUDE-SERVICE")
                 .containsEntry("lawyer-docs", "lawyer-space")
                 .containsEntry("user-service", "USER-SERVICE");
     }
@@ -79,7 +88,7 @@ class RoutesTest extends GatewayTestSupport {
         client.get().uri("/actuator/gateway/routes").exchange()
                 .expectStatus().isOk()
                 .expectBody()
-                .jsonPath("$.length()").isEqualTo(11)
+                .jsonPath("$.length()").isEqualTo(18)
                 .jsonPath("$[?(@.route_id == 'accounting-service')].uri").isEqualTo("lb://PROFESSIONAL-SERVICE")
                 .jsonPath("$[?(@.route_id == 'lawyer-service')].uri").isEqualTo("lb://lawyer-space");
     }

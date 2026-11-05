@@ -1,20 +1,20 @@
-﻿<div class="entete-section">
+<div class="entete-section">
   <div class="titre">
-    <h2>Opportunit├⌐s, menaces et SWOT</h2>
+    <h2>Opportunités, menaces et SWOT</h2>
     <p>{{ resume() }}</p>
   </div>
   <div class="actions">
     <button type="button" class="btn-secondaire" (click)="generer()" [disabled]="generationEnCours()">
-      <app-icon nom="etoile" [taille]="16" />{{ generationEnCours() ? 'G├⌐n├⌐rationΓÇª' : 'G├⌐n├⌐rer la SWOT' }}
+      <app-icon nom="etoile" [taille]="16" />{{ generationEnCours() ? 'Génération…' : 'Générer la SWOT' }}
     </button>
     <button type="button" class="btn-primaire" (click)="modal.set({ element: null, type: 'force' })">
-      <app-icon nom="plus" [taille]="16" />Ajouter un ├⌐l├⌐ment
+      <app-icon nom="plus" [taille]="16" />Ajouter un élément
     </button>
   </div>
 </div>
 
 @if (store.swotGenereeAutomatiquement()) {
-  <p class="swot-auto" role="status">SWOT g├⌐n├⌐r├⌐e automatiquement apr├¿s la finalisation de l'├⌐tude.</p>
+  <p class="swot-auto" role="status">SWOT générée automatiquement après la finalisation de l'étude.</p>
 }
 
 <div class="compteurs">
@@ -43,13 +43,13 @@
                 <span class="description">{{ e.description }}</span>
                 <span class="etiquettes">
                   @if (e.genere_automatiquement) {
-                    <span class="etiquette auto">G├⌐n├⌐r├⌐ automatiquement</span>
+                    <span class="etiquette auto">Généré automatiquement</span>
                   } @else {
-                    <span class="etiquette main">Ajout├⌐ ├á la main</span>
+                    <span class="etiquette main">Ajouté à la main</span>
                   }
                 </span>
               </span>
-              <app-menu-actions libelle="Actions pour cet ├⌐l├⌐ment">
+              <app-menu-actions libelle="Actions pour cet élément">
                 <button type="button" role="menuitem" (click)="modal.set({ element: e, type: e.type })">Modifier</button>
                 <button type="button" role="menuitem" class="danger" (click)="aSupprimer.set(e)">Supprimer</button>
               </app-menu-actions>
@@ -65,7 +65,7 @@
 
 <p class="info">
   <app-icon nom="info" [taille]="16" />
-  <span>┬½ G├⌐n├⌐rer la SWOT ┬╗ recalcule uniquement les ├⌐l├⌐ments automatiques, ├á partir de vos concurrents, tendances, prix et personas. Vos ajouts manuels sont toujours conserv├⌐s.</span>
+  <span>« Générer la SWOT » recalcule uniquement les éléments automatiques, à partir de vos concurrents, tendances, prix et personas. Vos ajouts manuels sont toujours conservés.</span>
 </p>
 
 @if (modal(); as m) {
@@ -75,10 +75,10 @@
 
 @if (aSupprimer(); as e) {
   <app-confirm-modal
-    titre="Supprimer cet ├⌐l├⌐ment ?"
-    avant="L'├⌐l├⌐ment "
+    titre="Supprimer cet élément ?"
+    avant="L'élément "
     [nom]="e.description"
-    apres=" sera retir├⌐ de la SWOT."
+    apres=" sera retiré de la SWOT."
     [enCours]="suppressionEnCours()"
     (confirmer)="supprimer()"
     (annuler)="aSupprimer.set(null)" />

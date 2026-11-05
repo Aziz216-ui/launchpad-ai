@@ -1,4 +1,4 @@
-﻿import {
+import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
@@ -13,8 +13,8 @@ import { IconComponent } from '../../../shared/components/icon.component';
 let compteur = 0;
 
 /**
- * Fen├¬tre modale (maquette Modales.dc.html) : en-t├¬te avec titre et croix,
- * corps et pied projet├⌐s. ├ëchap ou clic sur le fond la ferment.
+ * Fenêtre modale (maquette Modales.dc.html) : en-tête avec titre et croix,
+ * corps et pied projetés. Échap ou clic sur le fond la ferment.
  *
  * <app-modal titre="Ajouter un persona" (fermer)="...">
  *   ...corps...
@@ -97,7 +97,7 @@ export class ModalComponent {
 
   constructor() {
     const element = inject<ElementRef<HTMLElement>>(ElementRef);
-    // Place le focus dans le premier champ ├á l'ouverture
+    // Place le focus dans le premier champ à l'ouverture
     afterNextRender(() => {
       const champ = element.nativeElement.querySelector<HTMLElement>(
         '.corps input, .corps select, .corps textarea, .corps button',

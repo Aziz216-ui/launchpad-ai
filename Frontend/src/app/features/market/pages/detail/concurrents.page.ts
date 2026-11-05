@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { NotificationService } from '../../../../core/notifications/notification.service';
@@ -17,7 +17,7 @@ import { EtudeStore } from '../../services/etude-store.service';
 import { GeocodageService, PointCarte, regrouperParLieu } from '../../services/geocodage.service';
 import { MarketApiService } from '../../services/market-api.service';
 
-/** Onglet ┬½ Concurrents ┬╗ (maquette Concurrents.dc.html). */
+/** Onglet « Concurrents » (maquette Concurrents.dc.html). */
 @Component({
   selector: 'app-concurrents',
   imports: [
@@ -45,7 +45,7 @@ export class ConcurrentsPage {
 
   protected readonly concurrents = computed(() => this.store.etude()?.concurrents_details ?? []);
 
-  /** Carte des concurrents : un marqueur par pays, infobulle avec les concurrents qui y sont ├⌐tablis. */
+  /** Carte des concurrents : un marqueur par pays, infobulle avec les concurrents qui y sont établis. */
   protected readonly pays = computed(() => regrouperParLieu(this.concurrents(), (c) => c.pays, (c) => c.nom));
   protected readonly pointsPays = signal<PointCarte[]>([]);
   protected readonly localisationEnCours = signal(false);
@@ -55,37 +55,37 @@ export class ConcurrentsPage {
   protected readonly aSupprimer = signal<Concurrent | null>(null);
   protected readonly suppressionEnCours = signal(false);
 
-  /** Note sous le tableau : part du march├⌐ occup├⌐e par les concurrents analys├⌐s. */
+  /** Note sous le tableau : part du marché occupée par les concurrents analysés. */
   protected readonly notePartsDeMarche = computed(() => {
     const liste = this.concurrents();
     if (!liste.length) return '';
     const total = liste.reduce((somme, c) => somme + c.part_de_marche, 0);
     const reste = Math.max(0, 100 - total);
-    return `Parts de march├⌐ : ${formatPourcentage(total)} pour ces ${liste.length} acteurs, ${formatPourcentage(reste)} pour les autres.`;
+    return `Parts de marché : ${formatPourcentage(total)} pour ces ${liste.length} acteurs, ${formatPourcentage(reste)} pour les autres.`;
   });
 
-  /** Carte ┬½ positionnement ┬╗ construite ├á partir de la comparaison des prix. */
+  /** Carte « positionnement » construite à partir de la comparaison des prix. */
   protected readonly positionnement = computed(() => {
     const c = this.store.comparaison();
     if (!c || c.prix_min === null || c.prix_max === null || c.prix_moyen === null) return null;
     const titres = {
       economique: 'Un positionnement accessible',
-      aligne: 'Un positionnement align├⌐ sur le march├⌐',
+      aligne: 'Un positionnement aligné sur le marché',
       premium: 'Un positionnement premium',
-      inconnu: 'Les prix du march├⌐',
+      inconnu: 'Les prix du marché',
     };
-    let texte = `De ${formatMontant(c.prix_min)} ├á ${formatMontant(c.prix_max)}, avec une moyenne de ${formatMontant(c.prix_moyen)}.`;
+    let texte = `De ${formatMontant(c.prix_min)} à ${formatMontant(c.prix_max)}, avec une moyenne de ${formatMontant(c.prix_moyen)}.`;
     if (c.prix_propose !== null) {
       const position =
-        c.prix_propose < c.prix_moyen ? 'reste sous' : c.prix_propose > c.prix_moyen ? 'se situe au-dessus de' : 'est ├⌐gale ├á';
-      texte += ` Votre offre ├á ${formatMontant(c.prix_propose)} ${position} la moyenne du march├⌐ (positionnement ${POSITIONNEMENTS[c.positionnement]}).`;
+        c.prix_propose < c.prix_moyen ? 'reste sous' : c.prix_propose > c.prix_moyen ? 'se situe au-dessus de' : 'est égale à';
+      texte += ` Votre offre à ${formatMontant(c.prix_propose)} ${position} la moyenne du marché (positionnement ${POSITIONNEMENTS[c.positionnement]}).`;
     }
     return { titre: titres[c.positionnement], texte };
   });
 
   /**
-   * Carte ┬½ Votre angle de diff├⌐renciation ┬╗ : part du concurrent le moins cher et de sa
-   * faiblesse d├⌐clar├⌐e (aucune donn├⌐e invent├⌐e : pas de carte sans concurrent).
+   * Carte « Votre angle de différenciation » : part du concurrent le moins cher et de sa
+   * faiblesse déclarée (aucune donnée inventée : pas de carte sans concurrent).
    */
   protected readonly differenciation = computed(() => {
     const liste = this.concurrents();
@@ -95,11 +95,11 @@ export class ConcurrentsPage {
     const prix = formatMontant(moinsCher.prix_moyen);
     if (moinsCher.faiblesses) {
       const faiblesse = moinsCher.faiblesses.charAt(0).toLowerCase() + moinsCher.faiblesses.slice(1).replace(/\.$/, '');
-      return `${moinsCher.nom} est l'offre la moins ch├¿re du march├⌐ (${prix}), mais avec une limite : ${faiblesse}. `
-        + `${etude.titre} peut se d├⌐marquer en r├⌐pondant ├á ce manque.`;
+      return `${moinsCher.nom} est l'offre la moins chère du marché (${prix}), mais avec une limite : ${faiblesse}. `
+        + `${etude.titre} peut se démarquer en répondant à ce manque.`;
     }
-    return `${moinsCher.nom} est l'offre la moins ch├¿re du march├⌐ (${prix}). `
-      + `${etude.titre} doit se d├⌐marquer par la valeur de son offre plut├┤t que par le prix.`;
+    return `${moinsCher.nom} est l'offre la moins chère du marché (${prix}). `
+      + `${etude.titre} doit se démarquer par la valeur de son offre plutôt que par le prix.`;
   });
 
   constructor() {
@@ -122,7 +122,7 @@ export class ConcurrentsPage {
       .modifierEtude(etude.id, { concurrents: etude.concurrents.filter((id) => id !== concurrent.id) })
       .subscribe({
         next: () => {
-          this.notifications.succes(`${concurrent.nom} a ├⌐t├⌐ retir├⌐ de l'├⌐tude.`);
+          this.notifications.succes(`${concurrent.nom} a été retiré de l'étude.`);
           this.store.recharger();
         },
         error: (e: unknown) => this.notifications.erreur(messageErreur(e, 'Impossible de retirer ce concurrent.')),
@@ -137,7 +137,7 @@ export class ConcurrentsPage {
       next: () => {
         this.suppressionEnCours.set(false);
         this.aSupprimer.set(null);
-        this.notifications.succes(`Le concurrent ${concurrent.nom} a ├⌐t├⌐ supprim├⌐.`);
+        this.notifications.succes(`Le concurrent ${concurrent.nom} a été supprimé.`);
         this.store.recharger();
       },
       error: (e: unknown) => {

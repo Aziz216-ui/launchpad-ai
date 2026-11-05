@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, effect, inject, input, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, untracked } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 
 import { EmptyStateComponent } from '../../../../shared/components/empty-state.component';
@@ -8,8 +8,8 @@ import { EtudeOngletsComponent } from '../../components/etude-onglets.component'
 import { EtudeStore } from '../../services/etude-store.service';
 
 /**
- * Page d├⌐tail d'une ├⌐tude : en-t├¬te et onglets communs, puis l'onglet actif.
- * Fournit l'EtudeStore partag├⌐ par tous les onglets.
+ * Page détail d'une étude : en-tête et onglets communs, puis l'onglet actif.
+ * Fournit l'EtudeStore partagé par tous les onglets.
  */
 @Component({
   selector: 'app-etude-detail',
@@ -19,10 +19,10 @@ import { EtudeStore } from '../../services/etude-store.service';
   template: `
     <div class="page">
       @if (store.chargement()) {
-        <app-loader texte="Chargement de l'├⌐tudeΓÇª" />
+        <app-loader texte="Chargement de l'étude…" />
       } @else if (store.erreur()) {
-        <app-empty-state titre="├ëtude indisponible" [texte]="store.erreur()!">
-          <a class="btn-primaire" routerLink="/etude-marche">Retour ├á mes ├⌐tudes</a>
+        <app-empty-state titre="Étude indisponible" [texte]="store.erreur()!">
+          <a class="btn-primaire" routerLink="/etude-marche">Retour à mes études</a>
         </app-empty-state>
       } @else {
         <app-etude-entete />
@@ -35,7 +35,7 @@ import { EtudeStore } from '../../services/etude-store.service';
 export class EtudeDetailPage {
   protected readonly store = inject(EtudeStore);
 
-  /** Param├¿tre de route :id. */
+  /** Paramètre de route :id. */
   readonly id = input.required<string>();
 
   constructor() {

@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 export type NomIcone =
   | 'logo'
@@ -26,7 +26,7 @@ export type NomIcone =
   | 'cercle-valide'
   | 'crayon';
 
-/** Ic├┤nes SVG reprises ├á l'identique des maquettes (trac├⌐s et ├⌐paisseurs). */
+/** Icônes SVG reprises à l'identique des maquettes (tracés et épaisseurs). */
 @Component({
   selector: 'app-icon',
   changeDetection: ChangeDetectionStrategy.OnPush,
