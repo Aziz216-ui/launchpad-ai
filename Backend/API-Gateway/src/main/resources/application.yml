@@ -123,6 +123,24 @@ spring:
               metadata:
                 service: LEGAL-SERVICE
 
+            # --- Clauses : Clause-Service, port 3004 ------------------------------
+            # Docs : /api/clauses/docs et /api/clauses/docs-json (dans le préfixe)
+            - id: clause-service
+              uri: ${launchpad.services.clause.uri}
+              predicates:
+                - Path=/api/clauses/**
+              metadata:
+                service: CLAUSE-SERVICE
+
+            # --- Commentaires : Commentaire-Service, port 3005 --------------------
+            # Docs : /api/commentaires/docs et /api/commentaires/docs-json (dans le préfixe)
+            - id: commentaire-service
+              uri: ${launchpad.services.commentaire.uri}
+              predicates:
+                - Path=/api/commentaires/**
+              metadata:
+                service: COMMENTAIRE-SERVICE
+
             # --- IA : AI-Service (nom Eureka et port À CONFIRMER) ----------------
             - id: ai-service
               uri: ${launchpad.services.ai.uri}
@@ -170,6 +188,10 @@ launchpad:
       uri: ${LAWYER_SERVICE_URI:lb://lawyer-space}
     legal:
       uri: ${LEGAL_SERVICE_URI:lb://LEGAL-SERVICE}
+    clause:
+      uri: ${CLAUSE_SERVICE_URI:lb://CLAUSE-SERVICE}
+    commentaire:
+      uri: ${COMMENTAIRE_SERVICE_URI:lb://COMMENTAIRE-SERVICE}
     ai:
       uri: ${AI_SERVICE_URI:lb://AI-SERVICE}            # À CONFIRMER
     finance:
