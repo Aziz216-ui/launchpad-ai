@@ -2,9 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DocumentJuridique } from '../../database/entities/document-juridique.entity';
-import { Clause } from '../../database/entities/clause.entity';
 import { DocumentType } from '../../common/enums/document-type.enum';
 import { DocumentStatut } from '../../common/enums/document-statut.enum';
+import { ClauseClient } from '../../clients/clause.client';
+import { Clause } from '../../clients/models/clause.model';
+import { DocumentDetailDto } from '../dto/document-detail.dto';
 
 interface TemplateClause {
   numero: number;
@@ -19,13 +21,14 @@ export class GenerateurJuridiqueService {
   constructor(
     @InjectRepository(DocumentJuridique)
     private readonly documentRepository: Repository<DocumentJuridique>,
+    private readonly clauseClient: ClauseClient,
   ) {}
 
   async generer(
     type: DocumentType,
     projetId: string,
     params: Record<string, any> = {},
-  ): Promise<DocumentJuridique> {
+  ): Promise<DocumentDetailDto> {
     switch (type) {
       case DocumentType.STATUTS:
         return this.creerStatuts(projetId, params);
@@ -43,7 +46,7 @@ export class GenerateurJuridiqueService {
   async creerStatuts(
     projetId: string,
     params: Record<string, any> = {},
-  ): Promise<DocumentJuridique> {
+  ): Promise<DocumentDetailDto> {
     const denomination = params.denomination || 'Startup Inconnue';
     const forme = params.forme || 'SAS';
     const capital = params.capital || 1000;
@@ -104,7 +107,7 @@ export class GenerateurJuridiqueService {
   async creerContratPrestation(
     projetId: string,
     params: Record<string, any> = {},
-  ): Promise<DocumentJuridique> {
+  ): Promise<DocumentDetailDto> {
     const prestataire = params.prestataire || 'Le Prestataire';
     const client = params.client || 'Le Client';
     const objet =
@@ -157,7 +160,7 @@ export class GenerateurJuridiqueService {
   async creerNDA(
     projetId: string,
     params: Record<string, any> = {},
-  ): Promise<DocumentJuridique> {
+  ): Promise<DocumentDetailDto> {
     const partieA = params.partieA || 'La Partie Émettrice';
     const partieB = params.partieB || 'La Partie Réceptrice';
     const objet =
@@ -204,7 +207,7 @@ export class GenerateurJuridiqueService {
   async creerProcesVerbal(
     projetId: string,
     params: Record<string, any> = {},
-  ): Promise<DocumentJuridique> {
+  ): Promise<DocumentDetailDto> {
     const assembleeType = params.assembleeType || 'Générale Ordinaire';
     const dateSeance = params.dateSeance || new Date().toISOString().split('T')[0];
     const president = params.president || 'Le Président de séance';
@@ -255,7 +258,7 @@ export class GenerateurJuridiqueService {
     titre: string,
     templateClauses: TemplateClause[],
     params: Record<string, any>,
-  ): Promise<DocumentJuridique> {
+  ): Promise<DocumentDetailDto> {
     const document = this.documentRepository.create({
       projetId,
       type,
@@ -264,23 +267,26 @@ export class GenerateurJuridiqueService {
       version: 1,
       isArchived: false,
       metadata: params,
-      commentaires: [],
     });
-
-    const clauses = templateClauses.map((tc) => {
-      const clause = new Clause();
-      clause.numero = tc.numero;
-      clause.titre = tc.titre;
-      clause.texte = tc.texte;
-      return clause;
-    });
-
-    document.clauses = clauses;
 
     const saved = await this.documentRepository.save(document);
+
+    // Les clauses sont stockées par le Clause-Service
+    let clauses: Clause[];
+    try {
+      clauses = await this.clauseClient.creerEnMasse(saved.id, templateClauses);
+    } catch (error) {
+      // Compensation : un document sans ses clauses n'a pas de sens, on l'annule
+      await this.documentRepository.delete(saved.id);
+      this.logger.error(
+        `Création des clauses impossible, document ${saved.id} annulé`,
+      );
+      throw error;
+    }
+
     this.logger.log(
       `Document créé : ID=${saved.id}, Type=${saved.type}, Statut=${saved.statut}, Version=${saved.version}`,
     );
-    return saved;
+    return Object.assign(saved, { clauses, commentaires: [] });
   }
 }

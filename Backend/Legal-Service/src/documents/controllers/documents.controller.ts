@@ -30,8 +30,9 @@ import { ModifierClauseDto } from '../dto/modifier-clause.dto';
 import { DemanderSignatureDto } from '../dto/demander-signature.dto';
 import { FilterDocumentsDto } from '../dto/filter-documents.dto';
 import { DocumentJuridique } from '../../database/entities/document-juridique.entity';
-import { Clause } from '../../database/entities/clause.entity';
-import { Commentaire } from '../../database/entities/commentaire.entity';
+import { Clause } from '../../clients/models/clause.model';
+import { Commentaire } from '../../clients/models/commentaire.model';
+import { DocumentDetailDto } from '../dto/document-detail.dto';
 
 @ApiTags('Gestion des documents')
 @Controller('documents')
@@ -51,9 +52,9 @@ export class DocumentsController {
   @ApiResponse({
     status: 201,
     description: 'Document créé avec succès en statut BROUILLON',
-    type: DocumentJuridique,
+    type: DocumentDetailDto,
   })
-  async generate(@Body() dto: GenerateDocumentDto): Promise<DocumentJuridique> {
+  async generate(@Body() dto: GenerateDocumentDto): Promise<DocumentDetailDto> {
     return this.generateurService.generer(dto.type, dto.projetId, dto.params);
   }
 
@@ -78,14 +79,14 @@ export class DocumentsController {
   @ApiParam({ name: 'id', description: 'UUID du document' })
   @ApiResponse({
     status: 200,
-    description: 'Détails du document juridique',
-    type: DocumentJuridique,
+    description: 'Détails du document juridique avec ses clauses et commentaires',
+    type: DocumentDetailDto,
   })
   @ApiResponse({ status: 404, description: 'Document introuvable' })
   async findById(
     @Param('id', new ParseUUIDPipe()) id: string,
-  ): Promise<DocumentJuridique> {
-    return this.gestionnaireService.findById(id);
+  ): Promise<DocumentDetailDto> {
+    return this.gestionnaireService.findByIdAvecDetails(id);
   }
 
   @Patch(':id')

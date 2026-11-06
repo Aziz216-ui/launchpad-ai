@@ -4,8 +4,8 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { VerificationAvocatService } from './verification-avocat.service';
 import { DocumentJuridique } from '../../database/entities/document-juridique.entity';
-import { Clause } from '../../database/entities/clause.entity';
-import { Commentaire } from '../../database/entities/commentaire.entity';
+import { ClauseClient } from '../../clients/clause.client';
+import { CommentaireClient } from '../../clients/commentaire.client';
 import { DocumentStatut } from '../../common/enums/document-statut.enum';
 import { DocumentType } from '../../common/enums/document-type.enum';
 import { DOCUMENT_EVENTS } from '../../common/events/document.events';
@@ -13,8 +13,8 @@ import { DOCUMENT_EVENTS } from '../../common/events/document.events';
 describe('VerificationAvocatService', () => {
   let service: VerificationAvocatService;
   let mockDocRepo: any;
-  let mockClauseRepo: any;
-  let mockCommRepo: any;
+  let mockClauseClient: any;
+  let mockCommentaireClient: any;
   let mockEventEmitter: any;
 
   const createDoc = (statut: DocumentStatut, isArchived = false) => {
@@ -25,8 +25,6 @@ describe('VerificationAvocatService', () => {
     doc.statut = statut;
     doc.version = 1;
     doc.isArchived = isArchived;
-    doc.clauses = [];
-    doc.commentaires = [];
     return doc;
   };
 
@@ -35,13 +33,15 @@ describe('VerificationAvocatService', () => {
       findOne: jest.fn(),
       save: jest.fn().mockImplementation((d) => Promise.resolve({ ...d })),
     };
-    mockClauseRepo = {
-      findOne: jest.fn(),
-      save: jest.fn().mockImplementation((c) => Promise.resolve({ ...c })),
+    mockClauseClient = {
+      findByDocument: jest.fn().mockResolvedValue([]),
+      modifier: jest.fn(),
     };
-    mockCommRepo = {
-      create: jest.fn().mockImplementation((c) => c),
-      save: jest.fn().mockImplementation((c) => Promise.resolve({ ...c, id: 'comm-1' })),
+    mockCommentaireClient = {
+      findByDocument: jest.fn().mockResolvedValue([]),
+      creer: jest.fn().mockImplementation((documentId, auteur, texte) =>
+        Promise.resolve({ id: 'comm-1', documentId, auteur, texte, date: new Date() }),
+      ),
     };
     mockEventEmitter = {
       emit: jest.fn(),
@@ -55,12 +55,12 @@ describe('VerificationAvocatService', () => {
           useValue: mockDocRepo,
         },
         {
-          provide: getRepositoryToken(Clause),
-          useValue: mockClauseRepo,
+          provide: ClauseClient,
+          useValue: mockClauseClient,
         },
         {
-          provide: getRepositoryToken(Commentaire),
-          useValue: mockCommRepo,
+          provide: CommentaireClient,
+          useValue: mockCommentaireClient,
         },
         {
           provide: EventEmitter2,
@@ -101,7 +101,11 @@ describe('VerificationAvocatService', () => {
       const result = await service.refuser(doc.id, 'Pénalités non conformes');
       expect(result.statut).toBe(DocumentStatut.REFUSE);
       expect(result.motifRefus).toBe('Pénalités non conformes');
-      expect(mockCommRepo.save).toHaveBeenCalled();
+      expect(mockCommentaireClient.creer).toHaveBeenCalledWith(
+        doc.id,
+        'Avocat (Motif de refus)',
+        'Pénalités non conformes',
+      );
     });
 
     it('Lève une exception si le motif est vide', async () => {
@@ -134,10 +138,10 @@ describe('VerificationAvocatService', () => {
         'Me Laurent Dupont',
       );
 
-      expect(mockCommRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          texte: "[Demande d'informations] Quel est le régime fiscal choisi ?",
-        }),
+      expect(mockCommentaireClient.creer).toHaveBeenCalledWith(
+        doc.id,
+        'Avocat (Me Laurent Dupont)',
+        "[Demande d'informations] Quel est le régime fiscal choisi ?",
       );
       expect(mockEventEmitter.emit).toHaveBeenCalledWith(
         DOCUMENT_EVENTS.INFO_REQUESTED,

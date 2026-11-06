@@ -9,9 +9,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DocumentJuridique } from '../../database/entities/document-juridique.entity';
-import { Clause } from '../../database/entities/clause.entity';
-import { Commentaire } from '../../database/entities/commentaire.entity';
 import { DocumentStatut } from '../../common/enums/document-statut.enum';
+import { ClauseClient } from '../../clients/clause.client';
+import { CommentaireClient } from '../../clients/commentaire.client';
+import { Clause } from '../../clients/models/clause.model';
+import { Commentaire } from '../../clients/models/commentaire.model';
+import { DocumentDetailDto } from '../../documents/dto/document-detail.dto';
 import {
   DOCUMENT_EVENTS,
   DocumentInfoRequestedEvent,
@@ -26,22 +29,23 @@ export class VerificationAvocatService {
   constructor(
     @InjectRepository(DocumentJuridique)
     private readonly documentRepository: Repository<DocumentJuridique>,
-    @InjectRepository(Clause)
-    private readonly clauseRepository: Repository<Clause>,
-    @InjectRepository(Commentaire)
-    private readonly commentaireRepository: Repository<Commentaire>,
+    private readonly clauseClient: ClauseClient,
+    private readonly commentaireClient: CommentaireClient,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async consulterDocument(id: string): Promise<DocumentJuridique> {
-    const doc = await this.documentRepository.findOne({
-      where: { id },
-      relations: ['clauses', 'commentaires'],
-      order: {
-        clauses: { numero: 'ASC' },
-        commentaires: { date: 'ASC' },
-      },
-    });
+  // Document complet pour la revue : clauses et commentaires viennent des autres microservices
+  async consulterDocument(id: string): Promise<DocumentDetailDto> {
+    const doc = await this.trouverDocument(id);
+    const [clauses, commentaires] = await Promise.all([
+      this.clauseClient.findByDocument(id),
+      this.commentaireClient.findByDocument(id),
+    ]);
+    return Object.assign(doc, { clauses, commentaires });
+  }
+
+  private async trouverDocument(id: string): Promise<DocumentJuridique> {
+    const doc = await this.documentRepository.findOne({ where: { id } });
 
     if (!doc) {
       throw new NotFoundException(`Document juridique introuvable avec l'ID ${id}`);
@@ -55,7 +59,7 @@ export class VerificationAvocatService {
     numero: number,
     texte: string,
   ): Promise<Clause> {
-    const doc = await this.consulterDocument(docId);
+    const doc = await this.trouverDocument(docId);
 
     if (doc.isArchived) {
       throw new ConflictException(
@@ -63,18 +67,10 @@ export class VerificationAvocatService {
       );
     }
 
-    const clause = await this.clauseRepository.findOne({
-      where: { documentId: docId, numero },
+    // Le Clause-Service renvoie 404 si la clause n'existe pas
+    const savedClause = await this.clauseClient.modifier(docId, numero, {
+      texte,
     });
-
-    if (!clause) {
-      throw new NotFoundException(
-        `Clause n°${numero} introuvable pour le document ${docId}`,
-      );
-    }
-
-    clause.texte = texte;
-    const savedClause = await this.clauseRepository.save(clause);
 
     // Incrémentation de la version
     doc.version += 1;
@@ -91,7 +87,7 @@ export class VerificationAvocatService {
     texte: string,
     auteur: string,
   ): Promise<Commentaire> {
-    const doc = await this.consulterDocument(docId);
+    const doc = await this.trouverDocument(docId);
 
     if (doc.isArchived) {
       throw new ConflictException(
@@ -99,14 +95,11 @@ export class VerificationAvocatService {
       );
     }
 
-    const commentaire = this.commentaireRepository.create({
-      documentId: docId,
-      auteur: auteur || 'Avocat',
+    const savedCommentaire = await this.commentaireClient.creer(
+      docId,
+      auteur || 'Avocat',
       texte,
-      date: new Date(),
-    });
-
-    const savedCommentaire = await this.commentaireRepository.save(commentaire);
+    );
     this.logger.log(
       `Nouveau commentaire ajouté par ${auteur} sur le document ${docId}`,
     );
@@ -114,7 +107,7 @@ export class VerificationAvocatService {
   }
 
   async accepter(docId: string): Promise<DocumentJuridique> {
-    const doc = await this.consulterDocument(docId);
+    const doc = await this.trouverDocument(docId);
 
     if (doc.isArchived) {
       throw new ConflictException(
@@ -153,7 +146,7 @@ export class VerificationAvocatService {
       throw new BadRequestException('Le motif est obligatoire lors d’un refus');
     }
 
-    const doc = await this.consulterDocument(docId);
+    const doc = await this.trouverDocument(docId);
 
     if (doc.isArchived) {
       throw new ConflictException(
@@ -172,13 +165,7 @@ export class VerificationAvocatService {
     doc.motifRefus = motif;
 
     // Enregistrer également le motif comme commentaire traçable
-    const commentaire = this.commentaireRepository.create({
-      documentId: docId,
-      auteur: 'Avocat (Motif de refus)',
-      texte: motif,
-      date: new Date(),
-    });
-    await this.commentaireRepository.save(commentaire);
+    await this.commentaireClient.creer(docId, 'Avocat (Motif de refus)', motif);
 
     const saved = await this.documentRepository.save(doc);
 
@@ -201,12 +188,12 @@ export class VerificationAvocatService {
     docId: string,
     question: string,
     avocatName: string,
-  ): Promise<DocumentJuridique> {
+  ): Promise<DocumentDetailDto> {
     if (!question || question.trim() === '') {
       throw new BadRequestException('La question ne peut pas être vide');
     }
 
-    const doc = await this.consulterDocument(docId);
+    const doc = await this.trouverDocument(docId);
 
     if (doc.isArchived) {
       throw new ConflictException(
@@ -215,13 +202,11 @@ export class VerificationAvocatService {
     }
 
     // Ajout en commentaire
-    const commentaire = this.commentaireRepository.create({
-      documentId: docId,
-      auteur: avocatName ? `Avocat (${avocatName})` : 'Avocat',
-      texte: `[Demande d'informations] ${question}`,
-      date: new Date(),
-    });
-    await this.commentaireRepository.save(commentaire);
+    await this.commentaireClient.creer(
+      docId,
+      avocatName ? `Avocat (${avocatName})` : 'Avocat',
+      `[Demande d'informations] ${question}`,
+    );
 
     // Émettre événement
     this.eventEmitter.emit(
@@ -237,7 +222,7 @@ export class VerificationAvocatService {
   }
 
   async signer(docId: string, avocatName: string): Promise<DocumentJuridique> {
-    const doc = await this.consulterDocument(docId);
+    const doc = await this.trouverDocument(docId);
 
     if (doc.isArchived) {
       throw new ConflictException(

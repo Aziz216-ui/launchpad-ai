@@ -1,7 +1,5 @@
 import { DataSource } from 'typeorm';
 import { DocumentJuridique } from './database/entities/document-juridique.entity';
-import { Clause } from './database/entities/clause.entity';
-import { Commentaire } from './database/entities/commentaire.entity';
 import { DocumentType } from './common/enums/document-type.enum';
 import { DocumentStatut } from './common/enums/document-statut.enum';
 
@@ -13,7 +11,7 @@ async function seed() {
     username: process.env.DB_USERNAME || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
     database: process.env.DB_NAME || 'legal_db',
-    entities: [DocumentJuridique, Clause, Commentaire],
+    entities: [DocumentJuridique],
     synchronize: true,
   });
 
@@ -22,13 +20,9 @@ async function seed() {
   console.log('Connecté avec succès.');
 
   const docRepo = dataSource.getRepository(DocumentJuridique);
-  const clauseRepo = dataSource.getRepository(Clause);
-  const commRepo = dataSource.getRepository(Commentaire);
 
   // Nettoyage préalable optionnel
   console.log('Nettoyage des données existantes...');
-  await clauseRepo.delete({});
-  await commRepo.delete({});
   await docRepo.delete({});
 
   // 1. STATUTS en BROUILLON
@@ -50,27 +44,6 @@ async function seed() {
   });
   await docRepo.save(statuts);
 
-  await clauseRepo.save([
-    clauseRepo.create({
-      numero: 1,
-      titre: 'Forme et Dénomination',
-      texte: 'Il est formé une société par actions simplifiée dénommée AlphaTech Solutions.',
-      documentId: statuts.id,
-    }),
-    clauseRepo.create({
-      numero: 2,
-      titre: 'Objet social',
-      texte: 'Développement de solutions logicielles Saas pour entreprises innovantes.',
-      documentId: statuts.id,
-    }),
-    clauseRepo.create({
-      numero: 3,
-      titre: 'Capital social',
-      texte: 'Le capital social est fixé à 15 000 euros, divisé en 15 000 actions de 1 euro chacune.',
-      documentId: statuts.id,
-    }),
-  ]);
-
   // 2. CONTRAT en EN_VALIDATION
   console.log('Création du document 2 : Contrat de Prestation (EN_VALIDATION)...');
   const contrat = docRepo.create({
@@ -91,36 +64,6 @@ async function seed() {
   });
   await docRepo.save(contrat);
 
-  await clauseRepo.save([
-    clauseRepo.create({
-      numero: 1,
-      titre: 'Parties contractantes',
-      texte: 'Entre AlphaTech Solutions SAS (Prestataire) et Acme Corp (Client).',
-      documentId: contrat.id,
-    }),
-    clauseRepo.create({
-      numero: 2,
-      titre: 'Objet de la prestation',
-      texte: 'Déploiement d’une plateforme cloud haute disponibilité et APIs de synchronisation.',
-      documentId: contrat.id,
-    }),
-    clauseRepo.create({
-      numero: 3,
-      titre: 'Conditions financières',
-      texte: 'Montant forfaitaire de 18 000 € HT payable à 30 jours date d’émission de facture.',
-      documentId: contrat.id,
-    }),
-  ]);
-
-  await commRepo.save([
-    commRepo.create({
-      auteur: 'Alice Entrepreneur',
-      texte: 'Merci de vérifier la clause 3 concernant les conditions de paiement et pénalités de retard.',
-      date: new Date(Date.now() - 3600000 * 2),
-      documentId: contrat.id,
-    }),
-  ]);
-
   // 3. NDA en statut VALIDE
   console.log('Création du document 3 : NDA (VALIDE)...');
   const nda = docRepo.create({
@@ -138,30 +81,6 @@ async function seed() {
     },
   });
   await docRepo.save(nda);
-
-  await clauseRepo.save([
-    clauseRepo.create({
-      numero: 1,
-      titre: 'Définition des informations confidentielles',
-      texte: 'Toutes les données techniques, financières, commerciales communiquées par les parties.',
-      documentId: nda.id,
-    }),
-    clauseRepo.create({
-      numero: 2,
-      titre: 'Durée de validité',
-      texte: 'L’obligation de secret professionnel court pour une durée de 36 mois à compter de la signature.',
-      documentId: nda.id,
-    }),
-  ]);
-
-  await commRepo.save([
-    commRepo.create({
-      auteur: 'Me Marc Dupont',
-      texte: 'Document validé sans réserve. Conforme à la législation en vigueur.',
-      date: new Date(Date.now() - 1800000),
-      documentId: nda.id,
-    }),
-  ]);
 
   // 4. PV d'Assemblée en statut SIGNE
   console.log('Création du document 4 : PV d’Assemblée (SIGNE)...');
@@ -181,16 +100,7 @@ async function seed() {
   });
   await docRepo.save(pv);
 
-  await clauseRepo.save([
-    clauseRepo.create({
-      numero: 1,
-      titre: 'Adoption des résolutions',
-      texte: 'L’ensemble des associés fondateurs adopte à l’unanimité la constitution de la société.',
-      documentId: pv.id,
-    }),
-  ]);
-
-  console.log('Seed terminé avec succès ! 4 documents créés.');
+  console.log('Seed terminé avec succès ! 4 documents créés. Lancez ensuite le seed du Clause-Service et du Commentaire-Service.');
   await dataSource.destroy();
 }
 

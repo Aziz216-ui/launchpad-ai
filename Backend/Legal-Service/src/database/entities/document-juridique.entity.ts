@@ -2,15 +2,12 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { DocumentType } from '../../common/enums/document-type.enum';
 import { DocumentStatut } from '../../common/enums/document-statut.enum';
-import { Clause } from './clause.entity';
-import { Commentaire } from './commentaire.entity';
 
 @Entity('documents_juridiques')
 export class DocumentJuridique {
@@ -75,7 +72,7 @@ export class DocumentJuridique {
 
   @ApiProperty({
     example: null,
-    description: 'Date d’archivage du document',
+    description: "Date d'archivage du document",
     required: false,
     nullable: true,
   })
@@ -84,7 +81,7 @@ export class DocumentJuridique {
 
   @ApiProperty({
     example: null,
-    description: 'Motif en cas de refus par l’avocat',
+    description: "Motif en cas de refus par l'avocat",
     required: false,
     nullable: true,
   })
@@ -130,24 +127,4 @@ export class DocumentJuridique {
   })
   @UpdateDateColumn()
   updatedAt: Date;
-
-  @ApiProperty({
-    type: () => [Clause],
-    description: 'Clauses du document juridique',
-  })
-  @OneToMany(() => Clause, (clause) => clause.document, {
-    cascade: true,
-    eager: true,
-  })
-  clauses: Clause[];
-
-  @ApiProperty({
-    type: () => [Commentaire],
-    description: 'Commentaires et remarques laissés par les avocats/entrepreneurs',
-  })
-  @OneToMany(() => Commentaire, (commentaire) => commentaire.document, {
-    cascade: true,
-    eager: true,
-  })
-  commentaires: Commentaire[];
 }

@@ -21,8 +21,9 @@ import { DemanderInformationsDto } from '../dto/demander-informations.dto';
 import { SignerDocumentDto } from '../dto/signer-document.dto';
 import { ModifierClauseDto } from '../../documents/dto/modifier-clause.dto';
 import { DocumentJuridique } from '../../database/entities/document-juridique.entity';
-import { Clause } from '../../database/entities/clause.entity';
-import { Commentaire } from '../../database/entities/commentaire.entity';
+import { Clause } from '../../clients/models/clause.model';
+import { Commentaire } from '../../clients/models/commentaire.model';
+import { DocumentDetailDto } from '../../documents/dto/document-detail.dto';
 
 @ApiTags('Vérification par avocat')
 @Controller('verification')
@@ -41,12 +42,12 @@ export class VerificationController {
   @ApiResponse({
     status: 200,
     description: 'Document complet pour revue juridique',
-    type: DocumentJuridique,
+    type: DocumentDetailDto,
   })
   @ApiResponse({ status: 404, description: 'Document introuvable' })
   async consulterDocument(
     @Param('id', new ParseUUIDPipe()) id: string,
-  ): Promise<DocumentJuridique> {
+  ): Promise<DocumentDetailDto> {
     return this.verificationService.consulterDocument(id);
   }
 
@@ -148,12 +149,12 @@ export class VerificationController {
   @ApiResponse({
     status: 200,
     description: 'Demande d’informations émise',
-    type: DocumentJuridique,
+    type: DocumentDetailDto,
   })
   async demanderInformations(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: DemanderInformationsDto,
-  ): Promise<DocumentJuridique> {
+  ): Promise<DocumentDetailDto> {
     const avocatName = dto.avocat || 'Avocat';
     return this.verificationService.demanderInformations(
       id,

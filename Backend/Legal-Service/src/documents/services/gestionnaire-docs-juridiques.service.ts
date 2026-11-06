@@ -10,11 +10,14 @@ import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import PDFDocument = require('pdfkit');
 import { DocumentJuridique } from '../../database/entities/document-juridique.entity';
-import { Clause } from '../../database/entities/clause.entity';
-import { Commentaire } from '../../database/entities/commentaire.entity';
 import { DocumentStatut } from '../../common/enums/document-statut.enum';
+import { ClauseClient } from '../../clients/clause.client';
+import { CommentaireClient } from '../../clients/commentaire.client';
+import { Clause } from '../../clients/models/clause.model';
+import { Commentaire } from '../../clients/models/commentaire.model';
 import { ModifierDocumentDto } from '../dto/modifier-document.dto';
 import { FilterDocumentsDto } from '../dto/filter-documents.dto';
+import { DocumentDetailDto } from '../dto/document-detail.dto';
 import {
   DOCUMENT_EVENTS,
   DocumentArchivedEvent,
@@ -39,21 +42,17 @@ export class GestionnaireDocsJuridiquesService {
   constructor(
     @InjectRepository(DocumentJuridique)
     private readonly documentRepository: Repository<DocumentJuridique>,
-    @InjectRepository(Clause)
-    private readonly clauseRepository: Repository<Clause>,
-    @InjectRepository(Commentaire)
-    private readonly commentaireRepository: Repository<Commentaire>,
+    private readonly clauseClient: ClauseClient,
+    private readonly commentaireClient: CommentaireClient,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
+  // La liste ne renvoie que les documents : les clauses et commentaires
+  // se consultent document par document (GET /documents/:id).
   async list(filters?: FilterDocumentsDto): Promise<DocumentJuridique[]> {
     const query = this.documentRepository
       .createQueryBuilder('doc')
-      .leftJoinAndSelect('doc.clauses', 'clause')
-      .leftJoinAndSelect('doc.commentaires', 'commentaire')
-      .orderBy('doc.createdAt', 'DESC')
-      .addOrderBy('clause.numero', 'ASC')
-      .addOrderBy('commentaire.date', 'ASC');
+      .orderBy('doc.createdAt', 'DESC');
 
     if (filters?.projetId) {
       query.andWhere('doc.projetId = :projetId', { projetId: filters.projetId });
@@ -71,11 +70,6 @@ export class GestionnaireDocsJuridiquesService {
   async findById(id: string): Promise<DocumentJuridique> {
     const document = await this.documentRepository.findOne({
       where: { id },
-      relations: ['clauses', 'commentaires'],
-      order: {
-        clauses: { numero: 'ASC' },
-        commentaires: { date: 'ASC' },
-      },
     });
 
     if (!document) {
@@ -83,6 +77,16 @@ export class GestionnaireDocsJuridiquesService {
     }
 
     return document;
+  }
+
+  // Agrège le document avec ses clauses (Clause-Service) et ses commentaires (Commentaire-Service)
+  async findByIdAvecDetails(id: string): Promise<DocumentDetailDto> {
+    const document = await this.findById(id);
+    const [clauses, commentaires] = await Promise.all([
+      this.clauseClient.findByDocument(id),
+      this.commentaireClient.findByDocument(id),
+    ]);
+    return Object.assign(document, { clauses, commentaires });
   }
 
   async modifierDocument(
@@ -238,10 +242,7 @@ export class GestionnaireDocsJuridiquesService {
 
   async getClauses(id: string): Promise<Clause[]> {
     await this.findById(id); // vérifie existence
-    return this.clauseRepository.find({
-      where: { documentId: id },
-      order: { numero: 'ASC' },
-    });
+    return this.clauseClient.findByDocument(id);
   }
 
   async modifierClause(
@@ -258,22 +259,11 @@ export class GestionnaireDocsJuridiquesService {
       );
     }
 
-    const clause = await this.clauseRepository.findOne({
-      where: { documentId: id, numero },
+    // Le Clause-Service renvoie 404 si la clause n'existe pas
+    const savedClause = await this.clauseClient.modifier(id, numero, {
+      texte,
+      titre,
     });
-
-    if (!clause) {
-      throw new NotFoundException(
-        `Clause n°${numero} introuvable pour le document ${id}`,
-      );
-    }
-
-    clause.texte = texte;
-    if (titre !== undefined) {
-      clause.titre = titre;
-    }
-
-    const savedClause = await this.clauseRepository.save(clause);
 
     // Incrémentation systématique de la version du document
     doc.version += 1;
@@ -287,14 +277,12 @@ export class GestionnaireDocsJuridiquesService {
 
   async getCommentaires(id: string): Promise<Commentaire[]> {
     await this.findById(id); // vérifie existence
-    return this.commentaireRepository.find({
-      where: { documentId: id },
-      order: { date: 'ASC' },
-    });
+    return this.commentaireClient.findByDocument(id);
   }
 
   async exporterPDF(id: string): Promise<{ filename: string; buffer: Buffer }> {
     const doc = await this.findById(id);
+    const clauses = await this.clauseClient.findByDocument(id);
 
     return new Promise<{ filename: string; buffer: Buffer }>((resolve, reject) => {
       try {
@@ -361,7 +349,7 @@ export class GestionnaireDocsJuridiquesService {
         });
         pdf.moveDown(1);
 
-        const clausesTriees = (doc.clauses || []).sort(
+        const clausesTriees = clauses.sort(
           (a, b) => a.numero - b.numero,
         );
 

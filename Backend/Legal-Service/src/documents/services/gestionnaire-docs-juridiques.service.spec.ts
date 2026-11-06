@@ -4,8 +4,8 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { GestionnaireDocsJuridiquesService } from './gestionnaire-docs-juridiques.service';
 import { DocumentJuridique } from '../../database/entities/document-juridique.entity';
-import { Clause } from '../../database/entities/clause.entity';
-import { Commentaire } from '../../database/entities/commentaire.entity';
+import { ClauseClient } from '../../clients/clause.client';
+import { CommentaireClient } from '../../clients/commentaire.client';
 import { DocumentStatut } from '../../common/enums/document-statut.enum';
 import { DocumentType } from '../../common/enums/document-type.enum';
 import { DOCUMENT_EVENTS } from '../../common/events/document.events';
@@ -13,8 +13,8 @@ import { DOCUMENT_EVENTS } from '../../common/events/document.events';
 describe('GestionnaireDocsJuridiquesService (State Machine & Logic)', () => {
   let service: GestionnaireDocsJuridiquesService;
   let mockDocRepo: any;
-  let mockClauseRepo: any;
-  let mockCommRepo: any;
+  let mockClauseClient: any;
+  let mockCommentaireClient: any;
   let mockEventEmitter: any;
 
   const createMockDocument = (
@@ -30,8 +30,6 @@ describe('GestionnaireDocsJuridiquesService (State Machine & Logic)', () => {
     doc.version = 1;
     doc.isArchived = isArchived;
     doc.metadata = {};
-    doc.clauses = [];
-    doc.commentaires = [];
     doc.createdAt = new Date();
     doc.updatedAt = new Date();
     return doc;
@@ -43,14 +41,14 @@ describe('GestionnaireDocsJuridiquesService (State Machine & Logic)', () => {
       save: jest.fn().mockImplementation((doc) => Promise.resolve({ ...doc })),
       createQueryBuilder: jest.fn(),
     };
-    mockClauseRepo = {
-      find: jest.fn(),
-      findOne: jest.fn(),
-      save: jest.fn().mockImplementation((c) => Promise.resolve({ ...c })),
+    mockClauseClient = {
+      findByDocument: jest.fn().mockResolvedValue([]),
+      modifier: jest.fn().mockImplementation((documentId, numero, modifs) =>
+        Promise.resolve({ id: 'clause-1', documentId, numero, ...modifs }),
+      ),
     };
-    mockCommRepo = {
-      find: jest.fn(),
-      save: jest.fn().mockImplementation((c) => Promise.resolve({ ...c })),
+    mockCommentaireClient = {
+      findByDocument: jest.fn().mockResolvedValue([]),
     };
     mockEventEmitter = {
       emit: jest.fn(),
@@ -64,12 +62,12 @@ describe('GestionnaireDocsJuridiquesService (State Machine & Logic)', () => {
           useValue: mockDocRepo,
         },
         {
-          provide: getRepositoryToken(Clause),
-          useValue: mockClauseRepo,
+          provide: ClauseClient,
+          useValue: mockClauseClient,
         },
         {
-          provide: getRepositoryToken(Commentaire),
-          useValue: mockCommRepo,
+          provide: CommentaireClient,
+          useValue: mockCommentaireClient,
         },
         {
           provide: EventEmitter2,
@@ -241,19 +239,16 @@ describe('GestionnaireDocsJuridiquesService (State Machine & Logic)', () => {
       doc.version = 2;
       mockDocRepo.findOne.mockResolvedValue(doc);
 
-      const clause = new Clause();
-      clause.id = 'clause-1';
-      clause.numero = 1;
-      clause.texte = 'Texte initial';
-      clause.documentId = doc.id;
-      mockClauseRepo.findOne.mockResolvedValue(clause);
-
       const updatedClause = await service.modifierClause(
         doc.id,
         1,
         'Nouveau texte de la clause',
       );
       expect(updatedClause.texte).toBe('Nouveau texte de la clause');
+      expect(mockClauseClient.modifier).toHaveBeenCalledWith(doc.id, 1, {
+        texte: 'Nouveau texte de la clause',
+        titre: undefined,
+      });
       expect(doc.version).toBe(3);
       expect(mockDocRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({ version: 3 }),

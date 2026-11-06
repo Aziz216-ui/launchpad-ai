@@ -39,7 +39,6 @@ export class WorkflowSignatureService {
   ): Promise<DocumentJuridique> {
     const doc = await this.documentRepository.findOne({
       where: { id },
-      relations: ['clauses', 'commentaires'],
     });
 
     if (!doc) {

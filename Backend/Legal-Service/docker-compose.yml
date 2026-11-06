@@ -41,6 +41,8 @@ services:
       EUREKA_HOST: host.docker.internal
       EUREKA_PORT: 8761
       EUREKA_APP_NAME: LEGAL-SERVICE
+      CLAUSE_SERVICE_URL: http://host.docker.internal:3004/api/clauses
+      COMMENTAIRE_SERVICE_URL: http://host.docker.internal:3005/api/commentaires
     ports:
       - "3003:3003"
 

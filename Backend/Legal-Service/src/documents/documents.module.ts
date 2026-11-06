@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DocumentJuridique } from '../database/entities/document-juridique.entity';
-import { Clause } from '../database/entities/clause.entity';
-import { Commentaire } from '../database/entities/commentaire.entity';
+import { ClientsModule } from '../clients/clients.module';
 import { DocumentsController } from './controllers/documents.controller';
 import { GenerateurJuridiqueService } from './services/generateur-juridique.service';
 import { GestionnaireDocsJuridiquesService } from './services/gestionnaire-docs-juridiques.service';
@@ -10,7 +9,8 @@ import { WorkflowSignatureService } from './services/workflow-signature.service'
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([DocumentJuridique, Clause, Commentaire]),
+    TypeOrmModule.forFeature([DocumentJuridique]),
+    ClientsModule,
   ],
   controllers: [DocumentsController],
   providers: [
