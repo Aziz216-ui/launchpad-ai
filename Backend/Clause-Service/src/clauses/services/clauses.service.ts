@@ -10,6 +10,13 @@ import { Clause } from '../../database/entities/clause.entity';
 import { CreerClauseDto } from '../dto/creer-clause.dto';
 import { CreerClausesDto } from '../dto/creer-clauses.dto';
 import { ModifierClauseDto } from '../dto/modifier-clause.dto';
+import { RabbitMQService } from '../../messaging/rabbitmq.service';
+import {
+  CLAUSE_EVENTS,
+  ClauseModifiedEvent,
+  ClausesCreatedEvent,
+  ClausesDeletedEvent,
+} from '../../common/events/clause.events';
 
 @Injectable()
 export class ClausesService {
@@ -18,6 +25,7 @@ export class ClausesService {
   constructor(
     @InjectRepository(Clause)
     private readonly clauseRepository: Repository<Clause>,
+    private readonly rabbitMQService: RabbitMQService,
   ) {}
 
   async creer(dto: CreerClauseDto): Promise<Clause> {
@@ -34,6 +42,11 @@ export class ClausesService {
       this.clauseRepository.create(dto),
     );
     this.logger.log(`Clause n°${saved.numero} créée pour le document ${saved.documentId}`);
+    this.rabbitMQService.publish(CLAUSE_EVENTS.CREATED, {
+      documentId: saved.documentId,
+      numeros: [saved.numero],
+      timestamp: new Date(),
+    } satisfies ClausesCreatedEvent);
     return saved;
   }
 
@@ -44,6 +57,11 @@ export class ClausesService {
 
     const saved = await this.clauseRepository.save(clauses);
     this.logger.log(`${saved.length} clauses créées pour le document ${dto.documentId}`);
+    this.rabbitMQService.publish(CLAUSE_EVENTS.CREATED, {
+      documentId: dto.documentId,
+      numeros: saved.map((c) => c.numero),
+      timestamp: new Date(),
+    } satisfies ClausesCreatedEvent);
     return saved.sort((a, b) => a.numero - b.numero);
   }
 
@@ -82,6 +100,11 @@ export class ClausesService {
 
     const saved = await this.clauseRepository.save(clause);
     this.logger.log(`Clause n°${numero} du document ${documentId} modifiée`);
+    this.rabbitMQService.publish(CLAUSE_EVENTS.MODIFIED, {
+      documentId,
+      numero,
+      timestamp: new Date(),
+    } satisfies ClauseModifiedEvent);
     return saved;
   }
 
@@ -89,6 +112,11 @@ export class ClausesService {
     const result = await this.clauseRepository.delete({ documentId });
     const supprimees = result.affected ?? 0;
     this.logger.log(`${supprimees} clauses supprimées pour le document ${documentId}`);
+    this.rabbitMQService.publish(CLAUSE_EVENTS.DELETED, {
+      documentId,
+      supprimees,
+      timestamp: new Date(),
+    } satisfies ClausesDeletedEvent);
     return { supprimees };
   }
 }

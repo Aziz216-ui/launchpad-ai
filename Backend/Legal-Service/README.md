@@ -15,7 +15,8 @@ Microservice backend NestJS / TypeScript dédié à la **génération, gestion, 
 - **Validation** : `class-validator` & `class-transformer` avec `ValidationPipe` global (`whitelist: true`)
 - **Documentation OpenAPI / Swagger** : Accessible sur `/api/docs`
 - **CORS** : Géré par l'API Gateway en amont (désactivé au niveau du microservice)
-- **Événements de domaine** : `@nestjs/event-emitter` (`document.validation.requested`, `document.status.changed`, `document.signature.requested`, `document.signed`, `document.archived`, etc.)
+- **Événements de domaine** : `@nestjs/event-emitter` (`document.validation.requested`, `document.status.changed`, `document.signature.requested`, `document.signed`, `document.archived`, etc.), relayés sur RabbitMQ (voir ci-dessous)
+- **Messagerie asynchrone** : RabbitMQ (`amqplib` + `amqp-connection-manager`), exchange topic `launchpad.events`
 - **Génération & Export PDF** : `pdfkit` avec streaming de fichiers et mise en page soignée
 - **Conteneurisation** : `Dockerfile` multi-stage et `docker-compose.yml` (service + PostgreSQL)
 - **Tests** : Suite de tests unitaires [Jest](https://jestjs.io/) vérifiant notamment la machine à états et les règles de conflit
@@ -109,6 +110,25 @@ Legal-Service/
 
 ---
 
+## 🐇 Messagerie RabbitMQ
+
+Les trois microservices (Legal, Clause, Commentaire) partagent l'exchange topic `launchpad.events`.
+Les lectures et les créations qui doivent renvoyer un résultat restent en HTTP synchrone.
+
+| Publié par | Clé de routage | Consommé par (file) | Effet |
+|---|---|---|---|
+| Legal-Service | `document.*` (tous les `DOCUMENT_EVENTS`) | — | Diffusion des événements de domaine |
+| Legal-Service | `document.deleted` | `clause-service.document-deleted`, `commentaire-service.document-deleted` | Suppression des clauses / commentaires du document |
+| Clause-Service | `clause.created`, `clause.modified`, `clause.deleted` | `legal-service.events` | Journalisé par le Legal-Service |
+| Commentaire-Service | `commentaire.created`, `commentaire.deleted` | `legal-service.events` | Journalisé par le Legal-Service |
+
+- Démarrer le broker : `docker compose -f ../RabbitMQ/docker-compose.yml up -d` (interface : http://localhost:15672, `guest` / `guest`)
+- Variables : `RABBITMQ_ENABLED`, `RABBITMQ_URL`, `RABBITMQ_EXCHANGE`
+- Si le broker est arrêté, les services démarrent quand même et se reconnectent seuls ; les messages publiés entre-temps sont envoyés à la reconnexion.
+- Un message dont le traitement échoue est déplacé dans la file `<file>.dlq`.
+
+---
+
 ## 📡 Matrice Complète des Endpoints
 
 Tous les endpoints sont préfixés par `/api/legal`.
@@ -121,6 +141,7 @@ Tous les endpoints sont préfixés par `/api/legal`.
 | `GET` | `/documents` | Liste les documents avec filtres optionnels (`projetId`, `type`, `statut`) | `GestionnaireDocsJuridiquesService.list` |
 | `GET` | `/documents/{id}` | Consulter un document avec ses clauses et commentaires | `GestionnaireDocsJuridiquesService.findById` |
 | `PATCH` | `/documents/{id}` | Modifier titre ou paramètres (incrémente `version`) | `GestionnaireDocsJuridiquesService.modifierDocument` |
+| `DELETE` | `/documents/{id}` | Supprimer un document (refusé si archivé ou signé) ; clauses et commentaires supprimés via RabbitMQ | `GestionnaireDocsJuridiquesService.supprimer` |
 | `GET` | `/documents/{id}/export?format=pdf` | Exporter et télécharger le document mis en page en PDF | `GestionnaireDocsJuridiquesService.exporterPDF` |
 | `POST` | `/documents/{id}/archive` | Archiver le document (bascule en lecture seule) | `GestionnaireDocsJuridiquesService.archiver` |
 | `POST` | `/documents/{id}/validation-requests` | Soumettre le document à vérification avocat (`BROUILLON` -> `EN_VALIDATION`) | `GestionnaireDocsJuridiquesService.envoyerPourValidation` |

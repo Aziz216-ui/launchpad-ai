@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { getDatabaseConfig } from './config/database.config';
 import { ClausesModule } from './clauses/clauses.module';
 import { EurekaModule } from './eureka/eureka.module';
+import { MessagingModule } from './messaging/messaging.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { EurekaModule } from './eureka/eureka.module';
     }),
     ClausesModule,
     EurekaModule,
+    MessagingModule,
   ],
 })
 export class AppModule {}

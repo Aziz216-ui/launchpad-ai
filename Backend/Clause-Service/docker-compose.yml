@@ -41,6 +41,9 @@ services:
       EUREKA_HOST: host.docker.internal
       EUREKA_PORT: 8761
       EUREKA_APP_NAME: CLAUSE-SERVICE
+      RABBITMQ_ENABLED: \"true\"
+      RABBITMQ_URL: amqp://guest:guest@host.docker.internal:5672
+      RABBITMQ_EXCHANGE: launchpad.events
     ports:
       - "3004:3004"
 

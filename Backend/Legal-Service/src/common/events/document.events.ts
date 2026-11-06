@@ -11,6 +11,7 @@ export const DOCUMENT_EVENTS = {
   INFO_REQUESTED: 'document.info.requested',
   ARCHIVED: 'document.archived',
   MODIFIED: 'document.modified',
+  DELETED: 'document.deleted',
 };
 
 export class DocumentValidationRequestedEvent {
@@ -61,6 +62,15 @@ export class DocumentInfoRequestedEvent {
 }
 
 export class DocumentArchivedEvent {
+  constructor(
+    public readonly documentId: string,
+    public readonly projetId: string,
+    public readonly timestamp: Date = new Date(),
+  ) {}
+}
+
+// Consommé par Clause-Service et Commentaire-Service pour supprimer leurs données
+export class DocumentDeletedEvent {
   constructor(
     public readonly documentId: string,
     public readonly projetId: string,

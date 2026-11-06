@@ -6,6 +6,7 @@ import { getDatabaseConfig } from './config/database.config';
 import { DocumentsModule } from './documents/documents.module';
 import { VerificationModule } from './verification/verification.module';
 import { EurekaModule } from './eureka/eureka.module';
+import { MessagingModule } from './messaging/messaging.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { EurekaModule } from './eureka/eureka.module';
     DocumentsModule,
     VerificationModule,
     EurekaModule,
+    MessagingModule,
   ],
 })
 export class AppModule {}

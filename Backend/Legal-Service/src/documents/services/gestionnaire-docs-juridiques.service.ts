@@ -21,6 +21,7 @@ import { DocumentDetailDto } from '../dto/document-detail.dto';
 import {
   DOCUMENT_EVENTS,
   DocumentArchivedEvent,
+  DocumentDeletedEvent,
   DocumentStatusChangedEvent,
   DocumentValidationRequestedEvent,
 } from '../../common/events/document.events';
@@ -188,6 +189,31 @@ export class GestionnaireDocsJuridiquesService {
 
     this.logger.log(`Document ${id} archivé (lecture seule)`);
     return saved;
+  }
+
+  // Les clauses et commentaires sont supprimés de manière asynchrone par
+  // Clause-Service et Commentaire-Service à la réception de document.deleted (RabbitMQ).
+  async supprimer(id: string): Promise<void> {
+    const doc = await this.findById(id);
+
+    if (doc.isArchived) {
+      throw new ConflictException(
+        'Le document est archivé et se trouve en lecture seule',
+      );
+    }
+
+    if (doc.statut === DocumentStatut.SIGNE) {
+      throw new ConflictException('Un document signé ne peut pas être supprimé');
+    }
+
+    await this.documentRepository.remove(doc);
+
+    this.eventEmitter.emit(
+      DOCUMENT_EVENTS.DELETED,
+      new DocumentDeletedEvent(id, doc.projetId),
+    );
+
+    this.logger.log(`Document ${id} supprimé`);
   }
 
   async envoyerPourValidation(

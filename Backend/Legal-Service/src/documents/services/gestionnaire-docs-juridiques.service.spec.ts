@@ -39,6 +39,7 @@ describe('GestionnaireDocsJuridiquesService (State Machine & Logic)', () => {
     mockDocRepo = {
       findOne: jest.fn(),
       save: jest.fn().mockImplementation((doc) => Promise.resolve({ ...doc })),
+      remove: jest.fn().mockResolvedValue(undefined),
       createQueryBuilder: jest.fn(),
     };
     mockClauseClient = {
@@ -280,6 +281,36 @@ describe('GestionnaireDocsJuridiquesService (State Machine & Logic)', () => {
       await expect(
         service.envoyerPourValidation(doc.id, 'client-45'),
       ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('Suppression (supprimer)', () => {
+    it('Supprime le document et émet document.deleted pour Clause-Service et Commentaire-Service', async () => {
+      const doc = createMockDocument(DocumentStatut.BROUILLON);
+      mockDocRepo.findOne.mockResolvedValue(doc);
+
+      await service.supprimer(doc.id);
+      expect(mockDocRepo.remove).toHaveBeenCalledWith(doc);
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+        DOCUMENT_EVENTS.DELETED,
+        expect.objectContaining({ documentId: doc.id, projetId: doc.projetId }),
+      );
+    });
+
+    it('Refuse de supprimer un document archivé', async () => {
+      const doc = createMockDocument(DocumentStatut.BROUILLON, true);
+      mockDocRepo.findOne.mockResolvedValue(doc);
+
+      await expect(service.supprimer(doc.id)).rejects.toThrow(ConflictException);
+      expect(mockDocRepo.remove).not.toHaveBeenCalled();
+    });
+
+    it('Refuse de supprimer un document signé', async () => {
+      const doc = createMockDocument(DocumentStatut.SIGNE);
+      mockDocRepo.findOne.mockResolvedValue(doc);
+
+      await expect(service.supprimer(doc.id)).rejects.toThrow(ConflictException);
+      expect(mockEventEmitter.emit).not.toHaveBeenCalled();
     });
   });
 });

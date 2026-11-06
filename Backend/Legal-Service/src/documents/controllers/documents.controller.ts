@@ -3,6 +3,8 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
+  HttpCode,
   Param,
   Body,
   Query,
@@ -110,6 +112,24 @@ export class DocumentsController {
     @Body() dto: ModifierDocumentDto,
   ): Promise<DocumentJuridique> {
     return this.gestionnaireService.modifierDocument(id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Supprimer un document juridique',
+    description:
+      'Supprime le document et publie document.deleted sur RabbitMQ : ses clauses et commentaires sont supprimés de manière asynchrone par les microservices concernés.',
+  })
+  @ApiParam({ name: 'id', description: 'UUID du document' })
+  @ApiResponse({ status: 204, description: 'Document supprimé' })
+  @ApiResponse({ status: 404, description: 'Document introuvable' })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflit si le document est archivé ou signé',
+  })
+  async delete(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
+    return this.gestionnaireService.supprimer(id);
   }
 
   @Get(':id/export')

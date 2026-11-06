@@ -1,9 +1,11 @@
 # Lance tous les services Legal (chacun dans sa propre fenêtre PowerShell)
 #   .\start-all.ps1              -> avec Eureka
 #   .\start-all.ps1 -NoEureka    -> sans Eureka (gateway en profil local)
+#   .\start-all.ps1 -NoRabbitMQ  -> sans RabbitMQ (pas d'evenements asynchrones)
 #   .\start-all.ps1 -Install     -> fait aussi npm install avant
 param(
   [switch]$NoEureka,
+  [switch]$NoRabbitMQ,
   [switch]$Install
 )
 
@@ -39,6 +41,15 @@ else {
   Start-Sleep -Seconds 20
 }
 
+if ($NoRabbitMQ) {
+  $envPrefix += "`$env:RABBITMQ_ENABLED='false'; "
+}
+else {
+  # Conteneur Docker ; les services se reconnectent seuls s'il n'est pas encore pret
+  Write-Host 'Demarrage de RabbitMQ (docker compose)...' -ForegroundColor Cyan
+  docker compose -f (Join-Path $root 'RabbitMQ\docker-compose.yml') up -d
+}
+
 # Clause et Commentaire d'abord : Legal-Service les appelle
 Start-Service-Window 'Clause-Service (3004)' 'Clause-Service' "${envPrefix}npm run start:dev"
 Start-Service-Window 'Commentaire-Service (3005)' 'Commentaire-Service' "${envPrefix}npm run start:dev"
@@ -55,6 +66,7 @@ else {
 Write-Host ''
 Write-Host 'Tous les services sont lances. URLs utiles :' -ForegroundColor Cyan
 if (-not $NoEureka) { Write-Host '  Eureka    : http://localhost:8761' }
+if (-not $NoRabbitMQ) { Write-Host '  RabbitMQ  : http://localhost:15672 (guest / guest)' }
 Write-Host '  Legal     : http://localhost:3003/api/legal/docs'
 Write-Host '  Clauses   : http://localhost:3004/api/clauses/docs'
 Write-Host '  Comments  : http://localhost:3005/api/commentaires/docs'
