@@ -1,0 +1,193 @@
+version: '3.8'
+
+services:
+  # ─────────────────────────────────────────────
+  #  DATABASES  (one PostgreSQL DB per service)
+  # ─────────────────────────────────────────────
+
+  postgres-client:
+    image: postgres:16-alpine
+    container_name: postgres-client
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lawyer_client_db
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: '12345678'
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_client_data:/var/lib/postgresql/data
+    networks:
+      - launchpad-net
+
+  postgres-message:
+    image: postgres:16-alpine
+    container_name: postgres-message
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lawyer_message_db
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: '12345678'
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_message_data:/var/lib/postgresql/data
+    networks:
+      - launchpad-net
+
+  postgres-docreview:
+    image: postgres:16-alpine
+    container_name: postgres-docreview
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lawyer_docreview_db
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: '12345678'
+    ports:
+      - "5437:5432"
+    volumes:
+      - postgres_docreview_data:/var/lib/postgresql/data
+    networks:
+      - launchpad-net
+
+  # Legacy shared DB (kept for User-Service / Django)
+  postgres:
+    image: postgres:16-alpine
+    container_name: launchpad-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: launchpad
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: '12345678'
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - launchpad-net
+
+  # ─────────────────────────────────────────────
+  #  RABBITMQ  (async inter-service messaging)
+  # ─────────────────────────────────────────────
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: launchpad-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"    # AMQP protocol
+      - "15672:15672"  # Management Web UI (http://localhost:15672)
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - launchpad-net
+
+  # ─────────────────────────────────────────────
+  #  EUREKA DISCOVERY SERVER
+  # ─────────────────────────────────────────────
+
+  eureka-server:
+    build:
+      context: ./Backend/Eureka
+      dockerfile: Dockerfile
+    container_name: launchpad-eureka
+    ports:
+      - "8761:8761"
+    networks:
+      - launchpad-net
+    profiles:
+      - full-stack
+
+  # ─────────────────────────────────────────────
+  #  LAWYER MICROSERVICES
+  # ─────────────────────────────────────────────
+
+  lawyer-client-service:
+    build:
+      context: ./Backend/Lawyer-Client-Service
+      dockerfile: Dockerfile
+    container_name: lawyer-client-service
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres-client
+      DB_PORT: 5432
+      DB_NAME: lawyer_client_db
+      DB_USER: app_user
+      DB_PASSWORD: '12345678'
+      RABBITMQ_HOST: rabbitmq
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres-client
+      - rabbitmq
+    networks:
+      - launchpad-net
+    profiles:
+      - full-stack
+
+  lawyer-message-service:
+    build:
+      context: ./Backend/Lawyer-Message-Service
+      dockerfile: Dockerfile
+    container_name: lawyer-message-service
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres-message
+      DB_PORT: 5432
+      DB_NAME: lawyer_message_db
+      DB_USER: app_user
+      DB_PASSWORD: '12345678'
+      RABBITMQ_HOST: rabbitmq
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
+      CLIENT_SERVICE_URL: http://lawyer-client-service:8082
+    ports:
+      - "8084:8084"
+    depends_on:
+      - postgres-message
+      - rabbitmq
+      - lawyer-client-service
+    networks:
+      - launchpad-net
+    profiles:
+      - full-stack
+
+  lawyer-docreview-service:
+    build:
+      context: ./Backend/Lawyer-DocReview-Service
+      dockerfile: Dockerfile
+    container_name: lawyer-docreview-service
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres-docreview
+      DB_PORT: 5432
+      DB_NAME: lawyer_docreview_db
+      DB_USER: app_user
+      DB_PASSWORD: '12345678'
+      RABBITMQ_HOST: rabbitmq
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
+      CLIENT_SERVICE_URL: http://lawyer-client-service:8082
+    ports:
+      - "8086:8086"
+    depends_on:
+      - postgres-docreview
+      - rabbitmq
+      - lawyer-client-service
+    networks:
+      - launchpad-net
+    profiles:
+      - full-stack
+
+volumes:
+  postgres_data:
+  postgres_client_data:
+  postgres_message_data:
+  postgres_docreview_data:
+  rabbitmq_data:
+
+networks:
+  launchpad-net:
+    driver: bridge

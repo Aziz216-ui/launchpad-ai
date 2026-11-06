@@ -1,0 +1,317 @@
+# =============================================================================
+# Étude de marché LaunchPad AI : 4 microservices Django + 4 bases PostgreSQL.
+# Lancement (depuis Backend/Market) : docker compose up --build -d
+#
+# Chaque service a SA base (aucune base partagée) et s'enregistre dans Eureka
+# (Backend/Eureka, lancé sur la machine hôte, port 8761) sous localhost:<port>,
+# pour que l'API Gateway (hôte, port 8090) puisse le joindre.
+# Entre conteneurs, l'adresse lue dans Eureka "localhost:<port>" est réécrite en
+# host.docker.internal:<port> (EUREKA_LOCALHOST_ALIAS) ; en repli (Eureka arrêté),
+# les URL directes <NOM>_SERVICE_URL passent par le réseau Docker market-net.
+#
+# Secrets (SECRET_KEY, mots de passe PostgreSQL et RabbitMQ) : lus dans le fichier .env de
+# ce dossier (non commité), à créer depuis .env.example. Sans eux, docker compose s'arrête.
+#
+# Communication asynchrone : RabbitMQ (exchange topic "market.events", interface web
+# http://localhost:15672) et un conteneur consumer par service qui reçoit des événements
+# (python manage.py consume_events) : concurrent-consumer, etude-consumer, swot-consumer.
+# =============================================================================
+
+x-service-commun: &service-commun
+  extra_hosts:
+    - "host.docker.internal:host-gateway"   # nécessaire sous Linux, sans effet sous Docker Desktop
+  networks:
+    - market-net
+  restart: unless-stopped
+
+x-env-commun: &env-commun
+  DEBUG: ${DEBUG:-False}   # False : les secrets ci-dessous sont obligatoires
+  SECRET_KEY: ${SECRET_KEY:?SECRET_KEY manquant, copier .env.example en .env}
+  DB_PORT: "5432"
+  EUREKA_ENABLED: ${EUREKA_ENABLED:-true}
+  EUREKA_SERVER_URL: http://host.docker.internal:8761/eureka/
+  EUREKA_INSTANCE_HOST: localhost
+  EUREKA_LOCALHOST_ALIAS: host.docker.internal
+  CORS_ALLOWED_ORIGINS: http://localhost:4200
+  # Appels directs (repli sans Eureka) : nom du service dans le réseau Docker
+  SECTEUR_SERVICE_URL: http://secteur-service:8010
+  CONCURRENT_SERVICE_URL: http://concurrent-service:8011
+  ETUDE_SERVICE_URL: http://etude-service:8012
+  SWOT_SERVICE_URL: http://swot-service:8013
+  # RabbitMQ (nom du service dans le réseau Docker)
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USER: ${RABBITMQ_USER:?RABBITMQ_USER manquant dans .env}
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD manquant dans .env}
+
+# Consumer RabbitMQ : même image que le service, autre commande, pas de port publié.
+# Il attend que le service soit "healthy" (migrations appliquées) et que RabbitMQ réponde.
+x-consumer-commun: &consumer-commun
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  networks:
+    - market-net
+  restart: unless-stopped
+  command: ["python", "manage.py", "consume_events"]
+
+x-db-commune: &db-commune
+  image: postgres:16
+  networks:
+    - market-net
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+    interval: 5s
+    timeout: 5s
+    retries: 10
+
+services:
+  # --- Broker de messages ------------------------------------------------------
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: rabbitmq   # nom de nœud fixe : les messages persistants survivent à un redémarrage
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?RABBITMQ_USER manquant dans .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD manquant dans .env}
+    ports:
+      - "5672:5672"     # AMQP (producers et consumers)
+      - "15672:15672"   # interface web de management
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - market-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  # --- Bases de données (une par service, ports hôtes 5440-5443) ---------------
+  secteur-db:
+    <<: *db-commune
+    container_name: secteur-db
+    environment:
+      POSTGRES_DB: secteur_db
+      POSTGRES_USER: secteur_user
+      POSTGRES_PASSWORD: ${SECTEUR_DB_PASSWORD:?SECTEUR_DB_PASSWORD manquant dans .env}
+    ports:
+      - "5440:5432"
+    volumes:
+      - secteur_db_data:/var/lib/postgresql/data
+
+  concurrent-db:
+    <<: *db-commune
+    container_name: concurrent-db
+    environment:
+      POSTGRES_DB: concurrent_db
+      POSTGRES_USER: concurrent_user
+      POSTGRES_PASSWORD: ${CONCURRENT_DB_PASSWORD:?CONCURRENT_DB_PASSWORD manquant dans .env}
+    ports:
+      - "5441:5432"
+    volumes:
+      - concurrent_db_data:/var/lib/postgresql/data
+
+  etude-db:
+    <<: *db-commune
+    container_name: etude-db
+    environment:
+      POSTGRES_DB: etude_db
+      POSTGRES_USER: etude_user
+      POSTGRES_PASSWORD: ${ETUDE_DB_PASSWORD:?ETUDE_DB_PASSWORD manquant dans .env}
+    ports:
+      - "5442:5432"
+    volumes:
+      - etude_db_data:/var/lib/postgresql/data
+
+  swot-db:
+    <<: *db-commune
+    container_name: swot-db
+    environment:
+      POSTGRES_DB: swot_db
+      POSTGRES_USER: swot_user
+      POSTGRES_PASSWORD: ${SWOT_DB_PASSWORD:?SWOT_DB_PASSWORD manquant dans .env}
+    ports:
+      - "5443:5432"
+    volumes:
+      - swot_db_data:/var/lib/postgresql/data
+
+  # --- Microservices (ports 8010-8013) -----------------------------------------
+  secteur-service:
+    <<: *service-commun
+    build:
+      context: .
+      dockerfile: secteur-service/Dockerfile
+    container_name: secteur-service
+    environment:
+      <<: *env-commun
+      ALLOWED_HOSTS: localhost,127.0.0.1,host.docker.internal,secteur-service
+      CSRF_TRUSTED_ORIGINS: http://localhost:8090,http://localhost:4200,http://localhost:8010
+      DB_HOST: secteur-db
+      DB_NAME: secteur_db
+      DB_USER: secteur_user
+      DB_PASSWORD: ${SECTEUR_DB_PASSWORD:?SECTEUR_DB_PASSWORD manquant dans .env}
+    ports:
+      - "8010:8010"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8010/api/market/secteurs/health/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      secteur-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started   # le service fonctionne sans RabbitMQ (outbox)
+
+  concurrent-service:
+    <<: *service-commun
+    build:
+      context: .
+      dockerfile: concurrent-service/Dockerfile
+    container_name: concurrent-service
+    environment:
+      <<: *env-commun
+      ALLOWED_HOSTS: localhost,127.0.0.1,host.docker.internal,concurrent-service
+      CSRF_TRUSTED_ORIGINS: http://localhost:8090,http://localhost:4200,http://localhost:8011
+      DB_HOST: concurrent-db
+      DB_NAME: concurrent_db
+      DB_USER: concurrent_user
+      DB_PASSWORD: ${CONCURRENT_DB_PASSWORD:?CONCURRENT_DB_PASSWORD manquant dans .env}
+    ports:
+      - "8011:8011"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8011/api/market/concurrents/health/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      concurrent-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started   # le service fonctionne sans RabbitMQ (outbox)
+
+  etude-service:
+    <<: *service-commun
+    build:
+      context: .
+      dockerfile: etude-service/Dockerfile
+    container_name: etude-service
+    environment:
+      <<: *env-commun
+      ALLOWED_HOSTS: localhost,127.0.0.1,host.docker.internal,etude-service
+      CSRF_TRUSTED_ORIGINS: http://localhost:8090,http://localhost:4200,http://localhost:8012
+      DB_HOST: etude-db
+      DB_NAME: etude_db
+      DB_USER: etude_user
+      DB_PASSWORD: ${ETUDE_DB_PASSWORD:?ETUDE_DB_PASSWORD manquant dans .env}
+    ports:
+      - "8012:8012"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8012/api/market/etudes/health/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      etude-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started   # le service fonctionne sans RabbitMQ (outbox)
+
+  swot-service:
+    <<: *service-commun
+    build:
+      context: .
+      dockerfile: swot-service/Dockerfile
+    container_name: swot-service
+    environment:
+      <<: *env-commun
+      ALLOWED_HOSTS: localhost,127.0.0.1,host.docker.internal,swot-service
+      CSRF_TRUSTED_ORIGINS: http://localhost:8090,http://localhost:4200,http://localhost:8013
+      DB_HOST: swot-db
+      DB_NAME: swot_db
+      DB_USER: swot_user
+      DB_PASSWORD: ${SWOT_DB_PASSWORD:?SWOT_DB_PASSWORD manquant dans .env}
+    ports:
+      - "8013:8013"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8013/api/market/swot/health/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      swot-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started   # le service fonctionne sans RabbitMQ (outbox)
+
+  # --- Consumers RabbitMQ (python manage.py consume_events) ----------------------
+  concurrent-consumer:
+    <<: *consumer-commun
+    build:
+      context: .
+      dockerfile: concurrent-service/Dockerfile
+    container_name: concurrent-consumer
+    environment:
+      <<: *env-commun
+      DB_HOST: concurrent-db
+      DB_NAME: concurrent_db
+      DB_USER: concurrent_user
+      DB_PASSWORD: ${CONCURRENT_DB_PASSWORD:?CONCURRENT_DB_PASSWORD manquant dans .env}
+    depends_on:
+      concurrent-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  etude-consumer:
+    <<: *consumer-commun
+    build:
+      context: .
+      dockerfile: etude-service/Dockerfile
+    container_name: etude-consumer
+    environment:
+      <<: *env-commun
+      DB_HOST: etude-db
+      DB_NAME: etude_db
+      DB_USER: etude_user
+      DB_PASSWORD: ${ETUDE_DB_PASSWORD:?ETUDE_DB_PASSWORD manquant dans .env}
+    depends_on:
+      etude-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  swot-consumer:
+    <<: *consumer-commun
+    build:
+      context: .
+      dockerfile: swot-service/Dockerfile
+    container_name: swot-consumer
+    environment:
+      <<: *env-commun
+      DB_HOST: swot-db
+      DB_NAME: swot_db
+      DB_USER: swot_user
+      DB_PASSWORD: ${SWOT_DB_PASSWORD:?SWOT_DB_PASSWORD manquant dans .env}
+    depends_on:
+      swot-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+networks:
+  market-net:
+    name: market-net
+
+volumes:
+  secteur_db_data:
+  concurrent_db_data:
+  etude_db_data:
+  swot_db_data:
+  rabbitmq_data:

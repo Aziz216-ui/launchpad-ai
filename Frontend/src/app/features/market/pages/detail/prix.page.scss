@@ -1,0 +1,162 @@
+@use 'variables' as *;
+
+// Largeurs fixes des colonnes du graphique (comme dans la maquette)
+$col-nom: 96px;
+$col-prix: 56px;
+$espace: 12px;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ecart {
+  color: $primaire-fonce;
+}
+
+.graphique {
+  gap: 16px;
+}
+
+.titre-graphique {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+
+  span {
+    font-size: 11px;
+    color: $gris;
+  }
+}
+
+.barres {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 22px;
+}
+
+// Position de la moyenne : --position est une fraction (0 à 1) de la piste
+.moyenne,
+.libelle-moyenne {
+  position: absolute;
+  left: calc(#{$col-nom} + #{$espace} + (100% - #{$col-nom} - #{$espace} * 2 - #{$col-prix}) * var(--position));
+}
+
+.moyenne {
+  top: 0;
+  bottom: 0;
+  border-left: 2px dashed $orange;
+}
+
+.libelle-moyenne {
+  top: 0;
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: $orange-fonce;
+  white-space: nowrap;
+}
+
+.ligne {
+  display: flex;
+  align-items: center;
+  gap: $espace;
+  font-size: 13px;
+
+  .nom {
+    width: $col-nom;
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .piste {
+    flex: 1;
+    height: 22px;
+
+    span {
+      display: block;
+      height: 100%;
+      border-radius: 4px;
+      background: $barre-concurrent;
+    }
+  }
+  .prix {
+    width: $col-prix;
+    text-align: right;
+  }
+
+  &.offre {
+    padding: 6px 0;
+    border-radius: 8px;
+    background: $primaire-clair;
+
+    .nom {
+      padding-left: 8px;
+      font-weight: 600;
+      color: $primaire-fonce;
+    }
+    .piste span {
+      background: $primaire;
+    }
+    .prix {
+      font-weight: 600;
+      color: $primaire-fonce;
+    }
+  }
+}
+
+.legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12px;
+  color: $texte-secondaire;
+
+  span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  i {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+  .concurrent {
+    background: $barre-concurrent;
+  }
+  .mon-offre {
+    background: $primaire;
+  }
+  .tirets {
+    width: 14px;
+    height: 0;
+    border-radius: 0;
+    border-top: 2px dashed $orange;
+  }
+}
+
+.offre-carte {
+  padding: 18px;
+  gap: 10px;
+
+  .sur-titre {
+    font-size: 12px;
+    color: $gris;
+  }
+  .prix-offre {
+    font-size: 30px;
+    font-weight: 600;
+    color: $primaire-fonce;
+  }
+  .positionnement {
+    align-self: flex-start;
+    background: $primaire-clair;
+    color: $primaire-fonce;
+  }
+}
