@@ -1,6 +1,6 @@
 /**
  * Configuration de production : une URL par microservice.
- * Quand l'API Gateway sera en place, il suffira de remplacer ces URL par celle de la gateway.
+ * Tous les services passent par l'API Gateway (http://localhost:8090).
  * Chaque membre renseigne uniquement la clé de son service, ici ET dans environment.development.ts.
  */
 export const environment = {
@@ -8,16 +8,18 @@ export const environment = {
 
   /** Market-Service (module Étude de marché, features/market). */
   marketApiUrl: 'http://localhost:8090/api/market',
-  /** AI-Service (module Co-Fondateur IA, features/ai) : à remplir par le membre concerné. */
-  aiApiUrl: '',
+  /** AI-Service (module Co-Fondateur IA, features/ai). Exposé via l'API Gateway (port 8090). */
+  aiApiUrl: 'http://localhost:8090/api/ai',
   /** Finance : Prevision-Service et Document-Service, via l'API Gateway (module Finance, features/finance). */
   financeApiUrl: 'http://localhost:8090/api/finance',
   /** Legal-Service (module Juridique, features/legal) : à remplir par le membre concerné. */
   legalApiUrl: '',
   /** Professional-Service (Comptabilité et Avocat, features/professional) : à remplir par le membre concerné. */
   professionalApiUrl: '',
-  /** User-Service (comptes, authentification, features/auth) : à remplir par le membre concerné. */
-  userApiUrl: '',
+  /** Espace avocat : 3 microservices (clients, messages, revue de documents), via l'API Gateway. */
+  lawyerApiUrl: 'http://localhost:8090/api/lawyer',
+  /** User-Service (comptes, authentification Keycloak, features/auth), via l'API Gateway. */
+  userApiUrl: 'http://localhost:8090/api/auth',
 
   /**
    * Utilisateur provisoire, en attendant le User-Service et son token JWT :

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+        Agrégateur : permet de construire les deux microservices d'un coup (mvn verify). Il n'est le parent de
+        personne : chaque service a son propre pom, son Dockerfile et se construit seul.
+    -->
+    <groupId>com.launchpad</groupId>
+    <artifactId>finance</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>finance</name>
+    <description>LaunchPad - Finance : Prevision-Service et Document-Service</description>
+
+    <modules>
+        <module>Prevision-Service</module>
+        <module>Document-Service</module>
+    </modules>
+</project>

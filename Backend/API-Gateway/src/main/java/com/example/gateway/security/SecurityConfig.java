@@ -45,8 +45,15 @@ public class SecurityConfig {
             // Docs des 4 services de l'étude de marché : /api/market/<ressource>/docs/ et /schema/
             "/api/market/*/docs/**", "/api/market/*/schema/**",
             "/api/comptable/docs", "/api/comptable/docs/**", "/api/comptable/docs.json",
+            // Docs des 3 services IA : la page /docs/ai/<service>/docs/ charge /api/ai/schema/
+            "/api/ai/docs/**", "/api/ai/schema/**",
             "/docs/**",
+            // Docs avocat : la page /docs/lawyer/<service>/swagger-ui/ charge /v3/api-docs/
+            "/v3/api-docs/**",
+            // Docs utilisateurs : la page /docs/user/docs/ charge /api/schema/
+            "/api/schema/**",
             "/api/market/*/health", "/api/market/*/health/",
+            "/api/ai/health", "/api/ai/health/",
             "/api/comptable/health",
             "/actuator/health", "/actuator/health/**");
 

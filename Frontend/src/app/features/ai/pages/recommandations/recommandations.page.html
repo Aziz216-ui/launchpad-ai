@@ -1,0 +1,137 @@
+<div class="page">
+  <!-- Fil d'Ariane -->
+  <nav class="fil-ariane" aria-label="Fil d'Ariane">
+    <a routerLink="/">Mon espace</a>
+    <span aria-hidden="true">›</span>
+    <a routerLink="/co-fondateur-ia">Co-Fondateur IA</a>
+    <span aria-hidden="true">›</span>
+    <span class="courant">Plan d'action & Recommandations</span>
+  </nav>
+
+  <div class="en-tete">
+    <h1>Plan d'action & Recommandations</h1>
+    <nav class="sous-nav" aria-label="Sections Co-Fondateur IA">
+      <a routerLink="/co-fondateur-ia/projet" routerLinkActive="actif">Mon Projet & Diagnostic</a>
+      <a routerLink="/co-fondateur-ia/recommandations" routerLinkActive="actif">Plan d'action</a>
+      <a routerLink="/co-fondateur-ia/chat" routerLinkActive="actif">Chat Co-Fondateur</a>
+    </nav>
+  </div>
+
+  @if (chargement()) {
+    <app-loader />
+  } @else if (erreur()) {
+    <app-empty-state titre="Erreur de chargement" [texte]="erreur()!">
+      <button class="btn-primaire" (click)="charger()">Réessayer</button>
+    </app-empty-state>
+  } @else {
+    <!-- Barre de progression -->
+    <div class="progression-carte">
+      <div class="progression-entete">
+        <span class="progression-texte">
+          <strong>{{ nbCompletes() }}</strong> / {{ recommandations().length }} complétées
+        </span>
+        <span class="progression-pct">{{ progression() }}&nbsp;%</span>
+      </div>
+      <div class="progression-barre" role="progressbar" [attr.aria-valuenow]="progression()" aria-valuemin="0" aria-valuemax="100">
+        <div class="progression-remplissage" [style.width.%]="progression()"></div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="barre-actions">
+      <!-- Filtres par catégorie -->
+      <div class="onglets" role="tablist">
+        @for (onglet of onglets; track onglet.id) {
+          <button
+            role="tab"
+            [attr.aria-selected]="filtreCategorie() === onglet.id"
+            [class.actif]="filtreCategorie() === onglet.id"
+            (click)="filtreCategorie.set(onglet.id)"
+          >
+            {{ onglet.libelle }}
+          </button>
+        }
+      </div>
+      <!-- Bouton régénérer -->
+      <button class="btn-analyse" (click)="generer()" [disabled]="generationEnCours()">
+        @if (generationEnCours()) {
+          <span class="spinner"></span> Génération…
+        } @else {
+          <app-icon nom="etoile" [taille]="16" />
+          Régénérer les recommandations
+        }
+      </button>
+    </div>
+
+    <!-- Liste des recommandations -->
+    @if (visibles().length === 0) {
+      <app-empty-state
+        titre="Aucune recommandation"
+        texte="Analysez votre projet pour obtenir des recommandations personnalisées."
+        [compact]="true">
+        <a routerLink="/co-fondateur-ia/projet" class="btn-primaire">Aller au diagnostic</a>
+      </app-empty-state>
+    } @else {
+      <div class="liste-recos">
+        @for (reco of visibles(); track reco.id) {
+          <article class="carte-reco" [class.appliquee]="reco.statut === 'appliquee'" [class.ignoree]="reco.statut === 'ignoree'">
+            <div class="reco-entete">
+              <div class="reco-badges">
+                <app-badge [variante]="priorites[reco.priorite].variante" [petit]="true">
+                  {{ priorites[reco.priorite].libelle }}
+                </app-badge>
+                <app-badge variante="neutre" [petit]="true">{{ categories[reco.categorie] }}</app-badge>
+              </div>
+              @if (reco.statut === 'appliquee') {
+                <app-icon nom="cercle-valide" [taille]="20" class="icone-valide" />
+              }
+            </div>
+
+            <h3 class="reco-titre">{{ reco.titre }}</h3>
+            <p class="reco-desc">{{ reco.description }}</p>
+
+            <!-- Actions de statut -->
+            <div class="reco-actions">
+              @if (reco.statut !== 'appliquee') {
+                <button
+                  class="btn-action btn-appliquer"
+                  (click)="changerStatut(reco, 'appliquee')"
+                  [disabled]="actionEnCours() === reco.id"
+                >
+                  <app-icon nom="valider" [taille]="14" />
+                  Marquer appliquée
+                </button>
+              } @else {
+                <button
+                  class="btn-action btn-annuler"
+                  (click)="changerStatut(reco, 'nouvelle')"
+                  [disabled]="actionEnCours() === reco.id"
+                >
+                  Annuler
+                </button>
+              }
+              @if (reco.statut !== 'ignoree') {
+                <button
+                  class="btn-action btn-ignorer"
+                  (click)="changerStatut(reco, 'ignoree')"
+                  [disabled]="actionEnCours() === reco.id"
+                >
+                  Ignorer
+                </button>
+              } @else {
+                <button
+                  class="btn-action btn-annuler"
+                  (click)="changerStatut(reco, 'nouvelle')"
+                  [disabled]="actionEnCours() === reco.id"
+                >
+                  Restaurer
+                </button>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    }
+  }
+</div>
+

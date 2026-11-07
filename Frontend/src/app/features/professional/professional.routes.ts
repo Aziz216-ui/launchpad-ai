@@ -14,7 +14,7 @@ export default [
   },
   {
     path: 'avocat',
-    loadComponent: () => import('./avocat-en-cours.page').then((m) => m.AvocatEnCoursPage),
+    loadComponent: () => import('../lawyer-space/lawyer-space.component').then((m) => m.LawyerSpaceComponent),
     title: 'Avocat · LaunchPad AI',
   },
 ] satisfies Routes;
