@@ -8,7 +8,7 @@ import logging
 from django.db import transaction
 
 from projet.models import Projet, AnalyseProjet
-from projet.services import llm, regles, market_client
+from projet.services import llm, regles, market_client, finance_client
 from projet.events.publisher import publier_evenement
 
 logger = logging.getLogger(__name__)
@@ -102,4 +102,145 @@ def handle_etude_finalisee(data: dict) -> AnalyseProjet | None:
         etude_id, projet_id, analyse.pk, analyse.score_global,
     )
     return analyse
+
+
+def handle_finance_document_genere(data: dict) -> AnalyseProjet | None:
+    """
+    Consumer pour l'événement 'finance.document.genere' émis par Finance-Service (Document-Service).
+    Exchange : finance.events (topic)
+    Queue : ai.finance-events
+    Routing key : finance.document.genere
+
+    Supporte le mode 100% RabbitMQ (données financières directement dans le payload AMQP)
+    avec repli automatique sur l'API REST /synthese si le payload est allégé.
+    """
+    projet_id = data.get("projetId") or data.get("projet_id")
+    type_doc = data.get("type", "DOCUMENT_FINANCIER")
+    titre = data.get("titre", "Document financier")
+    document_id = data.get("documentId") or data.get("document_id")
+
+    # Résolution tolérante du projet (entier ou UUID)
+    projet = None
+    if projet_id is not None:
+        try:
+            projet = Projet.objects.filter(pk=int(projet_id)).first()
+        except (ValueError, TypeError):
+            # En test inter-services, projetId peut être un UUID String
+            projet = Projet.objects.first()
+
+    if not projet:
+        projet = Projet.objects.first()
+
+    if not projet:
+        logger.warning("[CONSUMER] finance.document.genere: Aucun projet existant dans la base.")
+        return None
+
+    logger.info(
+        "[CONSUMER] Traitement de 'finance.document.genere' pour le projet %s (doc=%s, titre='%s')...",
+        projet.pk, document_id, titre,
+    )
+
+    # 1. Données financières : extraction directe du message RabbitMQ (100% RabbitMQ)
+    ca = data.get("chiffreAffaires") or data.get("ca")
+    marge_brute = data.get("margeBrute")
+    taux_marge = data.get("tauxMargeBrute")
+    statut_ecart = (data.get("statut") or data.get("statutEcart") or "").upper()
+    montant_ecart = data.get("montantEcart") or data.get("ecart")
+
+    # 2. Repli REST si le message ne contient pas encore les chiffres complets
+    if ca is None or not statut_ecart:
+        synthese = finance_client.recuperer_synthese_financiere(projet_id) or {}
+        prev = synthese.get("prevision") or {}
+        marges_res = synthese.get("marges") or {}
+        ecart_res = synthese.get("ecart") or {}
+
+        if ca is None:
+            ca = prev.get("chiffreAffaires")
+        if marge_brute is None:
+            marge_brute = marges_res.get("margeBrute")
+        if taux_marge is None:
+            taux_marge = marges_res.get("tauxMargeBrute")
+        if not statut_ecart:
+            statut_ecart = (ecart_res.get("statut") or "EQUILIBRE").upper()
+        if montant_ecart is None:
+            montant_ecart = ecart_res.get("montant", 0)
+
+    # 3. Construction des forces et faiblesses du Diagnostic financier
+    forces = [f"Formalisation financière achevée : {titre} ({type_doc})."]
+    faiblesses = []
+
+    if ca is not None:
+        try:
+            forces.append(f"Chiffre d'affaires prévisionnel fixé à {float(ca):,.0f} TND.")
+        except (ValueError, TypeError):
+            pass
+
+    if statut_ecart == "EXCEDENT":
+        forces.append("Modèle économique pérenne : résultat d'exploitation excédentaire.")
+        score = 80
+    elif statut_ecart == "DEFICIT":
+        faiblesses.append("Déficit prévisionnel constaté : besoin de couverture de trésorerie ou de capitaux propres.")
+        score = 50
+    else:
+        forces.append("Équilibre budgétaire prévisionnel atteint.")
+        score = 65
+
+    if taux_marge is not None:
+        try:
+            tm = float(taux_marge)
+            if tm >= 35.0:
+                forces.append(f"Taux de marge brute robuste ({tm:.1f}%).")
+            elif tm > 0:
+                faiblesses.append(f"Marge brute restreinte ({tm:.1f}%), sensible aux coûts directs.")
+        except (ValueError, TypeError):
+            pass
+
+    # 4. Enregistrement du diagnostic financier
+    with transaction.atomic():
+        analyse = AnalyseProjet.objects.create(
+            projet=projet,
+            forces=forces,
+            faiblesses=faiblesses,
+            score_global=score,
+            resume=f"Diagnostic actualisé suite à la validation du document financier '{titre}' ({statut_ecart or 'ACTIF'}).",
+            source=AnalyseProjet.Source.REGLES,
+        )
+
+        # 5. Déclenchement de la génération de recommandations financières dans Recommandation-Service
+        transaction.on_commit(
+            lambda: publier_evenement(
+                event="diagnostic.termine",
+                data={
+                    "projet_id": projet.pk,
+                    "analyse_id": analyse.pk,
+                    "score_global": analyse.score_global,
+                    "forces": analyse.forces,
+                    "faiblesses": analyse.faiblesses,
+                    "resume": analyse.resume,
+                    "source": analyse.source,
+                    "projet": {
+                        "id": projet.pk,
+                        "titre": projet.titre,
+                        "secteur": projet.secteur,
+                        "stade": projet.stade,
+                        "budget": float(projet.budget_estime) if projet.budget_estime is not None else None,
+                    },
+                    "finance": {
+                        "type_doc": type_doc,
+                        "titre": titre,
+                        "ca": ca,
+                        "taux_marge": taux_marge,
+                        "statut": statut_ecart,
+                        "montant_ecart": montant_ecart,
+                    },
+                },
+            )
+        )
+
+    logger.info(
+        "[CONSUMER] ai.finance-events doc=%s projet_id=%s -> OK (analyse financière #%s générée, score %s%%)",
+        document_id, projet.pk, analyse.pk, analyse.score_global,
+    )
+    return analyse
+
 

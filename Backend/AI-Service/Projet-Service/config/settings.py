@@ -152,6 +152,7 @@ RABBITMQ_USER = os.getenv("RABBITMQ_USER", "market")
 RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "market")
 RABBITMQ_EXCHANGE = os.getenv("RABBITMQ_EXCHANGE", "ai.events")
 MARKET_RABBITMQ_EXCHANGE = os.getenv("MARKET_RABBITMQ_EXCHANGE", "market.events")
+FINANCE_RABBITMQ_EXCHANGE = os.getenv("FINANCE_RABBITMQ_EXCHANGE", "finance.events")
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 LOGGING = {

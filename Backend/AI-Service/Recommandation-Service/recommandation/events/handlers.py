@@ -44,9 +44,10 @@ def handle_diagnostic_termine(data: dict) -> int:
     donnees_marche = market_client.recuperer_donnees_marche(projet_id)
 
     # 4. Génération LLM ou règles expertes
+    donnees_finance = data.get("finance") or {}
     recos_data = llm.generer_recommandations_llm(projet_data, analyse_data, donnees_marche)
     if recos_data is None:
-        recos_data = regles.generer_recommandations(projet_data, analyse_data, donnees_marche)
+        recos_data = regles.generer_recommandations(projet_data, analyse_data, donnees_marche, donnees_finance)
 
     # 5. Supprimer les anciennes recommandations non appliquées
     Recommandation.objects.filter(
