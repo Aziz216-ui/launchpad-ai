@@ -1,9 +1,9 @@
-﻿import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { AbstractControl } from '@angular/forms';
 
 /**
  * Message d'erreur sous un champ de formulaire.
- * Affiche l'erreur de validation locale ou celle renvoy├⌐e par l'API (cl├⌐ `serveur`).
+ * Affiche l'erreur de validation locale ou celle renvoyée par l'API (clé `serveur`).
  */
 @Component({
   selector: 'app-field-error',
@@ -27,9 +27,9 @@ export class FieldErrorComponent {
     if (e['serveur']) return e['serveur'];
     if (e['required']) return 'Ce champ est obligatoire.';
     if (e['nombre']) return 'Saisissez un nombre valide (ex. 8,4).';
-    if (e['min']) return `La valeur doit ├¬tre sup├⌐rieure ou ├⌐gale ├á ${e['min'].min}.`;
-    if (e['max']) return `La valeur doit ├¬tre inf├⌐rieure ou ├⌐gale ├á ${e['max'].max}.`;
-    if (e['maxlength']) return `${e['maxlength'].requiredLength} caract├¿res maximum.`;
+    if (e['min']) return `La valeur doit être supérieure ou égale à ${e['min'].min}.`;
+    if (e['max']) return `La valeur doit être inférieure ou égale à ${e['max'].max}.`;
+    if (e['maxlength']) return `${e['maxlength'].requiredLength} caractères maximum.`;
     return 'Valeur invalide.';
   }
 }

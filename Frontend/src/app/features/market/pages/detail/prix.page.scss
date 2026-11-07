@@ -1,4 +1,4 @@
-﻿@use 'variables' as *;
+@use 'variables' as *;
 
 // Largeurs fixes des colonnes du graphique (comme dans la maquette)
 $col-nom: 96px;
@@ -39,7 +39,7 @@ $espace: 12px;
   padding-top: 22px;
 }
 
-// Position de la moyenne : --position est une fraction (0 ├á 1) de la piste
+// Position de la moyenne : --position est une fraction (0 à 1) de la piste
 .moyenne,
 .libelle-moyenne {
   position: absolute;

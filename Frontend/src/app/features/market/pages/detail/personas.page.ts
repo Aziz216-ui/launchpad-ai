@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { NotificationService } from '../../../../core/notifications/notification.service';
@@ -22,7 +22,7 @@ const COULEURS = [
   { fond: '#FDF0DC', texte: '#9A5B07' },
 ];
 
-/** Onglet ┬½ Personas ┬╗ (maquette Main.dc.html). */
+/** Onglet « Personas » (maquette Main.dc.html). */
 @Component({
   selector: 'app-personas',
   imports: [RouterLink, CarteLieuxComponent, ConfirmModalComponent, EmptyStateComponent, IconComponent, PersonaModalComponent, InitialesPipe, LignesPipe, MontantPipe],
@@ -59,8 +59,8 @@ export class PersonasPage {
   }
 
   /**
-   * ┬½ Ce qui rassemble vos personas ┬╗ : besoins cit├⌐s par au moins deux personas
-   * (comparaison sans casse ni espaces superflus). Rien d'invent├⌐ : liste vide sinon.
+   * « Ce qui rassemble vos personas » : besoins cités par au moins deux personas
+   * (comparaison sans casse ni espaces superflus). Rien d'inventé : liste vide sinon.
    */
   protected readonly besoinsCommuns = computed(() => {
     const occurrences = new Map<string, { texte: string; personas: number }>();
@@ -78,7 +78,7 @@ export class PersonasPage {
     return [...occurrences.values()].filter((e) => e.personas >= 2).map((e) => e.texte);
   });
 
-  /** null : ferm├⌐e ; { persona: null } : cr├⌐ation ; { persona } : modification. */
+  /** null : fermée ; { persona: null } : création ; { persona } : modification. */
   protected readonly modal = signal<{ persona: Persona | null } | null>(null);
   protected readonly aSupprimer = signal<Persona | null>(null);
   protected readonly suppressionEnCours = signal(false);
@@ -96,7 +96,7 @@ export class PersonasPage {
       next: () => {
         this.suppressionEnCours.set(false);
         this.aSupprimer.set(null);
-        this.notifications.succes(`Le persona ┬½ ${persona.nom} ┬╗ a ├⌐t├⌐ supprim├⌐.`);
+        this.notifications.succes(`Le persona « ${persona.nom} » a été supprimé.`);
         this.store.recharger();
       },
       error: (e: unknown) => {

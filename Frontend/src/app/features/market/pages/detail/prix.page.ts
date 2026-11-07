@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { EmptyStateComponent } from '../../../../shared/components/empty-state.component';
@@ -15,20 +15,20 @@ const CONSEILS: Record<PositionnementPrix, { titre: string; texte: string } | nu
   economique: {
     titre: 'Accessible, sans compromis',
     texte:
-      "Votre prix se situe dans la fourchette basse. Validez-le aupr├¿s de vos personas et v├⌐rifiez le co├╗t d'acquisition avant de le confirmer.",
+      "Votre prix se situe dans la fourchette basse. Validez-le auprès de vos personas et vérifiez le coût d'acquisition avant de le confirmer.",
   },
   aligne: {
-    titre: 'Dans la moyenne du march├⌐',
-    texte: 'Votre prix est align├⌐ sur celui des concurrents : votre diff├⌐rence devra venir de la valeur de votre offre.',
+    titre: 'Dans la moyenne du marché',
+    texte: 'Votre prix est aligné sur celui des concurrents : votre différence devra venir de la valeur de votre offre.',
   },
   premium: {
-    titre: 'Un prix premium ├á justifier',
-    texte: 'Votre prix d├⌐passe la moyenne du march├⌐. Mettez en avant ce qui le justifie aupr├¿s de vos personas.',
+    titre: 'Un prix premium à justifier',
+    texte: 'Votre prix dépasse la moyenne du marché. Mettez en avant ce qui le justifie auprès de vos personas.',
   },
   inconnu: null,
 };
 
-/** Onglet ┬½ Comparaison des offres et des prix ┬╗ (maquette Prix.dc.html). */
+/** Onglet « Comparaison des offres et des prix » (maquette Prix.dc.html). */
 @Component({
   selector: 'app-prix',
   imports: [RouterLink, EmptyStateComponent, MontantPipe, PourcentagePipe],
@@ -42,7 +42,7 @@ export class PrixPage {
 
   protected readonly comparaison = computed(() => this.store.comparaison());
 
-  /** ├ëchelle du graphique : le prix le plus haut (concurrents et offre) occupe 98 % de la barre. */
+  /** Échelle du graphique : le prix le plus haut (concurrents et offre) occupe 98 % de la barre. */
   private readonly echelle = computed(() => {
     const c = this.comparaison();
     if (!c) return 1;
@@ -57,12 +57,12 @@ export class PrixPage {
     return c.concurrents.map((x) => ({ nom: x.nom, prix: x.prix_moyen, largeur: x.prix_moyen * this.echelle() }));
   });
 
-  /** Largeur affich├⌐e : un prix ├á 0 Γé¼ garde une barre visible (largeur minimale). */
+  /** Largeur affichée : un prix à 0 € garde une barre visible (largeur minimale). */
   protected largeurVisible(largeur: number): number {
     return Math.max(largeur, LARGEUR_MINIMALE);
   }
 
-  /** Carte de conseil d├⌐duite du positionnement prix (maquette ┬½ Accessible, sans compromis ┬╗). */
+  /** Carte de conseil déduite du positionnement prix (maquette « Accessible, sans compromis »). */
   protected readonly conseil = computed(() => {
     const c = this.comparaison();
     if (!c || c.prix_propose === null) return null;
@@ -78,12 +78,12 @@ export class PrixPage {
     return liste[liste.length - 1]?.nom ?? '';
   });
 
-  /** ┬½ Mon offre : ΓêÆ5 Γé¼ ┬╗ : ├⌐cart absolu avec le prix moyen. */
+  /** « Mon offre : −5 € » : écart absolu avec le prix moyen. */
   protected readonly ecartAbsolu = computed(() => {
     const c = this.comparaison();
     if (!c || c.prix_propose === null || c.prix_moyen === null) return null;
     const ecart = c.prix_propose - c.prix_moyen;
-    const signe = ecart < 0 ? 'ΓêÆ' : ecart > 0 ? '+' : '';
+    const signe = ecart < 0 ? '−' : ecart > 0 ? '+' : '';
     return `${signe}${formatMontant(Math.abs(ecart))}`;
   });
 

@@ -1,10 +1,10 @@
-﻿/**
- * Interfaces TypeScript des microservices du march├⌐ (via l'API Gateway), ├⌐crites d'apr├¿s
- * leurs sch├⌐mas OpenAPI (/api/market/<ressource>/schema/). Les d├⌐cimaux sont des nombres JSON.
+/**
+ * Interfaces TypeScript des microservices du marché (via l'API Gateway), écrites d'après
+ * leurs schémas OpenAPI (/api/market/<ressource>/schema/). Les décimaux sont des nombres JSON.
  *
  * Les relations entre services sont des identifiants : le backend accepte toujours
  * secteur, concurrents, tendances et etude, et renvoie en plus secteur_id, concurrent_ids,
- * tendance_ids et etude_id. secteur_id / secteur_nom valent null si le secteur a ├⌐t├⌐ supprim├⌐.
+ * tendance_ids et etude_id. secteur_id / secteur_nom valent null si le secteur a été supprimé.
  */
 
 export type StatutEtude = 'brouillon' | 'finalisee';
@@ -27,7 +27,7 @@ export interface Concurrent {
   nom: string;
   secteur: number | null;
   secteur_id: number | null;
-  /** null si le secteur a ├⌐t├⌐ supprim├⌐ (afficher ┬½ Secteur supprim├⌐ ┬╗). */
+  /** null si le secteur a été supprimé (afficher « Secteur supprimé »). */
   secteur_nom: string | null;
   site_web: string;
   description: string;
@@ -81,14 +81,14 @@ export interface ElementSwot {
   etude_id: number;
   type: TypeSwot;
   description: string;
-  /** true : cr├⌐├⌐ par ┬½ G├⌐n├⌐rer la SWOT ┬╗ (remplac├⌐ ├á chaque g├⌐n├⌐ration). */
+  /** true : créé par « Générer la SWOT » (remplacé à chaque génération). */
   genere_automatiquement: boolean;
   date_creation: string;
 }
 
 export type ElementSwotSaisie = Pick<ElementSwot, 'etude' | 'type' | 'description'>;
 
-/** ├ëtude telle que renvoy├⌐e par la liste, la cr├⌐ation et la modification. */
+/** Étude telle que renvoyée par la liste, la création et la modification. */
 export interface EtudeMarche {
   id: number;
   projet_id: number;
@@ -96,7 +96,7 @@ export interface EtudeMarche {
   statut: StatutEtude;
   secteur: number | null;
   secteur_id: number | null;
-  /** null si le secteur a ├⌐t├⌐ supprim├⌐ (afficher ┬½ Secteur supprim├⌐ ┬╗). */
+  /** null si le secteur a été supprimé (afficher « Secteur supprimé »). */
   secteur_nom: string | null;
   titre: string;
   taille_marche: number;
@@ -106,17 +106,17 @@ export interface EtudeMarche {
   hypotheses: string;
   description_offre: string;
   prix_propose: number | null;
-  /** IDs des concurrents associ├⌐s ├á l'├⌐tude (identique ├á concurrent_ids). */
+  /** IDs des concurrents associés à l'étude (identique à concurrent_ids). */
   concurrents: number[];
   concurrent_ids: number[];
-  /** IDs des tendances associ├⌐es ├á l'├⌐tude (identique ├á tendance_ids). */
+  /** IDs des tendances associées à l'étude (identique à tendance_ids). */
   tendances: number[];
   tendance_ids: number[];
   date_creation: string;
   date_mise_a_jour: string;
 }
 
-/** D├⌐tail d'une ├⌐tude (GET /etudes/<id>/). */
+/** Détail d'une étude (GET /etudes/<id>/). */
 export interface EtudeMarcheDetail extends EtudeMarche {
   concurrents_details: Concurrent[];
   tendances_details: Tendance[];
@@ -124,7 +124,7 @@ export interface EtudeMarcheDetail extends EtudeMarche {
   swot: ElementSwot[];
 }
 
-/** Champs envoy├⌐s en cr├⌐ation / modification (le statut se change via /finaliser/). */
+/** Champs envoyés en création / modification (le statut se change via /finaliser/). */
 export type EtudeSaisie = Partial<
   Pick<
     EtudeMarche,
@@ -161,7 +161,7 @@ export interface ComparaisonPrix {
   prix_max: number | null;
   ecart_moyenne_pct: number | null;
   positionnement: PositionnementPrix;
-  /** Tri├⌐s par prix croissant. */
+  /** Triés par prix croissant. */
   concurrents: ConcurrentResume[];
 }
 

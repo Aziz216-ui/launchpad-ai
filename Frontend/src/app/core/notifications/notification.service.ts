@@ -1,4 +1,4 @@
-﻿import { Injectable, signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 
 export type TypeNotification = 'succes' | 'erreur' | 'info';
 
@@ -8,7 +8,7 @@ export interface Notification {
   message: string;
 }
 
-/** Notifications ├⌐ph├⌐m├¿res (toasts) affich├⌐es en haut ├á droite de l'├⌐cran. */
+/** Notifications éphémères (toasts) affichées en haut à droite de l'écran. */
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
   private readonly _notifications = signal<Notification[]>([]);

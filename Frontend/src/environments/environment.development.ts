@@ -9,14 +9,16 @@ export const environment = {
   marketApiUrl: 'http://localhost:8090/api/market',
   /** AI-Service (module Co-Fondateur IA, features/ai). Exposé via l'API Gateway (port 8090). */
   aiApiUrl: 'http://localhost:8090/api/ai',
-  /** Finance-Service (module Finance, features/finance) : à remplir par le membre concerné. */
-  financeApiUrl: '',
+  /** Finance : Prevision-Service et Document-Service, via l'API Gateway (module Finance, features/finance). */
+  financeApiUrl: 'http://localhost:8090/api/finance',
   /** Legal-Service (module Juridique, features/legal) : à remplir par le membre concerné. */
   legalApiUrl: '',
   /** Professional-Service (Comptabilité et Avocat, features/professional) : à remplir par le membre concerné. */
   professionalApiUrl: '',
-  /** User-Service (comptes, authentification, features/auth) : à remplir par le membre concerné. */
-  userApiUrl: '',
+  /** Espace avocat : 3 microservices (clients, messages, revue de documents), via l'API Gateway. */
+  lawyerApiUrl: 'http://localhost:8090/api/lawyer',
+  /** User-Service (comptes, authentification Keycloak, features/auth), via l'API Gateway. */
+  userApiUrl: 'http://localhost:8090/api/auth',
 
   /** Utilisateur provisoire, en attendant le User-Service et son token JWT. */
   utilisateur: {

@@ -1,4 +1,4 @@
-﻿@use 'variables' as *;
+@use 'variables' as *;
 
 :host {
   display: flex;
@@ -13,7 +13,7 @@ table {
   font-size: 13px;
 }
 
-// Pays, prix et part de march├⌐ tiennent sur une ligne (en-t├¬tes compris)
+// Pays, prix et part de marché tiennent sur une ligne (en-têtes compris)
 th,
 td:nth-child(2),
 td:nth-child(3) {

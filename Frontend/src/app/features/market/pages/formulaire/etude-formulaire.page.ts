@@ -1,4 +1,4 @@
-﻿import { DatePipe, Location } from '@angular/common';
+import { DatePipe, Location } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -34,16 +34,16 @@ const CHAMPS_PAR_ETAPE: Record<number, Champ[]> = {
   3: ['hypotheses'],
 };
 
-const ETAPES = ['March├⌐ cible', 'Mon offre', 'Hypoth├¿ses'];
+const ETAPES = ['Marché cible', 'Mon offre', 'Hypothèses'];
 
-/** Textes du ┬½ conseil LaunchPad ┬╗ repris de la maquette, un par ├⌐tape. */
+/** Textes du « conseil LaunchPad » repris de la maquette, un par étape. */
 const CONSEILS = [
-  'D├⌐finissez un march├⌐ pr├⌐cis. Une cible bien d├⌐finie rend vos estimations et votre analyse de la concurrence plus utiles.',
-  'Comparez des offres ├⌐quivalentes : m├¬mes services, m├¬me fr├⌐quence de paiement et m├¬mes options incluses.',
-  'Une bonne hypoth├¿se est mesurable. Pr├⌐cisez ce que vous voulez v├⌐rifier et comment vous le testerez.',
+  'Définissez un marché précis. Une cible bien définie rend vos estimations et votre analyse de la concurrence plus utiles.',
+  'Comparez des offres équivalentes : mêmes services, même fréquence de paiement et mêmes options incluses.',
+  'Une bonne hypothèse est mesurable. Précisez ce que vous voulez vérifier et comment vous le testerez.',
 ];
 
-/** Cr├⌐ation et modification d'une ├⌐tude en 3 ├⌐tapes (maquette Creation.dc.html). */
+/** Création et modification d'une étude en 3 étapes (maquette Creation.dc.html). */
 @Component({
   selector: 'app-etude-formulaire',
   imports: [ReactiveFormsModule, RouterLink, DatePipe, BadgeComponent, FieldErrorComponent, LoaderComponent, RechercheLieuComponent],
@@ -57,9 +57,9 @@ export class EtudeFormulairePage implements OnInit {
   private readonly router = inject(Router);
   private readonly location = inject(Location);
 
-  /** Param├¿tre de route (:id) en modification. */
+  /** Paramètre de route (:id) en modification. */
   readonly id = input<string>();
-  /** ?etape=2 : ouvre directement une ├⌐tape (liens ┬½ Modifier mon prix ┬╗, ┬½ Revoir mes hypoth├¿ses ┬╗). */
+  /** ?etape=2 : ouvre directement une étape (liens « Modifier mon prix », « Revoir mes hypothèses »). */
   readonly etape = input<string>();
 
   protected readonly etapes = ETAPES;
@@ -93,7 +93,7 @@ export class EtudeFormulairePage implements OnInit {
     initialValue: this.formulaire.getRawValue(),
   });
 
-  /** Encadr├⌐ ┬½ Votre ├⌐tude en bref ┬╗, mis ├á jour pendant la saisie. */
+  /** Encadré « Votre étude en bref », mis à jour pendant la saisie. */
   protected readonly resume = computed(() => {
     const v = this.valeurs();
     const nombre = (texte: string | undefined) => {
@@ -104,41 +104,41 @@ export class EtudeFormulairePage implements OnInit {
     const croissance = nombre(v.taux_croissance);
     const prix = nombre(v.prix_propose);
     return {
-      titre: v.titre || 'ΓÇö',
-      secteur: this.secteurs().find((s) => s.id === Number(v.secteur))?.nom ?? 'ΓÇö',
-      zone: v.zone_geographique || 'ΓÇö',
-      taille: taille === null ? 'ΓÇö' : `${formatMontant(taille, true)} / an`,
-      croissance: croissance === null ? 'ΓÇö' : `${formatPourcentage(croissance, true)} / an`,
-      prix: prix === null ? 'ΓÇö' : formatMontant(prix),
+      titre: v.titre || '—',
+      secteur: this.secteurs().find((s) => s.id === Number(v.secteur))?.nom ?? '—',
+      zone: v.zone_geographique || '—',
+      taille: taille === null ? '—' : `${formatMontant(taille, true)} / an`,
+      croissance: croissance === null ? '—' : `${formatPourcentage(croissance, true)} / an`,
+      prix: prix === null ? '—' : formatMontant(prix),
     };
   });
 
-  /** Aide du champ ┬½ Taille du march├⌐ ┬╗ : zone saisie et ann├⌐e en cours (maquette ┬½ March├⌐ fran├ºais estim├⌐ pour 2026 ┬╗). */
+  /** Aide du champ « Taille du marché » : zone saisie et année en cours (maquette « Marché français estimé pour 2026 »). */
   protected readonly aideTailleMarche = computed(() => {
     const zone = this.valeurs().zone_geographique;
     const annee = new Date().getFullYear();
-    return zone ? `March├⌐ ${zone} estim├⌐ pour ${annee}` : 'Montant annuel estim├⌐ du march├⌐';
+    return zone ? `Marché ${zone} estimé pour ${annee}` : 'Montant annuel estimé du marché';
   });
 
-  /** Encadr├⌐ de l'├⌐tape 1 : r├⌐sum├⌐ du march├⌐ saisi (cible, secteur, zone), affich├⌐ une fois complet. */
+  /** Encadré de l'étape 1 : résumé du marché saisi (cible, secteur, zone), affiché une fois complet. */
   protected readonly encadreMarche = computed(() => {
     const v = this.valeurs();
     const secteur = this.secteurs().find((s) => s.id === Number(v.secteur))?.nom;
     if (!v.cible || !v.zone_geographique || !secteur) return null;
-    return `${v.cible.trim()} ┬╖ secteur ${secteur} ┬╖ ${v.zone_geographique}.`;
+    return `${v.cible.trim()} · secteur ${secteur} · ${v.zone_geographique}.`;
   });
 
-  /** Encadr├⌐ de l'├⌐tape 2 : prix propos├⌐ compar├⌐ aux concurrents de l'├⌐tude. */
+  /** Encadré de l'étape 2 : prix proposé comparé aux concurrents de l'étude. */
   protected readonly encadrePrix = computed(() => {
     const c = this.comparaison();
     if (!c || c.positionnement === 'inconnu' || c.prix_moyen === null || c.prix_propose === null) return null;
     const titres = {
-      economique: 'Un prix accessible, ├á tester sur le terrain.',
-      aligne: 'Un prix align├⌐ sur le march├⌐.',
-      premium: 'Un prix premium, ├á justifier aupr├¿s de vos clients.',
+      economique: 'Un prix accessible, à tester sur le terrain.',
+      aligne: 'Un prix aligné sur le marché.',
+      premium: 'Un prix premium, à justifier auprès de vos clients.',
     };
     const ecart = c.ecart_moyenne_pct;
-    const sens = ecart === null ? '' : ecart < 0 ? ' en dessous du march├⌐' : ' au-dessus du march├⌐';
+    const sens = ecart === null ? '' : ecart < 0 ? ' en dessous du marché' : ' au-dessus du marché';
     return {
       titre: titres[c.positionnement],
       texte:
@@ -171,7 +171,7 @@ export class EtudeFormulairePage implements OnInit {
         this.chargerComparaison();
       },
       error: (e: unknown) => {
-        this.erreurChargement.set(messageErreur(e, "Impossible de charger l'├⌐tude."));
+        this.erreurChargement.set(messageErreur(e, "Impossible de charger l'étude."));
         this.chargement.set(false);
       },
     });
@@ -215,17 +215,17 @@ export class EtudeFormulairePage implements OnInit {
   /** Enregistre le brouillon : seuls le titre et le secteur sont indispensables. */
   protected enregistrerBrouillon(): void {
     if (!this.valider(['titre', 'secteur'], true)) return;
-    this.sauvegarder(() => this.notifications.succes('Brouillon enregistr├⌐.'));
+    this.sauvegarder(() => this.notifications.succes('Brouillon enregistré.'));
   }
 
-  /** Valide l'├⌐tape courante, enregistre puis passe ├á l'├⌐tape suivante. */
+  /** Valide l'étape courante, enregistre puis passe à l'étape suivante. */
   protected suivant(): void {
     const etape = this.etapeCourante();
     if (!this.valider(CHAMPS_PAR_ETAPE[etape])) return;
     this.sauvegarder(() => this.etapeCourante.set(etape + 1));
   }
 
-  /** Derni├¿re ├⌐tape : v├⌐rifie tout le formulaire puis ouvre l'aper├ºu de l'├⌐tude. */
+  /** Dernière étape : vérifie tout le formulaire puis ouvre l'aperçu de l'étude. */
   protected terminer(): void {
     for (const etape of [1, 2, 3]) {
       if (!this.valider(CHAMPS_PAR_ETAPE[etape])) {
@@ -235,14 +235,14 @@ export class EtudeFormulairePage implements OnInit {
     }
     const creation = this.statut() === 'brouillon' && !this.id();
     this.sauvegarder((id) => {
-      this.notifications.succes(creation ? '├ëtude cr├⌐├⌐e.' : '├ëtude enregistr├⌐e.');
+      this.notifications.succes(creation ? 'Étude créée.' : 'Étude enregistrée.');
       this.router.navigate(['/etude-marche', id, 'apercu']);
     });
   }
 
   /**
-   * V├⌐rifie les champs donn├⌐s. En mode brouillon, les autres champs ne sont contr├┤l├⌐s
-   * que s'ils sont remplis (un nombre mal saisi bloque quand m├¬me l'enregistrement).
+   * Vérifie les champs donnés. En mode brouillon, les autres champs ne sont contrôlés
+   * que s'ils sont remplis (un nombre mal saisi bloque quand même l'enregistrement).
    */
   private valider(champs: Champ[], brouillon = false): boolean {
     let valide = true;
@@ -257,8 +257,8 @@ export class EtudeFormulairePage implements OnInit {
       }
     }
     if (!valide) {
-      this.notifications.erreur('V├⌐rifiez les champs signal├⌐s avant de continuer.');
-      // En brouillon, ouvre l'├⌐tape du premier champ en erreur
+      this.notifications.erreur('Vérifiez les champs signalés avant de continuer.');
+      // En brouillon, ouvre l'étape du premier champ en erreur
       if (brouillon) {
         const etape = [1, 2, 3].find((e) =>
           CHAMPS_PAR_ETAPE[e].some((c) => this.formulaire.controls[c].invalid && this.formulaire.controls[c].touched),
@@ -310,7 +310,7 @@ export class EtudeFormulairePage implements OnInit {
         this.statut.set(etude.statut);
         this.derniereSauvegarde.set(etude.date_mise_a_jour);
         if (id === null) {
-          // L'├⌐tude existe d├⌐sormais : l'URL devient celle de la modification
+          // L'étude existe désormais : l'URL devient celle de la modification
           this.location.replaceState(`/etude-marche/${etude.id}/modifier`);
         }
         this.chargerComparaison();
@@ -324,7 +324,7 @@ export class EtudeFormulairePage implements OnInit {
           );
           if (etape) this.etapeCourante.set(etape);
         }
-        this.notifications.erreur(messageErreur(e, "Impossible d'enregistrer l'├⌐tude."));
+        this.notifications.erreur(messageErreur(e, "Impossible d'enregistrer l'étude."));
       },
     });
   }

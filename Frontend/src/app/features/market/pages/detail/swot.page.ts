@@ -1,4 +1,4 @@
-﻿import { formatDate } from '@angular/common';
+import { formatDate } from '@angular/common';
 import { ChangeDetectionStrategy, Component, LOCALE_ID, computed, inject, signal } from '@angular/core';
 
 import { NotificationService } from '../../../../core/notifications/notification.service';
@@ -12,7 +12,7 @@ import { ElementSwot, TypeSwot } from '../../models/market.models';
 import { EtudeStore } from '../../services/etude-store.service';
 import { MarketApiService } from '../../services/market-api.service';
 
-/** Onglet ┬½ SWOT ┬╗ (maquette SWOT.dc.html). */
+/** Onglet « SWOT » (maquette SWOT.dc.html). */
 @Component({
   selector: 'app-swot',
   imports: [ConfirmModalComponent, IconComponent, MenuActionsComponent, SwotModalComponent],
@@ -33,10 +33,10 @@ export class SwotPage {
 
   private readonly elements = computed(() => this.store.etude()?.swot ?? []);
 
-  /** Les 4 quadrants avec leurs ├⌐l├⌐ments et compteurs. */
+  /** Les 4 quadrants avec leurs éléments et compteurs. */
   protected readonly quadrants = computed(() =>
     TYPES_SWOT.map((t) => {
-      // Comme la maquette : ├⌐l├⌐ments g├⌐n├⌐r├⌐s automatiquement d'abord, puis ceux ajout├⌐s ├á la main
+      // Comme la maquette : éléments générés automatiquement d'abord, puis ceux ajoutés à la main
       const elements = this.elements()
         .filter((e) => e.type === t.type)
         .sort((a, b) => Number(b.genere_automatiquement) - Number(a.genere_automatiquement) || a.id - b.id);
@@ -49,15 +49,15 @@ export class SwotPage {
     const automatiques = elements.filter((e) => e.genere_automatiquement);
     const manuels = elements.length - automatiques.length;
     const accord = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
-    const detail = `${accord(automatiques.length, '├⌐l├⌐ment')} ${automatiques.length > 1 ? 'automatiques' : 'automatique'}, ${manuels} ajout├⌐${manuels > 1 ? 's' : ''} ├á la main.`;
-    if (!automatiques.length) return `Aucune g├⌐n├⌐ration pour le moment ┬╖ ${detail}`;
+    const detail = `${accord(automatiques.length, 'élément')} ${automatiques.length > 1 ? 'automatiques' : 'automatique'}, ${manuels} ajouté${manuels > 1 ? 's' : ''} à la main.`;
+    if (!automatiques.length) return `Aucune génération pour le moment · ${detail}`;
     const derniere = automatiques.map((e) => e.date_creation).sort().at(-1)!;
     const date = new Date(derniere);
     const aujourdhui = date.toDateString() === new Date().toDateString();
     const quand = aujourdhui
-      ? `aujourd'hui ├á ${formatDate(date, 'HH:mm', this.locale)}`
-      : `le ${formatDate(date, "d MMM y '├á' HH:mm", this.locale)}`;
-    return `Derni├¿re g├⌐n├⌐ration ${quand} ┬╖ ${detail}`;
+      ? `aujourd'hui à ${formatDate(date, 'HH:mm', this.locale)}`
+      : `le ${formatDate(date, "d MMM y 'à' HH:mm", this.locale)}`;
+    return `Dernière génération ${quand} · ${detail}`;
   });
 
   protected generer(): void {
@@ -68,13 +68,13 @@ export class SwotPage {
       next: (r) => {
         this.generationEnCours.set(false);
         this.notifications.succes(
-          `SWOT g├⌐n├⌐r├⌐e : ${r.generes} ├⌐l├⌐ment(s) automatique(s), ${r.conserves} ajout(s) manuel(s) conserv├⌐(s).`,
+          `SWOT générée : ${r.generes} élément(s) automatique(s), ${r.conserves} ajout(s) manuel(s) conservé(s).`,
         );
         this.store.recharger();
       },
       error: (e: unknown) => {
         this.generationEnCours.set(false);
-        this.notifications.erreur(messageErreur(e, 'Impossible de g├⌐n├⌐rer la SWOT.'));
+        this.notifications.erreur(messageErreur(e, 'Impossible de générer la SWOT.'));
       },
     });
   }
@@ -92,12 +92,12 @@ export class SwotPage {
       next: () => {
         this.suppressionEnCours.set(false);
         this.aSupprimer.set(null);
-        this.notifications.succes('├ël├⌐ment supprim├⌐ de la SWOT.');
+        this.notifications.succes('Élément supprimé de la SWOT.');
         this.store.recharger();
       },
       error: (e: unknown) => {
         this.suppressionEnCours.set(false);
-        this.notifications.erreur(messageErreur(e, 'Impossible de supprimer cet ├⌐l├⌐ment.'));
+        this.notifications.erreur(messageErreur(e, 'Impossible de supprimer cet élément.'));
       },
     });
   }

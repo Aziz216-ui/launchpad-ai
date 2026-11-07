@@ -27,6 +27,13 @@
 @REM   MVNW_VERBOSE - true: enable verbose log; others: silence the output
 @REM ----------------------------------------------------------------------------
 
+@IF "%JAVA_HOME%"=="" (
+  @IF EXIST "C:\Program Files\JetBrains\IntelliJ IDEA 2026.1\jbr\bin\java.exe" (
+    @SET "JAVA_HOME=C:\Program Files\JetBrains\IntelliJ IDEA 2026.1\jbr"
+  ) ELSE @IF EXIST "C:\Users\user\.jdks\jbr-17.0.14\bin\java.exe" (
+    @SET "JAVA_HOME=C:\Users\user\.jdks\jbr-17.0.14"
+  )
+)
 @IF "%__MVNW_ARG0_NAME__%"=="" (SET __MVNW_ARG0_NAME__=%~nx0)
 @SET __MVNW_CMD__=
 @SET __MVNW_ERROR__=

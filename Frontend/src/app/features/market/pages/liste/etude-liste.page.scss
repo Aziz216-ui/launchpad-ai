@@ -1,4 +1,4 @@
-﻿@use 'variables' as *;
+@use 'variables' as *;
 
 .cta {
   min-height: 48px;
@@ -143,7 +143,7 @@
   color: $gris;
 }
 
-// 3 colonnes sur grand ├⌐cran, 4 ├á partir de 1600 px ; en dessous, la grille s'adapte (2 puis 1 colonne)
+// 3 colonnes sur grand écran, 4 à partir de 1600 px ; en dessous, la grille s'adapte (2 puis 1 colonne)
 .cartes {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));

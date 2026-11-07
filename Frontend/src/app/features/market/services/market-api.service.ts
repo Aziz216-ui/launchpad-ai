@@ -1,4 +1,4 @@
-﻿import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -22,7 +22,7 @@ import {
 } from '../models/market.models';
 
 /**
- * Acc├¿s REST aux 4 microservices du march├⌐ via l'API Gateway (pr├⌐fixe environment.marketApiUrl).
+ * Accès REST aux 4 microservices du marché via l'API Gateway (préfixe environment.marketApiUrl).
  * Fourni par market.routes.ts, avec le HttpClient du module (marketInterceptor).
  */
 @Injectable()
@@ -30,7 +30,7 @@ export class MarketApiService {
   private readonly http = inject(HttpClient);
   private readonly url = environment.marketApiUrl;
 
-  // --- ├ëtudes -----------------------------------------------------------------
+  // --- Études -----------------------------------------------------------------
 
   listerEtudes(filtres: { search?: string; statut?: string; entrepreneur_id?: number } = {}): Observable<EtudeMarche[]> {
     return this.http.get<EtudeMarche[]>(`${this.url}/etudes/`, { params: parametres(filtres) });
@@ -76,7 +76,7 @@ export class MarketApiService {
     return this.http.get(`${this.url}/etudes/${id}/rapport/pdf/`, { responseType: 'blob' });
   }
 
-  // --- R├⌐f├⌐rentiels -------------------------------------------------------------
+  // --- Référentiels -------------------------------------------------------------
 
   listerSecteurs(): Observable<Secteur[]> {
     return this.http.get<Secteur[]>(`${this.url}/secteurs/`);
@@ -116,7 +116,7 @@ export class MarketApiService {
     return this.http.delete<void>(`${this.url}/personas/${id}/`);
   }
 
-  // --- ├ël├⌐ments SWOT --------------------------------------------------------------
+  // --- Éléments SWOT --------------------------------------------------------------
 
   creerElementSwot(saisie: ElementSwotSaisie): Observable<ElementSwot> {
     return this.http.post<ElementSwot>(`${this.url}/swot/`, saisie);
@@ -131,7 +131,7 @@ export class MarketApiService {
   }
 }
 
-/** Construit les param├¿tres de requ├¬te en ignorant les valeurs vides. */
+/** Construit les paramètres de requête en ignorant les valeurs vides. */
 function parametres(filtres: Record<string, string | number | undefined>): HttpParams {
   let params = new HttpParams();
   for (const [cle, valeur] of Object.entries(filtres)) {

@@ -1,4 +1,4 @@
-﻿@use 'variables' as *;
+@use 'variables' as *;
 
 .etapes {
   list-style: none;
@@ -106,8 +106,8 @@
   }
 }
 
-// 3 colonnes de champs au plus : en pleine largeur, la carte sous ┬½ Zone g├⌐ographique ┬╗
-// ne doit pas ├⌐tirer une ligne de 4 champs
+// 3 colonnes de champs au plus : en pleine largeur, la carte sous « Zone géographique »
+// ne doit pas étirer une ligne de 4 champs
 .grille-champs {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, max(240px, calc((100% - 32px) / 3))), 1fr));
 }

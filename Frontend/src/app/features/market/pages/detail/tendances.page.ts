@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { NotificationService } from '../../../../core/notifications/notification.service';
@@ -13,7 +13,7 @@ import { Tendance } from '../../models/market.models';
 import { EtudeStore } from '../../services/etude-store.service';
 import { MarketApiService } from '../../services/market-api.service';
 
-/** Onglet ┬½ Tendances ┬╗ (maquette Tendances.dc.html). */
+/** Onglet « Tendances » (maquette Tendances.dc.html). */
 @Component({
   selector: 'app-tendances',
   imports: [RouterLink, BadgeComponent, EmptyStateComponent, IconComponent, MenuActionsComponent, TendanceModalComponent],
@@ -41,8 +41,8 @@ export class TendancesPage {
   });
 
   /**
-   * Carte ┬½ Votre priorit├⌐ ┬╗ : d├⌐duite des tendances associ├⌐es (point de vigilance principal
-   * si les risques dominent, sinon opportunit├⌐ principale). Pas de carte sans tendance orient├⌐e.
+   * Carte « Votre priorité » : déduite des tendances associées (point de vigilance principal
+   * si les risques dominent, sinon opportunité principale). Pas de carte sans tendance orientée.
    */
   protected readonly priorite = computed(() => {
     const liste = this.tendances();
@@ -50,11 +50,11 @@ export class TendancesPage {
     const opportunite = liste.find((t) => t.impact === 'positif');
     const { positives, negatives } = this.balance();
     if (risque && (negatives > positives || !opportunite)) {
-      return `S├⌐curiser votre projet face ├á ┬½ ${risque.titre} ┬╗ avant d'acc├⌐l├⌐rer : c'est le principal point de vigilance de votre march├⌐.`;
+      return `Sécuriser votre projet face à « ${risque.titre} » avant d'accélérer : c'est le principal point de vigilance de votre marché.`;
     }
     if (opportunite) {
-      const suite = risque ? ` Gardez un ┼ôil sur ┬½ ${risque.titre} ┬╗.` : '';
-      return `Appuyez-vous sur ┬½ ${opportunite.titre} ┬╗ : c'est la principale opportunit├⌐ de votre march├⌐.${suite}`;
+      const suite = risque ? ` Gardez un œil sur « ${risque.titre} ».` : '';
+      return `Appuyez-vous sur « ${opportunite.titre} » : c'est la principale opportunité de votre marché.${suite}`;
     }
     return null;
   });
@@ -64,7 +64,7 @@ export class TendancesPage {
     if (!etude) return;
     this.api.modifierEtude(etude.id, { tendances: etude.tendances.filter((id) => id !== tendance.id) }).subscribe({
       next: () => {
-        this.notifications.succes(`┬½ ${tendance.titre} ┬╗ a ├⌐t├⌐ retir├⌐e de l'├⌐tude.`);
+        this.notifications.succes(`« ${tendance.titre} » a été retirée de l'étude.`);
         this.store.recharger();
       },
       error: (e: unknown) => this.notifications.erreur(messageErreur(e, 'Impossible de retirer cette tendance.')),

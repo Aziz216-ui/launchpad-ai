@@ -1,13 +1,13 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 
 const CLE_TOKEN = 'launchpad.token';
 
 /**
  * Stockage du token JWT.
  *
- * Le User-Service n'existe pas encore : aucun token n'est enregistr├⌐ pour le moment.
- * Quand l'authentification sera pr├¬te, la page de connexion appellera `enregistrer()`
- * et l'intercepteur ajoutera automatiquement l'en-t├¬te Authorization.
+ * Le User-Service n'existe pas encore : aucun token n'est enregistré pour le moment.
+ * Quand l'authentification sera prête, la page de connexion appellera `enregistrer()`
+ * et l'intercepteur ajoutera automatiquement l'en-tête Authorization.
  */
 @Injectable({ providedIn: 'root' })
 export class TokenService {
@@ -23,7 +23,7 @@ export class TokenService {
     try {
       localStorage.setItem(CLE_TOKEN, token);
     } catch {
-      // Stockage indisponible (navigation priv├⌐e) : le token ne sera pas conserv├⌐.
+      // Stockage indisponible (navigation privée) : le token ne sera pas conservé.
     }
   }
 
@@ -31,7 +31,7 @@ export class TokenService {
     try {
       localStorage.removeItem(CLE_TOKEN);
     } catch {
-      // ignor├⌐
+      // ignoré
     }
   }
 }

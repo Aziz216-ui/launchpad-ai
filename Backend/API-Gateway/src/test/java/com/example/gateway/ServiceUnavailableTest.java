@@ -10,16 +10,26 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.json.JsonCompareMode;
 
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.SocketPolicy;
+
 /** Service éteint ou absent d'Eureka : 503 {"service": "<NOM>", "message": "Service indisponible"}. */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("local")
 class ServiceUnavailableTest extends GatewayTestSupport {
 
+    /** Accepte la connexion puis la coupe sans répondre (port publié d'un conteneur Docker arrêté). */
+    static final MockService stopping = new MockService(
+            request -> new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST));
+
     @DynamicPropertySource
     static void services(DynamicPropertyRegistry registry) {
         String closed = MockService.closedPortUrl();
         registry.add("launchpad.services.legal.uri", () -> closed);
-        registry.add("launchpad.services.lawyer.uri", () -> closed);
+        registry.add("launchpad.services.lawyer-client.uri", () -> closed);
+        registry.add("launchpad.services.secteur.uri", stopping::url);
+        // Route en lb:// alors qu'Eureka est coupé (profil local) : aucune instance connue
+        registry.add("launchpad.services.user.uri", () -> "lb://user-service");
     }
 
     @Test
@@ -31,18 +41,24 @@ class ServiceUnavailableTest extends GatewayTestSupport {
     }
 
     @Test
-    void lowercaseEurekaNameIsKeptInTheMessage() {
-        client.get().uri("/api/lawyer/dossiers").exchange()
+    void connectionClosedBeforeAnyResponseGives503Json() {
+        client.get().uri("/api/market/secteurs/").exchange()
                 .expectStatus().isEqualTo(503)
-                .expectBody().jsonPath("$.service").isEqualTo("lawyer-space");
+                .expectBody().json("{\"service\":\"SECTEUR-SERVICE\",\"message\":\"Service indisponible\"}", JsonCompareMode.STRICT);
+    }
+
+    @Test
+    void lowercaseEurekaNameIsKeptInTheMessage() {
+        client.get().uri("/api/lawyer/clients").exchange()
+                .expectStatus().isEqualTo(503)
+                .expectBody().jsonPath("$.service").isEqualTo("lawyer-client-service");
     }
 
     @Test
     void loadBalancedRouteWithoutInstanceGives503Json() {
-        // ai-service reste en lb://AI-SERVICE en profil local : aucune instance connue
-        client.post().uri("/api/ai/conversations").exchange()
+        client.post().uri("/api/auth/login").exchange()
                 .expectStatus().isEqualTo(503)
-                .expectBody().json("{\"service\":\"AI-SERVICE\",\"message\":\"Service indisponible\"}", JsonCompareMode.STRICT);
+                .expectBody().json("{\"service\":\"user-service\",\"message\":\"Service indisponible\"}", JsonCompareMode.STRICT);
     }
 
     @Test

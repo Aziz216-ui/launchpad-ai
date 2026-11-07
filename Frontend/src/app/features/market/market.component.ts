@@ -1,12 +1,12 @@
-﻿import { ChangeDetectionStrategy, Component, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewEncapsulation } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
 /**
- * Racine du module ┬½ ├ëtude de march├⌐ ┬╗ : enveloppe tous ses ├⌐crans.
+ * Racine du module « Étude de marché » : enveloppe tous ses écrans.
  *
- * Ses styles (market.component.scss) ne sont pas encapsul├⌐s pour ├¬tre partag├⌐s
- * par les pages et composants du module, mais ils sont tous pr├⌐fix├⌐s par `.market` :
- * ils ne d├⌐bordent jamais sur les autres modules. Ils sont charg├⌐s avec le module (lazy).
+ * Ses styles (market.component.scss) ne sont pas encapsulés pour être partagés
+ * par les pages et composants du module, mais ils sont tous préfixés par `.market` :
+ * ils ne débordent jamais sur les autres modules. Ils sont chargés avec le module (lazy).
  */
 @Component({
   selector: 'app-market',

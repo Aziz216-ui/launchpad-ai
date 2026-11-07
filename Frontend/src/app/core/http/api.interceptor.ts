@@ -1,4 +1,4 @@
-﻿import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 
@@ -7,11 +7,11 @@ import { NotificationService } from '../notifications/notification.service';
 import { ApiError } from './api-error';
 
 /**
- * Intercepteur commun ├á tous les appels HTTP :
+ * Intercepteur commun à tous les appels HTTP :
  * - ajoute le token JWT quand il existe (futur User-Service) ;
  * - transforme les erreurs en ApiError ;
- * - affiche un toast pour les erreurs r├⌐seau et serveur (les erreurs 400 et 404
- *   sont g├⌐r├⌐es par les ├⌐crans, au plus pr├¿s des champs concern├⌐s).
+ * - affiche un toast pour les erreurs réseau et serveur (les erreurs 400 et 404
+ *   sont gérées par les écrans, au plus près des champs concernés).
  */
 export const apiInterceptor: HttpInterceptorFn = (requete, suivant) => {
   const token = inject(TokenService).lire();

@@ -1,13 +1,13 @@
-﻿import { Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 
 /**
- * Routes du module ┬½ Juridique ┬╗, charg├⌐es ├á la demande sous /juridique.
+ * Routes du module « Juridique », chargées à la demande sous /juridique.
  * Remplacer la page provisoire par les pages du module (voir README.md).
  */
 export default [
   {
     path: '',
     loadComponent: () => import('./legal-en-cours.page').then((m) => m.LegalEnCoursPage),
-    title: 'Juridique ┬╖ LaunchPad AI',
+    title: 'Juridique · LaunchPad AI',
   },
 ] satisfies Routes;

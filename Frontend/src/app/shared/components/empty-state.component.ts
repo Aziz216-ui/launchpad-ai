@@ -1,8 +1,8 @@
-﻿import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /**
- * ├ëtat vide (maquette Liste-vide.dc.html) : illustration, titre, texte et actions projet├⌐es.
- * `compact` r├⌐duit les marges pour un usage ├á l'int├⌐rieur d'un onglet.
+ * État vide (maquette Liste-vide.dc.html) : illustration, titre, texte et actions projetées.
+ * `compact` réduit les marges pour un usage à l'intérieur d'un onglet.
  */
 @Component({
   selector: 'app-empty-state',

@@ -1,10 +1,10 @@
-﻿import { Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 
 import { AppLayoutComponent } from './layout/app-layout.component';
 
 /**
  * Une route lazy par module : loadChildren vers features/<module>/<module>.routes.ts.
- * Les dossiers portent le nom du service backend (market, ai, legalΓÇª), les URL restent en fran├ºais.
+ * Les dossiers portent le nom du service backend (market, ai, legal…), les URL restent en français.
  * Ajouter un module = ajouter une ligne ici et une ligne dans layout/menu.ts.
  */
 export const routes: Routes = [
@@ -18,7 +18,7 @@ export const routes: Routes = [
       { path: 'etude-marche', loadChildren: () => import('./features/market/market.routes') },
       { path: 'finance', loadChildren: () => import('./features/finance/finance.routes') },
       { path: 'juridique', loadChildren: () => import('./features/legal/legal.routes') },
-      // Comptabilit├⌐ et Avocat : /professional/comptabilite et /professional/avocat
+      // Comptabilité et Avocat : /professional/comptabilite et /professional/avocat
       { path: 'professional', loadChildren: () => import('./features/professional/professional.routes') },
       { path: 'comptabilite', redirectTo: 'professional/comptabilite' },
       { path: 'avocat', redirectTo: 'professional/avocat' },

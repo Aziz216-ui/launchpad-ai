@@ -1,11 +1,11 @@
-﻿import { AbstractControl, FormGroup, ValidationErrors, ValidatorFn } from '@angular/forms';
+import { AbstractControl, FormGroup, ValidationErrors, ValidatorFn } from '@angular/forms';
 
 import { ApiError } from '../../../core/http/api-error';
 import { lireNombre } from './format';
 
 /**
- * Valide un nombre saisi ├á la fran├ºaise ("24 000 000", "8,4").
- * Un champ vide est accept├⌐ : combiner avec Validators.required si besoin.
+ * Valide un nombre saisi à la française ("24 000 000", "8,4").
+ * Un champ vide est accepté : combiner avec Validators.required si besoin.
  */
 export function nombreValidator(options: { min?: number; max?: number } = {}): ValidatorFn {
   return (controle: AbstractControl): ValidationErrors | null => {
@@ -20,7 +20,7 @@ export function nombreValidator(options: { min?: number; max?: number } = {}): V
 
 /**
  * Reporte les erreurs 400 de l'API sous les champs correspondants.
- * Renvoie true si au moins une erreur a ├⌐t├⌐ plac├⌐e sur un champ du formulaire.
+ * Renvoie true si au moins une erreur a été placée sur un champ du formulaire.
  */
 export function appliquerErreursServeur(formulaire: FormGroup, erreur: unknown): boolean {
   if (!(erreur instanceof ApiError)) return false;
@@ -36,7 +36,7 @@ export function appliquerErreursServeur(formulaire: FormGroup, erreur: unknown):
   return place;
 }
 
-/** Texte de l'erreur ├á afficher dans un toast. */
+/** Texte de l'erreur à afficher dans un toast. */
 export function messageErreur(erreur: unknown, defaut = 'Une erreur est survenue.'): string {
   if (erreur instanceof ApiError) {
     const champs = Object.entries(erreur.erreursChamps);

@@ -49,7 +49,12 @@ class JwtSecurityTest extends GatewayTestSupport {
     static void services(DynamicPropertyRegistry registry) {
         registry.add("spring.security.oauth2.resourceserver.jwt.jwk-set-uri",
                 () -> keycloakAndMarket.url() + JWKS_PATH);
-        registry.add("launchpad.services.market.uri", keycloakAndMarket::url);
+        for (String service : new String[] {"secteur", "concurrent", "etude", "swot"}) {
+            registry.add("launchpad.services." + service + ".uri", keycloakAndMarket::url);
+        }
+        for (String service : new String[] {"projet", "recommandation", "conversation"}) {
+            registry.add("launchpad.services." + service + ".uri", keycloakAndMarket::url);
+        }
         registry.add("launchpad.services.accounting.uri", keycloakAndMarket::url);
         registry.add("launchpad.services.legal.uri", keycloakAndMarket::url);
         registry.add("launchpad.services.user.uri", keycloakAndMarket::url);
@@ -100,18 +105,28 @@ class JwtSecurityTest extends GatewayTestSupport {
     @ParameterizedTest
     @ValueSource(strings = {
             "/api/auth/login",
-            "/api/market/docs/", "/api/market/schema/",
+            "/api/market/secteurs/docs/", "/api/market/concurrents/schema/",
+            "/api/market/etudes/docs/", "/api/market/swot/schema/",
             "/api/comptable/docs", "/api/comptable/docs.json",
             "/docs/legal", "/docs/legal-json",
-            "/api/market/health/", "/api/comptable/health",
+            "/api/market/secteurs/health/", "/api/market/concurrents/health/",
+            "/api/market/etudes/health/", "/api/market/swot/health/", "/api/comptable/health",
+            "/api/ai/health/", "/api/ai/docs/", "/api/ai/schema/",
+            "/docs/ai/projet/docs/", "/docs/ai/recommandation/schema/", "/docs/ai/conversation/docs/",
     })
     void publicRoutesNeedNoToken(String path) {
         client.get().uri(path).exchange().expectStatus().isOk();
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"/api/ai/projets/", "/api/ai/recommandations/", "/api/ai/conversations/"})
+    void aiRoutesNeedAToken(String path) {
+        client.get().uri(path).exchange().expectStatus().isUnauthorized();
+    }
+
     @Test
     void invalidTokenIsIgnoredOnPublicRoutesButStillForwarded() {
-        client.get().uri("/api/market/health/").headers(h -> h.setBearerAuth("pas-un-jwt")).exchange()
+        client.get().uri("/api/market/etudes/health/").headers(h -> h.setBearerAuth("pas-un-jwt")).exchange()
                 .expectStatus().isOk();
         assertThat(lastServiceRequestAuthorization()).isEqualTo("Bearer pas-un-jwt");
     }

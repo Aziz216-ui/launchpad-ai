@@ -1,6 +1,6 @@
-﻿// Styles communs aux ├⌐crans du module ┬½ ├ëtude de march├⌐ ┬╗.
-// Ce composant n'est pas encapsul├⌐ : toutes les r├¿gles sont limit├⌐es au conteneur
-// .market, elles ne s'appliquent donc ├á aucun autre module.
+// Styles communs aux écrans du module « Étude de marché ».
+// Ce composant n'est pas encapsulé : toutes les règles sont limitées au conteneur
+// .market, elles ne s'appliquent donc à aucun autre module.
 @use 'variables' as *;
 
 .market {
@@ -24,7 +24,7 @@
 
   // --- Mise en page des pages -------------------------------------------------
 
-  // Pleine largeur ├á c├┤t├⌐ de la barre lat├⌐rale, 32 px de marge int├⌐rieure de chaque c├┤t├⌐
+  // Pleine largeur à côté de la barre latérale, 32 px de marge intérieure de chaque côté
   .page {
     padding: 24px 32px 48px;
     display: flex;
@@ -386,7 +386,7 @@
   // --- Tableaux ---------------------------------------------------------------
 
   .tableau-conteneur {
-    // Contient les ├⌐l├⌐ments positionn├⌐s (libell├⌐s masqu├⌐s) dans la zone qui d├⌐file
+    // Contient les éléments positionnés (libellés masqués) dans la zone qui défile
     position: relative;
     background: #ffffff;
     border: 1px solid $bordure;
