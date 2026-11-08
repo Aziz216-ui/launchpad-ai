@@ -119,14 +119,41 @@ spring:
               metadata:
                 service: ETUDE-SERVICE
 
-            # --- Comptable : Professional-Service, port 8085 --------------------
-            # Docs : /api/comptable/docs et /api/comptable/docs.json (dans le préfixe)
-            - id: accounting-service
-              uri: ${launchpad.services.accounting.uri}
+            # --- Comptable : 4 microservices Symfony (Backend/Professional-Service) --
+            # Ordre important : documents et messages d'un dossier avant /files/**.
+            # Docs Swagger et /health : servis par chaque service, exposés ici via workspace-service.
+
+            # document-service, port 8093 : documents comptables
+            - id: accounting-document-service
+              uri: ${launchpad.services.accounting-document.uri}
+              predicates:
+                - Path=/api/comptable/files/*/documents/**,/api/comptable/files/*/documents,/api/comptable/documents/**
+              metadata:
+                service: ACCOUNTING-DOCUMENT-SERVICE
+
+            # message-service, port 8094 : messages d'un dossier
+            - id: accounting-message-service
+              uri: ${launchpad.services.accounting-message.uri}
+              predicates:
+                - Path=/api/comptable/files/*/messages,/api/comptable/files/*/messages/**,/api/comptable/messages/**
+              metadata:
+                service: ACCOUNTING-MESSAGE-SERVICE
+
+            # client-file-service, port 8092 : dossiers clients
+            - id: accounting-client-file-service
+              uri: ${launchpad.services.accounting-client-file.uri}
+              predicates:
+                - Path=/api/comptable/files,/api/comptable/files/**
+              metadata:
+                service: ACCOUNTING-CLIENT-FILE-SERVICE
+
+            # workspace-service, port 8091 : espaces comptables, /me, docs, health
+            - id: accounting-workspace-service
+              uri: ${launchpad.services.accounting-workspace.uri}
               predicates:
                 - Path=/api/comptable/**
               metadata:
-                service: PROFESSIONAL-SERVICE
+                service: ACCOUNTING-WORKSPACE-SERVICE
 
             # --- Avocat : 3 microservices Spring Boot (Backend/Lawyer-*-Service) ----
             # Noms Eureka en minuscules. Tous sous /api/lawyer/, découpés par ressource.
@@ -400,8 +427,14 @@ launchpad:
       uri: ${ETUDE_SERVICE_URI:lb://ETUDE-SERVICE}
     swot:
       uri: ${SWOT_SERVICE_URI:lb://SWOT-SERVICE}
-    accounting:
-      uri: ${ACCOUNTING_SERVICE_URI:lb://PROFESSIONAL-SERVICE}
+    accounting-workspace:
+      uri: ${ACCOUNTING_WORKSPACE_SERVICE_URI:lb://ACCOUNTING-WORKSPACE-SERVICE}
+    accounting-client-file:
+      uri: ${ACCOUNTING_CLIENT_FILE_SERVICE_URI:lb://ACCOUNTING-CLIENT-FILE-SERVICE}
+    accounting-document:
+      uri: ${ACCOUNTING_DOCUMENT_SERVICE_URI:lb://ACCOUNTING-DOCUMENT-SERVICE}
+    accounting-message:
+      uri: ${ACCOUNTING_MESSAGE_SERVICE_URI:lb://ACCOUNTING-MESSAGE-SERVICE}
     lawyer-client:
       uri: ${LAWYER_CLIENT_SERVICE_URI:lb://lawyer-client-service}
     lawyer-message:

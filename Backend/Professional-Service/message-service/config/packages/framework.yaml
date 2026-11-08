@@ -1,0 +1,32 @@
+# see https://symfony.com/doc/current/reference/configuration/framework.html
+framework:
+    secret: '%env(APP_SECRET)%'
+
+    # API stateless : aucune session
+    session: false
+
+    # Clients HTTP vers les routes /internal des autres microservices
+    http_client:
+        scoped_clients:
+            client_file_service.client:
+                base_uri: '%env(CLIENT_FILE_SERVICE_URL)%'
+                timeout: 5
+                headers:
+                    Accept: application/json
+                    X-Internal-Key: '%env(INTERNAL_API_KEY)%'
+            document_service.client:
+                base_uri: '%env(DOCUMENT_SERVICE_URL)%'
+                timeout: 5
+                headers:
+                    Accept: application/json
+                    X-Internal-Key: '%env(INTERNAL_API_KEY)%'
+
+when@test:
+    framework:
+        test: true
+        # Cache en mémoire : les clés JWKS de test ne survivent pas d'une exécution à l'autre
+        cache:
+            app: cache.adapter.array
+        # Keycloak simulé : les appels HTTP de découverte OIDC sont servis par une fabrique de réponses
+        http_client:
+            mock_response_factory: Launchpad\Common\Testing\KeycloakMockResponseFactory
