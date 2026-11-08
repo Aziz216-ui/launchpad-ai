@@ -1,3 +1,5 @@
+# Port hôte de commentaire-postgres surchargeable via COMMENTAIRE_DB_PORT (défaut 5448,
+# déplacé de 5434 pour ne pas entrer en collision avec le défaut de Finance/Document-Service).
 services:
   commentaire-postgres:
     image: postgres:16-alpine
@@ -8,7 +10,7 @@ services:
       POSTGRES_PASSWORD: postgrespassword
       POSTGRES_DB: commentaire_db
     ports:
-      - "5434:5432"
+      - "${COMMENTAIRE_DB_PORT:-5448}:5432"
     volumes:
       - commentaire_pgdata:/var/lib/postgresql/data
     healthcheck:

@@ -7,13 +7,16 @@ version: '3.8'
 #  POSTGRES_CLIENT_PORT     (5444)  port hôte de la base du Lawyer-Client-Service
 #  POSTGRES_MESSAGE_PORT    (5438)  port hôte de la base du Lawyer-Message-Service
 #  POSTGRES_DOCREVIEW_PORT  (5437)  port hôte de la base du Lawyer-DocReview-Service
-#  RABBITMQ_PORT            (5672)  port hôte AMQP du RabbitMQ de ce compose
+#  RABBITMQ_PORT            (5674)  port hôte AMQP du RabbitMQ de ce compose
+#  RABBITMQ_MGMT_PORT       (15674) port hôte de l'interface de gestion RabbitMQ
 #  RABBITMQ_HOST            (rabbitmq) hôte RabbitMQ utilisé par les services avocat ;
 #                           surcharger en host.docker.internal pour pointer vers un
-#                           RabbitMQ déjà lancé en local plutôt que celui de ce compose
-#                           (évite le conflit sur le port 5672 si un broker local tourne déjà).
-#  Ne pas lancer en même temps ce RabbitMQ et celui de Backend/Market/docker-compose.yml
-#  (les deux publient 5672/15672 par défaut).
+#                           RabbitMQ déjà lancé en local plutôt que celui de ce compose.
+#  Conteneur nommé "lawyer-rabbitmq" (pas "launchpad-rabbitmq") et ports déplacés de
+#  5672/15672 vers 5674/15674 : Backend/RabbitMQ/docker-compose.yml (broker partagé pour
+#  Legal/Clause/Commentaire-Service) utilise déjà ce nom de conteneur et ces ports par
+#  défaut. Backend/Market/docker-compose.yml publie aussi son propre RabbitMQ sur
+#  5673/15673 (voir ce fichier) : trois brokers indépendants, un par groupe de services.
 #
 #  Ports Postgres choisis pour ne pas collisionner avec les autres compose du repo :
 #  Finance/Prevision-Service (5433 par défaut), Finance/Document-Service (5434 par
@@ -91,14 +94,14 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: launchpad-rabbitmq
+    container_name: lawyer-rabbitmq
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     ports:
-      - "${RABBITMQ_PORT:-5672}:5672"    # AMQP protocol
-      - "15672:15672"  # Management Web UI (http://localhost:15672)
+      - "${RABBITMQ_PORT:-5674}:5672"    # AMQP protocol
+      - "${RABBITMQ_MGMT_PORT:-15674}:15672"  # Management Web UI
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:

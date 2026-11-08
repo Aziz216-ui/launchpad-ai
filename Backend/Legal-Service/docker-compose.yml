@@ -1,3 +1,5 @@
+# Port hôte de legal-postgres surchargeable via LEGAL_DB_PORT (défaut 5446, déplacé de
+# 5432 pour ne pas entrer en collision avec la base "legacy" du docker-compose.yml racine).
 services:
   legal-postgres:
     image: postgres:16-alpine
@@ -8,7 +10,7 @@ services:
       POSTGRES_PASSWORD: postgrespassword
       POSTGRES_DB: legal_db
     ports:
-      - "5432:5432"
+      - "${LEGAL_DB_PORT:-5446}:5432"
     volumes:
       - legal_pgdata:/var/lib/postgresql/data
     healthcheck:
