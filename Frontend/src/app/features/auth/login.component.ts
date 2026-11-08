@@ -82,20 +82,21 @@ import { routeParDefaut } from '../../core/auth/role-routes';
     </div>
   `,
   styles: [`
+    @use 'variables' as *;
+
     .auth-page {
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #f0fdfa 0%, #f4f7f6 100%);
+      background: $fond;
       padding: 24px;
     }
 
     .auth-card {
-      background: #ffffff;
-      border: 1px solid #e3e8ea;
-      border-radius: 14px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+      background: $fond-carte;
+      border: 1px solid $bordure;
+      border-radius: $rayon-carte;
       width: 100%;
       max-width: 440px;
       padding: 36px 32px;
@@ -115,42 +116,42 @@ import { routeParDefaut } from '../../core/auth/role-routes';
       width: 36px;
       height: 36px;
       border-radius: 10px;
-      background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%);
-      color: white;
+      background: $primaire;
+      color: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .brand-name {
-      font-size: 19px;
-      font-weight: 800;
-      color: #1d2b2f;
-      .teal { color: #2b7a86; }
+      font-size: 17px;
+      font-weight: 600;
+      color: $texte;
+      .teal { color: $primaire; }
     }
 
     .auth-header {
       text-align: center;
       h2 {
+        margin: 0;
         font-size: 22px;
-        font-weight: 700;
-        color: #1d2b2f;
+        font-weight: 600;
+        color: $texte;
       }
       p {
+        margin: 4px 0 0;
         font-size: 13px;
-        color: #5a6a6f;
-        margin-top: 4px;
+        color: $gris;
       }
     }
 
     .alert {
       padding: 10px 14px;
-      border-radius: 10px;
+      border-radius: $rayon-champ;
       font-size: 12.5px;
       &.error {
-        background: #fef2f2;
-        color: #dc2626;
-        border: 1px solid #fee2e2;
+        background: $rouge-clair;
+        color: $rouge-fonce;
       }
     }
 
@@ -168,7 +169,7 @@ import { routeParDefaut } from '../../core/auth/role-routes';
       label {
         font-size: 12px;
         font-weight: 600;
-        color: #1d2b2f;
+        color: $texte;
       }
     }
 
@@ -180,34 +181,36 @@ import { routeParDefaut } from '../../core/auth/role-routes';
 
     .forgot-link {
       font-size: 11.5px;
-      color: #2b7a86;
+      color: $primaire-fonce;
       text-decoration: none;
-      &:hover { text-decoration: underline; }
+      &:hover { color: $primaire-tres-fonce; text-decoration: underline; }
     }
 
     .input-wrapper input {
       width: 100%;
-      padding: 11px 14px;
-      border: 1px solid #e3e8ea;
-      border-radius: 10px;
+      min-height: 44px;
+      padding: 0 14px;
+      border: 1px solid $bordure-champ;
+      border-radius: $rayon-champ;
       font-size: 13.5px;
+      color: $texte;
       outline: none;
-      transition: all 0.15s ease;
+      transition: border-color 0.15s ease;
 
       &:focus {
-        border-color: #2b7a86;
-        box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+        border-color: $primaire;
       }
     }
 
     .btn-submit {
       margin-top: 6px;
-      background: #2b7a86;
-      color: white;
+      min-height: 44px;
+      border: 0;
+      background: $primaire;
+      color: #ffffff;
       font-weight: 600;
-      font-size: 14px;
-      padding: 12px;
-      border-radius: 10px;
+      font-size: 13px;
+      border-radius: $rayon-champ;
       transition: background 0.15s ease;
       display: flex;
       align-items: center;
@@ -215,10 +218,10 @@ import { routeParDefaut } from '../../core/auth/role-routes';
       cursor: pointer;
 
       &:hover:not(:disabled) {
-        background: #1f6470;
+        background: $primaire-fonce;
       }
       &:disabled {
-        opacity: 0.7;
+        opacity: 0.6;
         cursor: not-allowed;
       }
     }
@@ -229,22 +232,22 @@ import { routeParDefaut } from '../../core/auth/role-routes';
       justify-content: center;
       gap: 6px;
       font-size: 11px;
-      color: #5a6a6f;
-      background: #f8fafc;
+      color: $gris;
+      background: $fond-doux;
       padding: 8px;
-      border-radius: 10px;
+      border-radius: $rayon-champ;
     }
 
     .auth-footer {
       text-align: center;
       font-size: 13px;
-      color: #5a6a6f;
+      color: $gris;
 
       .link-bold {
-        color: #2b7a86;
+        color: $primaire-fonce;
         font-weight: 600;
         text-decoration: none;
-        &:hover { text-decoration: underline; }
+        &:hover { color: $primaire-tres-fonce; text-decoration: underline; }
       }
     }
   `]

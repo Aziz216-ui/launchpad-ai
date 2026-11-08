@@ -122,20 +122,21 @@ const LABEL_ROLE: Record<Role, string> = {
     </div>
   `,
   styles: [`
+    @use 'variables' as *;
+
     .auth-page {
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #f0fdfa 0%, #f4f7f6 100%);
+      background: $fond;
       padding: 32px 20px;
     }
 
     .auth-card {
-      background: #ffffff;
-      border: 1px solid #e3e8ea;
-      border-radius: 14px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+      background: $fond-carte;
+      border: 1px solid $bordure;
+      border-radius: $rayon-carte;
       width: 100%;
       max-width: 500px;
       padding: 36px 32px;
@@ -155,47 +156,46 @@ const LABEL_ROLE: Record<Role, string> = {
       width: 36px;
       height: 36px;
       border-radius: 10px;
-      background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%);
-      color: white;
+      background: $primaire;
+      color: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .brand-name {
-      font-size: 19px;
-      font-weight: 800;
-      color: #1d2b2f;
-      .teal { color: #2b7a86; }
+      font-size: 17px;
+      font-weight: 600;
+      color: $texte;
+      .teal { color: $primaire; }
     }
 
     .auth-header {
       text-align: center;
       h2 {
+        margin: 0;
         font-size: 22px;
-        font-weight: 700;
-        color: #1d2b2f;
+        font-weight: 600;
+        color: $texte;
       }
       p {
+        margin: 4px 0 0;
         font-size: 12.5px;
-        color: #5a6a6f;
-        margin-top: 4px;
+        color: $gris;
       }
     }
 
     .alert {
       padding: 10px 14px;
-      border-radius: 10px;
+      border-radius: $rayon-champ;
       font-size: 12.5px;
       &.error {
-        background: #fef2f2;
-        color: #dc2626;
-        border: 1px solid #fee2e2;
+        background: $rouge-clair;
+        color: $rouge-fonce;
       }
       &.success {
-        background: #ecfdf5;
-        color: #059669;
-        border: 1px solid #d1fae5;
+        background: $vert-clair;
+        color: $vert-fonce;
       }
     }
 
@@ -213,8 +213,8 @@ const LABEL_ROLE: Record<Role, string> = {
 
     .group-label {
       font-size: 12px;
-      font-weight: 700;
-      color: #1d2b2f;
+      font-weight: 600;
+      color: $texte;
     }
 
     .role-pills {
@@ -225,25 +225,25 @@ const LABEL_ROLE: Record<Role, string> = {
 
     .role-pill {
       padding: 10px 12px;
-      border-radius: 10px;
-      border: 1.5px solid #e3e8ea;
-      background: #f8fafc;
+      border-radius: $rayon-champ;
+      border: 1.5px solid $bordure-champ;
+      background: $fond-doux;
       font-size: 12.5px;
       font-weight: 600;
-      color: #5a6a6f;
+      color: $gris;
       cursor: pointer;
       text-align: center;
       transition: all 0.15s ease;
 
       &:hover {
-        border-color: #cbd5e1;
-        color: #1d2b2f;
+        border-color: $gris;
+        color: $texte;
       }
 
       &.selected {
-        border-color: #2b7a86;
-        background: #e3f0f1;
-        color: #1f6470;
+        border-color: $primaire;
+        background: $primaire-clair;
+        color: $primaire-fonce;
         font-weight: 700;
       }
     }
@@ -262,41 +262,43 @@ const LABEL_ROLE: Record<Role, string> = {
       label {
         font-size: 12px;
         font-weight: 600;
-        color: #1d2b2f;
+        color: $texte;
       }
 
       input {
         width: 100%;
-        padding: 9px 12px;
-        border: 1px solid #e3e8ea;
-        border-radius: 10px;
+        min-height: 40px;
+        padding: 0 12px;
+        border: 1px solid $bordure-champ;
+        border-radius: $rayon-champ;
         font-size: 13px;
+        color: $texte;
         outline: none;
-        transition: all 0.15s ease;
+        transition: border-color 0.15s ease;
 
         &:focus {
-          border-color: #2b7a86;
-          box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+          border-color: $primaire;
         }
       }
     }
 
     .btn-submit {
       margin-top: 6px;
-      background: #2b7a86;
-      color: white;
+      min-height: 44px;
+      border: 0;
+      background: $primaire;
+      color: #ffffff;
       font-weight: 600;
-      font-size: 14px;
-      padding: 12px;
-      border-radius: 10px;
+      font-size: 13px;
+      border-radius: $rayon-champ;
       transition: background 0.15s ease;
       cursor: pointer;
 
       &:hover:not(:disabled) {
-        background: #1f6470;
+        background: $primaire-fonce;
       }
       &:disabled {
-        opacity: 0.7;
+        opacity: 0.6;
         cursor: not-allowed;
       }
     }
@@ -304,13 +306,13 @@ const LABEL_ROLE: Record<Role, string> = {
     .auth-footer {
       text-align: center;
       font-size: 13px;
-      color: #5a6a6f;
+      color: $gris;
 
       .link-bold {
-        color: #2b7a86;
+        color: $primaire-fonce;
         font-weight: 600;
         text-decoration: none;
-        &:hover { text-decoration: underline; }
+        &:hover { color: $primaire-tres-fonce; text-decoration: underline; }
       }
     }
   `]
