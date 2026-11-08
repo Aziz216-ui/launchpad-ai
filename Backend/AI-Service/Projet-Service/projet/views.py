@@ -20,7 +20,7 @@ from .serializers import (
     ProjetSerializer, ProjetListSerializer,
     AnalyseProjetSerializer,
 )
-from .services import market_client, llm, regles
+from .services import market_client, llm, regles, finance_client
 
 logger = logging.getLogger(__name__)
 
@@ -110,12 +110,13 @@ class ProjetViewSet(viewsets.ModelViewSet):
         """
         projet = self.get_object()
         donnees_marche = market_client.recuperer_donnees_marche(projet.pk)
+        donnees_finance = finance_client.recuperer_synthese_financiere(projet.pk) or {}
 
         # Tentative LLM, repli sur les regles
         resultat = llm.analyser_projet_llm(projet, donnees_marche)
         source = AnalyseProjet.Source.LLM if resultat else AnalyseProjet.Source.REGLES
         if resultat is None:
-            resultat = regles.analyser_projet(projet, donnees_marche)
+            resultat = regles.analyser_projet(projet, donnees_marche, donnees_finance)
 
         from django.db import transaction
         from .events.publisher import publier_evenement
@@ -153,6 +154,7 @@ class ProjetViewSet(viewsets.ModelViewSet):
                             "budget": float(projet.budget_estime) if projet.budget_estime is not None else None,
                             "budget_estime": float(projet.budget_estime) if projet.budget_estime is not None else None,
                         },
+                        "finance": donnees_finance,
                     },
                 )
             )

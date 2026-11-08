@@ -27,6 +27,13 @@ export class ApiError extends Error {
 
     if (corps && typeof corps === 'object' && !(corps instanceof Blob)) {
       for (const [cle, valeur] of Object.entries(corps)) {
+        // Services Spring (ProblemDetail, RFC 7807) : les métadonnées ne sont pas des champs de formulaire,
+        // et les erreurs de validation arrivent sous forme {"erreurs": {"champ": "message"}}.
+        if (corps.detail !== undefined && METADONNEES_PROBLEME.has(cle)) continue;
+        if (cle === 'erreurs' && valeur && typeof valeur === 'object' && !Array.isArray(valeur)) {
+          for (const [champ, texte] of Object.entries(valeur)) erreursChamps[champ] = [String(texte)];
+          continue;
+        }
         const messages = Array.isArray(valeur) ? valeur.map(String) : [String(valeur)];
         if (cle === 'detail' || cle === 'non_field_errors') {
           message = messages.join(' ');
@@ -41,6 +48,8 @@ export class ApiError extends Error {
     return new ApiError(reponse.status, message, erreursChamps);
   }
 }
+
+const METADONNEES_PROBLEME = new Set(['type', 'title', 'status', 'instance']);
 
 function messageParDefaut(statut: number): string {
   if (statut === 404) return "L'élément demandé est introuvable.";

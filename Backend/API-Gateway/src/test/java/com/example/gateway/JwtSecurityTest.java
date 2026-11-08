@@ -55,7 +55,9 @@ class JwtSecurityTest extends GatewayTestSupport {
         for (String service : new String[] {"projet", "recommandation", "conversation"}) {
             registry.add("launchpad.services." + service + ".uri", keycloakAndMarket::url);
         }
-        registry.add("launchpad.services.accounting.uri", keycloakAndMarket::url);
+        for (String service : new String[] {"accounting-workspace", "accounting-client-file", "accounting-document", "accounting-message"}) {
+            registry.add("launchpad.services." + service + ".uri", keycloakAndMarket::url);
+        }
         registry.add("launchpad.services.legal.uri", keycloakAndMarket::url);
         registry.add("launchpad.services.user.uri", keycloakAndMarket::url);
     }

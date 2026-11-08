@@ -1,0 +1,52 @@
+services:
+  clause-postgres:
+    image: postgres:16-alpine
+    container_name: launchpad-clause-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: clause_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - clause_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d clause_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  clause-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: launchpad-clause-service
+    restart: unless-stopped
+    depends_on:
+      clause-postgres:
+        condition: service_healthy
+    environment:
+      PORT: 3004
+      NODE_ENV: production
+      GLOBAL_PREFIX: api/clauses
+      DB_HOST: clause-postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgrespassword
+      DB_NAME: clause_db
+      DB_SYNCHRONIZE: "true"
+      DB_LOGGING: "false"
+      EUREKA_ENABLED: "true"
+      EUREKA_HOST: host.docker.internal
+      EUREKA_PORT: 8761
+      EUREKA_APP_NAME: CLAUSE-SERVICE
+      RABBITMQ_ENABLED: \"true\"
+      RABBITMQ_URL: amqp://guest:guest@host.docker.internal:5672
+      RABBITMQ_EXCHANGE: launchpad.events
+    ports:
+      - "3004:3004"
+
+volumes:
+  clause_pgdata:
+    driver: local

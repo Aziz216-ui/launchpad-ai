@@ -52,7 +52,10 @@ class RoutesTest extends GatewayTestSupport {
                 Map.entry("market-concurrent-service", "lb://CONCURRENT-SERVICE"),
                 Map.entry("market-swot-service", "lb://SWOT-SERVICE"),
                 Map.entry("market-etude-service", "lb://ETUDE-SERVICE"),
-                Map.entry("accounting-service", "lb://PROFESSIONAL-SERVICE"),
+                Map.entry("accounting-document-service", "lb://ACCOUNTING-DOCUMENT-SERVICE"),
+                Map.entry("accounting-message-service", "lb://ACCOUNTING-MESSAGE-SERVICE"),
+                Map.entry("accounting-client-file-service", "lb://ACCOUNTING-CLIENT-FILE-SERVICE"),
+                Map.entry("accounting-workspace-service", "lb://ACCOUNTING-WORKSPACE-SERVICE"),
                 Map.entry("lawyer-client-service", "lb://lawyer-client-service"),
                 Map.entry("lawyer-message-service", "lb://lawyer-message-service"),
                 Map.entry("lawyer-docreview-service", "lb://lawyer-docreview-service"),
@@ -88,6 +91,18 @@ class RoutesTest extends GatewayTestSupport {
                 .isLessThan(ids.indexOf("prevision-service"));
     }
 
+    /** Comptable : documents et messages d'un dossier avant /files/**, et workspace-service (/api/comptable/**) en dernier. */
+    @Test
+    void accountingRoutesAreEvaluatedFromMostToLeastSpecific() {
+        List<String> ids = routes().stream().map(Route::getId).toList();
+        assertThat(ids.indexOf("accounting-document-service")).isNotNegative()
+                .isLessThan(ids.indexOf("accounting-client-file-service"));
+        assertThat(ids.indexOf("accounting-message-service")).isNotNegative()
+                .isLessThan(ids.indexOf("accounting-client-file-service"));
+        assertThat(ids.indexOf("accounting-client-file-service"))
+                .isLessThan(ids.indexOf("accounting-workspace-service"));
+    }
+
     /** IA : les schémas choisis par Referer passent avant ai-projet-service, qui prend /api/ai/schema/ par défaut. */
     @Test
     void aiSchemaRoutesAreEvaluatedBeforeProjetDefault() {
@@ -102,7 +117,8 @@ class RoutesTest extends GatewayTestSupport {
     void routesCarryTheServiceNameUsedIn503() {
         Map<String, Object> services = routes().stream()
                 .collect(Collectors.toMap(Route::getId, r -> r.getMetadata().get("service")));
-        assertThat(services).containsEntry("accounting-service", "PROFESSIONAL-SERVICE")
+        assertThat(services).containsEntry("accounting-workspace-service", "ACCOUNTING-WORKSPACE-SERVICE")
+                .containsEntry("accounting-document-service", "ACCOUNTING-DOCUMENT-SERVICE")
                 .containsEntry("market-swot-service", "SWOT-SERVICE")
                 .containsEntry("market-etude-docs", "ETUDE-SERVICE")
                 .containsEntry("lawyer-client-docs", "lawyer-client-service")
@@ -118,8 +134,8 @@ class RoutesTest extends GatewayTestSupport {
         client.get().uri("/actuator/gateway/routes").exchange()
                 .expectStatus().isOk()
                 .expectBody()
-                .jsonPath("$.length()").isEqualTo(34)
-                .jsonPath("$[?(@.route_id == 'accounting-service')].uri").isEqualTo("lb://PROFESSIONAL-SERVICE")
+                .jsonPath("$.length()").isEqualTo(37)
+                .jsonPath("$[?(@.route_id == 'accounting-workspace-service')].uri").isEqualTo("lb://ACCOUNTING-WORKSPACE-SERVICE")
                 .jsonPath("$[?(@.route_id == 'lawyer-message-service')].uri").isEqualTo("lb://lawyer-message-service");
     }
 

@@ -17,8 +17,14 @@ launchpad:
       uri: ${ETUDE_SERVICE_URI:http://localhost:8012}
     swot:
       uri: ${SWOT_SERVICE_URI:http://localhost:8013}
-    accounting:
-      uri: ${ACCOUNTING_SERVICE_URI:http://localhost:8085}
+    accounting-workspace:
+      uri: ${ACCOUNTING_WORKSPACE_SERVICE_URI:http://localhost:8091}
+    accounting-client-file:
+      uri: ${ACCOUNTING_CLIENT_FILE_SERVICE_URI:http://localhost:8092}
+    accounting-document:
+      uri: ${ACCOUNTING_DOCUMENT_SERVICE_URI:http://localhost:8093}
+    accounting-message:
+      uri: ${ACCOUNTING_MESSAGE_SERVICE_URI:http://localhost:8094}
     lawyer-client:
       uri: ${LAWYER_CLIENT_SERVICE_URI:http://localhost:8082}
     lawyer-message:
@@ -27,6 +33,10 @@ launchpad:
       uri: ${LAWYER_DOCREVIEW_SERVICE_URI:http://localhost:8086}
     legal:
       uri: ${LEGAL_SERVICE_URI:http://localhost:3003}
+    clause:
+      uri: ${CLAUSE_SERVICE_URI:http://localhost:3004}
+    commentaire:
+      uri: ${COMMENTAIRE_SERVICE_URI:http://localhost:3005}
     prevision:
       uri: ${PREVISION_SERVICE_URI:http://localhost:8081}
     document:
