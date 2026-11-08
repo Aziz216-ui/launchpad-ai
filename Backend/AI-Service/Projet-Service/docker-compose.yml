@@ -40,14 +40,17 @@ services:
       DB_PORT: "5432"
 
       # Eureka
-      # Dans Docker, utilise le nom du conteneur eureka-server (resolu par le reseau Docker)
-      EUREKA_SERVER: "http://eureka-server:8761/eureka/"
+      # Ce compose cree son propre reseau, separe de celui du docker-compose.yml racine :
+      # le nom de conteneur "eureka-server" ne resout pas ici. host.docker.internal (l'hote,
+      # vu depuis l'interieur d'un conteneur) est la seule adresse qui atteint le port 8761
+      # publie par Eureka sur l'hote.
+      EUREKA_SERVER: "http://host.docker.internal:8761/eureka/"
       APP_NAME: "projet-service"
       APP_PORT: "8006"
-      # HOST_IP : IP de la machine hote, joignable depuis le gateway.
-      # Sous Docker Desktop (Windows/Mac) : host.docker.internal
-      # En prod Linux : mettre l'IP reelle de la machine.
-      HOST_IP: "host.docker.internal"
+      # HOST_IP : adresse annoncee dans Eureka. L'API Gateway tourne sur l'hote et ne peut
+      # PAS resoudre host.docker.internal depuis lui-meme (ca ne marche que dans l'autre sens,
+      # depuis un conteneur vers l'hote) : "localhost" est la seule valeur qu'elle peut joindre.
+      HOST_IP: "localhost"
 
       # ETUDE-SERVICE (Étude de marché via Gateway ou Eureka)
       MARKET_SERVICE_NAME: "ETUDE-SERVICE"
