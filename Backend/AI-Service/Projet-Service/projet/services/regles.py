@@ -5,7 +5,7 @@ Fournit : analyse forces/faiblesses et score global basés sur le projet et l'ET
 from __future__ import annotations
 
 
-def analyser_projet(projet, donnees_marche: dict) -> dict:
+def analyser_projet(projet, donnees_marche: dict, donnees_finance: dict | None = None) -> dict:
     """
     Analyse un projet par règles et retourne :
     - forces (list[str])
@@ -13,6 +13,9 @@ def analyser_projet(projet, donnees_marche: dict) -> dict:
     - score_global (int 0-100)
     - resume (str)
     """
+    if donnees_finance is None:
+        donnees_finance = {}
+
     forces = []
     faiblesses = []
     score = 50  # Base
@@ -112,6 +115,43 @@ def analyser_projet(projet, donnees_marche: dict) -> dict:
         titres = ", ".join(tendances_negatives[:2])
         faiblesses.append(f"Tendances défavorables ou menaces identifiées : {titres}.")
         score -= 6
+
+    # --- 3. Données de FINANCE-SERVICE ---
+    if donnees_finance:
+        prev = donnees_finance.get("prevision") or {}
+        marges = donnees_finance.get("marges") or {}
+        ecart = donnees_finance.get("ecart") or {}
+
+        ca = prev.get("chiffreAffaires") or donnees_finance.get("chiffreAffaires")
+        statut_ecart = (ecart.get("statut") or donnees_finance.get("statut") or "").upper()
+        montant_ecart = ecart.get("montant") or donnees_finance.get("montant_ecart") or 0
+        taux_marge = marges.get("tauxMargeBrute") or donnees_finance.get("taux_marge")
+
+        if ca is not None:
+            try:
+                forces.append(f"Modèle financier établi : CA prévisionnel de {float(ca):,.0f} TND.")
+                score += 5
+            except (ValueError, TypeError):
+                pass
+
+        if statut_ecart == "EXCEDENT":
+            forces.append("Résultat d'exploitation prévisionnel excédentaire (rentable).")
+            score += 10
+        elif statut_ecart == "DEFICIT":
+            faiblesses.append(f"Déficit prévisionnel identifié ({abs(float(montant_ecart)):,.0f} TND) — besoin de financement.")
+            score -= 10
+
+        if taux_marge is not None:
+            try:
+                tm = float(taux_marge)
+                if tm >= 35.0:
+                    forces.append(f"Marge brute saine ({tm:.1f}%).")
+                    score += 5
+                elif tm > 0 and tm < 25.0:
+                    faiblesses.append(f"Marge brute fragile ({tm:.1f}%), vulnérable aux coûts directs.")
+                    score -= 5
+            except (ValueError, TypeError):
+                pass
 
     # Normalisation du score
     score = max(0, min(100, score))
