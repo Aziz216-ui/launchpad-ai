@@ -26,5 +26,5 @@ export const MENU: ElementMenu[] = [
   { libelle: 'Finance', route: '/finance', icone: 'carte', roles: ['ENTREPRENEUR', 'FINANCIER', 'ADMIN'] },
   { libelle: 'Juridique', route: '/juridique', icone: 'balance', roles: ['ENTREPRENEUR', 'ADMIN'] },
   { libelle: 'Comptabilité', route: '/professional/comptabilite', icone: 'calculatrice', roles: ['ACCOUNTANT'] },
-  { libelle: 'Avocat', route: '/professional/avocat', icone: 'mallette', roles: ['LAWYER'] },
+  { libelle: 'Avocat', route: '/professional/avocat', icone: 'mallette', roles: ['LAWYER', 'ENTREPRENEUR', 'ADMIN'] },
 ];
