@@ -133,8 +133,8 @@ const LABEL_ROLE: Record<Role, string> = {
 
     .auth-card {
       background: #ffffff;
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-lg);
+      border: 1px solid #e3e8ea;
+      border-radius: 14px;
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
       width: 100%;
       max-width: 500px;
@@ -165,8 +165,8 @@ const LABEL_ROLE: Record<Role, string> = {
     .brand-name {
       font-size: 19px;
       font-weight: 800;
-      color: var(--text-main);
-      .teal { color: var(--primary-teal); }
+      color: #1d2b2f;
+      .teal { color: #2b7a86; }
     }
 
     .auth-header {
@@ -174,18 +174,18 @@ const LABEL_ROLE: Record<Role, string> = {
       h2 {
         font-size: 22px;
         font-weight: 700;
-        color: var(--text-main);
+        color: #1d2b2f;
       }
       p {
         font-size: 12.5px;
-        color: var(--text-muted);
+        color: #5a6a6f;
         margin-top: 4px;
       }
     }
 
     .alert {
       padding: 10px 14px;
-      border-radius: var(--radius-sm);
+      border-radius: 10px;
       font-size: 12.5px;
       &.error {
         background: #fef2f2;
@@ -214,7 +214,7 @@ const LABEL_ROLE: Record<Role, string> = {
     .group-label {
       font-size: 12px;
       font-weight: 700;
-      color: var(--text-main);
+      color: #1d2b2f;
     }
 
     .role-pills {
@@ -225,25 +225,25 @@ const LABEL_ROLE: Record<Role, string> = {
 
     .role-pill {
       padding: 10px 12px;
-      border-radius: var(--radius-sm);
-      border: 1.5px solid var(--border-color);
+      border-radius: 10px;
+      border: 1.5px solid #e3e8ea;
       background: #f8fafc;
       font-size: 12.5px;
       font-weight: 600;
-      color: var(--text-muted);
+      color: #5a6a6f;
       cursor: pointer;
       text-align: center;
       transition: all 0.15s ease;
 
       &:hover {
         border-color: #cbd5e1;
-        color: var(--text-main);
+        color: #1d2b2f;
       }
 
       &.selected {
-        border-color: var(--primary-teal);
-        background: var(--primary-teal-light);
-        color: var(--primary-teal-dark);
+        border-color: #2b7a86;
+        background: #e3f0f1;
+        color: #1f6470;
         font-weight: 700;
       }
     }
@@ -262,20 +262,20 @@ const LABEL_ROLE: Record<Role, string> = {
       label {
         font-size: 12px;
         font-weight: 600;
-        color: var(--text-main);
+        color: #1d2b2f;
       }
 
       input {
         width: 100%;
         padding: 9px 12px;
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-sm);
+        border: 1px solid #e3e8ea;
+        border-radius: 10px;
         font-size: 13px;
         outline: none;
         transition: all 0.15s ease;
 
         &:focus {
-          border-color: var(--primary-teal);
+          border-color: #2b7a86;
           box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
         }
       }
@@ -283,17 +283,17 @@ const LABEL_ROLE: Record<Role, string> = {
 
     .btn-submit {
       margin-top: 6px;
-      background: var(--primary-teal);
+      background: #2b7a86;
       color: white;
       font-weight: 600;
       font-size: 14px;
       padding: 12px;
-      border-radius: var(--radius-sm);
+      border-radius: 10px;
       transition: background 0.15s ease;
       cursor: pointer;
 
       &:hover:not(:disabled) {
-        background: var(--primary-teal-hover);
+        background: #1f6470;
       }
       &:disabled {
         opacity: 0.7;
@@ -304,10 +304,10 @@ const LABEL_ROLE: Record<Role, string> = {
     .auth-footer {
       text-align: center;
       font-size: 13px;
-      color: var(--text-muted);
+      color: #5a6a6f;
 
       .link-bold {
-        color: var(--primary-teal);
+        color: #2b7a86;
         font-weight: 600;
         text-decoration: none;
         &:hover { text-decoration: underline; }
