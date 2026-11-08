@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
+
+parameters:
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        bind:
+            # Keycloak : correspondance des rôles (noms configurables dans .env)
+            string $keycloakClientId: '%env(KEYCLOAK_CLIENT_ID)%'
+            bool $useClientRoles: '%env(bool:KEYCLOAK_USE_CLIENT_ROLES)%'
+            string $accountantRoleName: '%env(KEYCLOAK_ROLE_ACCOUNTANT)%'
+            string $entrepreneurRoleName: '%env(KEYCLOAK_ROLE_ENTREPRENEUR)%'
+            string $adminRoleName: '%env(KEYCLOAK_ROLE_ADMIN)%'
+            # Stockage des fichiers déposés
+            string $storageDirectory: '%env(resolve:DOCUMENT_STORAGE_DIR)%'
+            string $maxUploadSize: '%env(DOCUMENT_MAX_SIZE)%'
+
+    App\:
+        resource: '../src/'
+
+    # Module commun à tous les microservices (../common) : sécurité, erreurs, pagination, Eureka, Swagger
+    Launchpad\Common\:
+        resource: '../../common/src/'
+        exclude:
+            - '../../common/src/Fixtures/'
+            - '../../common/src/Remote/Model/'
+            - '../../common/src/Messaging/Message/'
+            - '../../common/src/Remote/RemoteService.php'
+
+    # Documentation OpenAPI : conventions communes (après les describers de nelmio, avant le describer par défaut)
+    Launchpad\Common\ApiDoc\ApiConventionsDescriber:
+        tags:
+            - { name: nelmio_api_doc.describer, priority: -900 }
+
+    # Format des listes paginées (adaptable si l'équipe impose un format commun)
+    Launchpad\Common\Http\Pagination\PaginationFormatterInterface: '@Launchpad\Common\Http\Pagination\DefaultPaginationFormatter'
+
+    # Implémentation de stockage utilisée (remplaçable par S3 / MinIO)
+    App\Storage\DocumentStorageInterface: '@App\Storage\LocalDocumentStorage'
+
+    # Dossiers lus auprès de client-file-service (GET /internal/files/{id})
+    Launchpad\Common\Remote\ClientFileDirectory: '@Launchpad\Common\Remote\HttpClientFileDirectory'
+
+when@dev:
+    services:
+        # Swagger sans Keycloak : jetons "sonia", "amine", "nadia"... (voir DevAccessTokenHandler)
+        Launchpad\Common\Security\DevAccessTokenHandler:
+            decorates: security.access_token_handler.api
+            arguments:
+                $inner: '@.inner'
+                $accountantRoleName: '%env(KEYCLOAK_ROLE_ACCOUNTANT)%'
+                $entrepreneurRoleName: '%env(KEYCLOAK_ROLE_ENTREPRENEUR)%'
+                $adminRoleName: '%env(KEYCLOAK_ROLE_ADMIN)%'
+
+when@test:
+    services:
+        Launchpad\Common\Testing\KeycloakMockResponseFactory:
+            arguments:
+                $issuer: '%env(KEYCLOAK_ISSUER)%'
+
+        # RabbitMQ remplacé par une doublure qui garde les messages publiés en mémoire
+        Launchpad\Common\Testing\FakeMessagePublisher:
+            public: true
+        Launchpad\Common\Messaging\MessagePublisher: '@Launchpad\Common\Testing\FakeMessagePublisher'
+
+        # client-file-service remplacé par une doublure (dossiers du catalogue des fixtures)
+        Launchpad\Common\Testing\FakeClientFileDirectory:
+            public: true
+        Launchpad\Common\Remote\ClientFileDirectory: '@Launchpad\Common\Testing\FakeClientFileDirectory'

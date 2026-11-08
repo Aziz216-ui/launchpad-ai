@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=../vendor/symfony/routing/Loader/schema/routing.schema.json
+
+# Routes publiques sous /api/comptable (même préfixe pour les quatre services : le front
+# ou une future Gateway route selon le chemin). Routes /internal : appels entre services.
+#   bin/console debug:router
+
+api:
+    resource: ../src/Controller/
+    type: attribute
+    prefix: /api/comptable
+
+# Santé et Swagger UI, fournis par le module commun
+common:
+    resource: ../../common/src/Controller/
+    type: attribute
+    prefix: /api/comptable
+
+internal:
+    resource: ../src/Internal/
+    type: attribute
+    prefix: /internal

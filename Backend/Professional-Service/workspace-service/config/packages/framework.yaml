@@ -1,0 +1,18 @@
+# see https://symfony.com/doc/current/reference/configuration/framework.html
+framework:
+    secret: '%env(APP_SECRET)%'
+
+    # API stateless : aucune session
+    session: false
+
+    # Aucun appel HTTP vers les autres services : client-file-service est prévenu via RabbitMQ
+
+when@test:
+    framework:
+        test: true
+        # Cache en mémoire : les clés JWKS de test ne survivent pas d'une exécution à l'autre
+        cache:
+            app: cache.adapter.array
+        # Keycloak simulé : les appels HTTP de découverte OIDC sont servis par une fabrique de réponses
+        http_client:
+            mock_response_factory: Launchpad\Common\Testing\KeycloakMockResponseFactory
