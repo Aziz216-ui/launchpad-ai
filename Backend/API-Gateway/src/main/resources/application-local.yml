@@ -1,0 +1,41 @@
+# =============================================================================
+# Profil "local" : sans Eureka, les routes pointent directement vers
+# http://localhost:<port>. Chaque URL reste surchargeable par <NOM>_SERVICE_URI.
+# =============================================================================
+
+eureka:
+  client:
+    enabled: false
+
+launchpad:
+  services:
+    secteur:
+      uri: ${SECTEUR_SERVICE_URI:http://localhost:8010}
+    concurrent:
+      uri: ${CONCURRENT_SERVICE_URI:http://localhost:8011}
+    etude:
+      uri: ${ETUDE_SERVICE_URI:http://localhost:8012}
+    swot:
+      uri: ${SWOT_SERVICE_URI:http://localhost:8013}
+    accounting:
+      uri: ${ACCOUNTING_SERVICE_URI:http://localhost:8085}
+    lawyer-client:
+      uri: ${LAWYER_CLIENT_SERVICE_URI:http://localhost:8082}
+    lawyer-message:
+      uri: ${LAWYER_MESSAGE_SERVICE_URI:http://localhost:8084}
+    lawyer-docreview:
+      uri: ${LAWYER_DOCREVIEW_SERVICE_URI:http://localhost:8086}
+    legal:
+      uri: ${LEGAL_SERVICE_URI:http://localhost:3003}
+    prevision:
+      uri: ${PREVISION_SERVICE_URI:http://localhost:8081}
+    document:
+      uri: ${DOCUMENT_SERVICE_URI:http://localhost:8083}
+    projet:
+      uri: ${PROJET_SERVICE_URI:http://localhost:8006}
+    recommandation:
+      uri: ${RECOMMANDATION_SERVICE_URI:http://localhost:8007}
+    conversation:
+      uri: ${CONVERSATION_SERVICE_URI:http://localhost:8008}
+    user:
+      uri: ${USER_SERVICE_URI:http://localhost:8001}

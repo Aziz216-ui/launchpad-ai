@@ -1,0 +1,38 @@
+services:
+  prevision-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: prevision_db
+      POSTGRES_USER: ${DB_USERNAME:-prevision}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-prevision}
+    ports:
+      - "${DB_HOST_PORT:-5433}:5432"
+    volumes:
+      - prevision-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d prevision_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  prevision-service:
+    build: .
+    image: launchpad/prevision-service:latest
+    depends_on:
+      prevision-db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://prevision-db:5432/prevision_db
+      DB_USERNAME: ${DB_USERNAME:-prevision}
+      DB_PASSWORD: ${DB_PASSWORD:-prevision}
+      EUREKA_SERVER_URL: ${EUREKA_SERVER_URL:-http://host.docker.internal:8761/eureka/}
+      # Adresse annoncée dans Eureka : joignable depuis l'hôte et les autres conteneurs (port publié ci-dessous).
+      EUREKA_INSTANCE_HOST: ${EUREKA_INSTANCE_HOST:-host.docker.internal}
+      DOCUMENT_SERVICE_URL: ${DOCUMENT_SERVICE_URL:-http://host.docker.internal:8083}
+      SPRING_AI_MODEL_CHAT: ${SPRING_AI_MODEL_CHAT:-none}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+    ports:
+      - "${PREVISION_HTTP_PORT:-8081}:8081"
+
+volumes:
+  prevision-db-data:

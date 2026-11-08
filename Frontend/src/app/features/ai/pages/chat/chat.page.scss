@@ -1,0 +1,564 @@
+@use 'variables' as *;
+
+.page {
+  padding: 24px 32px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1240px;
+  height: 100%;
+}
+
+.fil-ariane {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: $gris;
+  flex-shrink: 0;
+
+  a { color: $gris; text-decoration: none; &:hover { text-decoration: underline; } }
+  .courant { color: $texte; }
+}
+
+.en-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.titre-groupe {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  h1 { margin: 0; font-size: 26px; font-weight: 700; color: $texte; }
+}
+
+.btn-toggle-panneau {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: $texte;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background 0.15s;
+  &:hover { background: $fond-neutre; }
+
+  @media (max-width: 800px) { display: flex; align-items: center; }
+}
+
+.sous-nav {
+  display: flex;
+  gap: 4px;
+  background: $fond-neutre;
+  border-radius: $rayon-champ;
+  padding: 4px;
+
+  a {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: $texte-secondaire;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover { background: $fond-carte; color: $texte; }
+    &.actif { background: $fond-carte; color: $primaire; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  }
+}
+
+// ─── Conteneur chat ──────────────────────────────────────────────────────────
+.chat-conteneur {
+  display: flex;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid $bordure;
+  border-radius: $rayon-carte;
+  overflow: hidden;
+  background: $fond-carte;
+  margin-bottom: 0;
+}
+
+// ─── Panneau gauche ──────────────────────────────────────────────────────────
+.panneau-gauche {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid $bordure;
+  background: $fond-encadre;
+  overflow: hidden;
+  transition: width 0.25s ease;
+
+  &.ferme {
+    width: 0;
+    border-right: none;
+  }
+}
+
+.panneau-entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid $bordure;
+  flex-shrink: 0;
+
+  h2 { margin: 0; font-size: 14px; font-weight: 700; color: $texte; }
+}
+
+.btn-nouvelle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: $primaire;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+
+  &:hover:not(:disabled) { background: $primaire-fonce; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: tourner 0.7s linear infinite;
+}
+
+@keyframes tourner { to { transform: rotate(360deg); } }
+
+.convs-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 16px;
+  color: $gris;
+
+  p { margin: 0; font-size: 13px; }
+}
+
+.btn-primaire-sm {
+  padding: 8px 16px;
+  background: $primaire;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: $primaire-fonce; }
+}
+
+.liste-convs {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.conv-ligne {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  &:hover .btn-suppr-item {
+    opacity: 1;
+  }
+}
+
+.conv-item {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 32px 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  color: $texte;
+  transition: background 0.12s;
+
+  &:hover { background: $fond-neutre; }
+  &.actif { background: $primaire-clair; color: $primaire-tres-fonce; }
+
+  app-icon { flex-shrink: 0; margin-top: 2px; color: $gris; }
+}
+
+.btn-suppr-item {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: $gris;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+
+  &:hover {
+    color: $rouge;
+    background: $rouge-clair;
+  }
+}
+
+.conv-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.conv-titre {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conv-date {
+  font-size: 11px;
+  color: $gris;
+}
+
+// ─── Panneau droit ───────────────────────────────────────────────────────────
+.panneau-droit {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+// ─── Bienvenue ───────────────────────────────────────────────────────────────
+.bienvenue {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.bienvenue-illu {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e3f0f1, #d4e6f1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $primaire;
+}
+
+.bienvenue h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: $texte;
+}
+
+.bienvenue p {
+  margin: 0;
+  font-size: 14px;
+  color: $texte-secondaire;
+  line-height: 1.6;
+  max-width: 400px;
+}
+
+.btn-primaire {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: $primaire;
+  color: #fff;
+  border: none;
+  border-radius: $rayon-champ;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover:not(:disabled) { background: $primaire-fonce; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+// ─── En-tête conversation ────────────────────────────────────────────────────
+.conv-entete {
+  padding: 16px 20px;
+  border-bottom: 1px solid $bordure;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  h2 { margin: 0; font-size: 15px; font-weight: 700; color: $texte; }
+}
+
+.conv-entete-infos {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-suppr-entete {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  color: $rouge;
+  border: 1px solid $rouge-clair;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: $rouge-clair;
+    border-color: $rouge;
+  }
+}
+
+.conv-entete-date {
+  font-size: 11px;
+  color: $gris;
+}
+
+// ─── Messages ─────────────────────────────────────────────────────────────────
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scroll-behavior: smooth;
+}
+
+.messages-vide {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $gris;
+  font-size: 13px;
+}
+
+.message {
+  display: flex;
+  gap: 10px;
+  max-width: 75%;
+
+  &.utilisateur {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+
+    .bulle {
+      background: $primaire;
+      color: #fff;
+      border-radius: 18px 18px 4px 18px;
+    }
+
+    .bulle-heure { color: rgba(255,255,255,0.7); }
+  }
+
+  &.assistant {
+    align-self: flex-start;
+
+    .bulle {
+      background: $fond-neutre;
+      color: $texte;
+      border-radius: 18px 18px 18px 4px;
+    }
+  }
+}
+
+.avatar-ia {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #2b7a86);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.bulle {
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.bulle-texte {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bulle-heure {
+  font-size: 10px;
+  color: $gris;
+  align-self: flex-end;
+}
+
+// ─── Indicateur de frappe ────────────────────────────────────────────────────
+.bulle-typage {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  padding: 14px 18px;
+}
+
+.point {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: $gris;
+  border-radius: 50%;
+  animation: rebond 1.2s ease-in-out infinite;
+
+  &:nth-child(2) { animation-delay: 0.2s; }
+  &:nth-child(3) { animation-delay: 0.4s; }
+}
+
+@keyframes rebond {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-6px); opacity: 1; }
+}
+
+// ─── Zone de saisie ──────────────────────────────────────────────────────────
+.saisie-zone {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid $bordure;
+  flex-shrink: 0;
+  background: $fond-carte;
+}
+
+.saisie-champ {
+  flex: 1;
+  resize: none;
+  border: 1px solid $bordure-champ;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  color: $texte;
+  background: $fond-encadre;
+  outline: none;
+  line-height: 1.5;
+  max-height: 120px;
+  overflow-y: auto;
+  transition: border-color 0.15s;
+
+  &:focus { border-color: $primaire; background: $fond-carte; }
+  &:disabled { opacity: 0.6; }
+}
+
+.btn-envoyer {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $primaire;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, opacity 0.15s;
+
+  &:hover:not(:disabled) { background: $primaire-fonce; }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+
+.saisie-indice {
+  margin: 0 0 8px;
+  padding: 0 16px;
+  font-size: 11px;
+  color: $gris;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+// ─── Responsive ──────────────────────────────────────────────────────────────
+@media (max-width: 800px) {
+  .page {
+    padding: 16px 16px 0;
+  }
+
+  .en-tete {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sous-nav { width: 100%; overflow-x: auto; }
+
+  .chat-conteneur {
+    height: calc(100vh - 180px);
+  }
+
+  .panneau-gauche {
+    position: absolute;
+    z-index: 100;
+    height: 100%;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+
+    &.ferme { width: 0; }
+  }
+
+  .message {
+    max-width: 90%;
+  }
+}
+

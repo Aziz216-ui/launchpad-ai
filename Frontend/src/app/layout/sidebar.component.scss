@@ -1,0 +1,190 @@
+@use 'variables' as *;
+
+:host {
+  flex: 1 1 232px;
+  padding: 20px 14px;
+  background: #ffffff;
+  border-right: 1px solid $bordure;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.marque {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 6px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: $primaire;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.projet {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 10px;
+  border: 1px solid $bordure;
+  border-radius: 10px;
+  background: $fond-doux;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.initiale {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: $primaire-clair;
+  color: $primaire-fonce;
+  font-weight: 600;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.textes {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.nom {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.sous-titre {
+  font-size: 11px;
+  color: $gris;
+}
+
+nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    color: $texte-secondaire;
+    text-decoration: none;
+    font-size: 13px;
+
+    &:hover {
+      background: $fond-doux;
+    }
+    &.actif {
+      background: $primaire-clair;
+      color: $primaire-fonce;
+      font-weight: 600;
+    }
+  }
+}
+
+.rubrique {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: $gris;
+  padding: 0 10px 6px;
+}
+
+.espaceur {
+  flex-grow: 1;
+}
+
+.encart {
+  padding: 14px;
+  border-radius: 12px;
+  background: $primaire-clair;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .titre {
+    font-weight: 600;
+    font-size: 13px;
+    color: $primaire-fonce;
+  }
+  .texte {
+    font-size: 12px;
+    color: $texte-secondaire;
+    line-height: 1.5;
+  }
+  a {
+    font-size: 12px;
+    font-weight: 600;
+    color: $primaire-fonce;
+
+    &:hover {
+      color: $primaire-tres-fonce;
+    }
+  }
+}
+
+.compte {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: $primaire;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Mobile : la barre passe au-dessus du contenu et le menu défile horizontalement
+@media (max-width: $mobile) {
+  :host {
+    flex-basis: 100%;
+    // Sans min-width: 0, le menu horizontal élargirait toute la page
+    min-width: 0;
+    border-right: 0;
+    border-bottom: 1px solid $bordure;
+    padding: 14px 12px;
+    gap: 12px;
+  }
+  nav {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 4px;
+
+    a {
+      white-space: nowrap;
+    }
+  }
+  .rubrique,
+  .espaceur,
+  .encart,
+  .compte {
+    display: none;
+  }
+}

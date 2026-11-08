@@ -1,0 +1,92 @@
+// Non encapsulé : Leaflet crée lui-même les marqueurs et infobulles (sans attribut de portée).
+// Toutes les règles restent limitées à .carte-lieux.
+@use 'variables' as *;
+
+.carte-lieux {
+  position: relative;
+  display: block;
+
+  .carte-lieux-fond {
+    width: 100%;
+    border-radius: $rayon-carte;
+    border: 1px solid $bordure;
+    background: $fond-neutre;
+    overflow: hidden;
+    // Garde les contrôles de Leaflet (z-index 1000) sous les modales et menus du module
+    isolation: isolate;
+    z-index: 0;
+    font-family: $police;
+  }
+
+  .carte-lieux-message {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    text-align: center;
+    font-size: 12px;
+    color: $gris;
+    border-radius: $rayon-carte;
+    background: $fond-neutre;
+
+    &.discret {
+      inset: auto 12px 12px 12px;
+      padding: 8px 12px;
+      border-radius: $rayon-champ;
+      background: rgba(#ffffff, 0.92);
+      z-index: 1;
+    }
+  }
+
+  // Choix d'un lieu : curseur de visée sur la carte, main sur le marqueur déplaçable
+  &.selectionnable .leaflet-container {
+    cursor: crosshair;
+  }
+  &.selectionnable .carte-lieux-marqueur {
+    cursor: grab;
+  }
+
+  // Épingle aux couleurs du module (dans un span : Leaflet positionne l'élément avec transform)
+  .carte-lieux-marqueur span {
+    display: block;
+    width: 24px;
+    height: 24px;
+    border-radius: 50% 50% 50% 0;
+    background: $primaire;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 6px rgba($texte, 0.35);
+    box-sizing: border-box;
+    transform: rotate(-45deg);
+  }
+
+  .leaflet-popup-content-wrapper {
+    border-radius: $rayon-champ;
+    box-shadow: 0 6px 18px rgba($texte, 0.18);
+  }
+  .leaflet-popup-content {
+    margin: 10px 14px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: $texte;
+
+    strong {
+      display: block;
+      font-size: 13px;
+      color: $primaire-fonce;
+    }
+    ul {
+      margin: 4px 0 0;
+      padding-left: 16px;
+    }
+  }
+
+  .leaflet-control-attribution {
+    font-size: 10px;
+  }
+  .leaflet-control-zoom a {
+    color: $primaire-fonce;
+  }
+}

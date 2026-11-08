@@ -1,0 +1,422 @@
+# =============================================================================
+# API Gateway LaunchPad AI : point d'entrée unique du frontend (port 8090).
+#
+# Profils :
+#   eureka (par défaut) : enregistrement dans Eureka, routes en lb://<NOM-EUREKA>
+#   local               : sans Eureka, URL directes http://localhost:<port>
+#                         (voir application-eureka.yml et application-local.yml)
+#
+# Chaque route lit son URI dans launchpad.services.<service>.uri, surchargeable
+# par la variable d'environnement <NOM>_SERVICE_URI (ex. SECTEUR_SERVICE_URI).
+# =============================================================================
+
+server:
+  port: ${SERVER_PORT:8090}   # 8080 est pris par Keycloak
+
+spring:
+  application:
+    name: API-GATEWAY
+  profiles:
+    default: eureka
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          # Seules les routes déclarées ci-dessous sont exposées
+          discovery:
+            locator:
+              enabled: false
+
+          httpclient:
+            connect-timeout: 3000      # ms : service éteint -> 503 rapide
+            response-timeout: 30s
+
+          # ----------------------------------------------------------------------
+          # CORS : géré UNIQUEMENT par la gateway (aucun service n'envoie d'en-têtes
+          # CORS). Appliqué par la chaîne de sécurité (SecurityConfig), donc aussi
+          # sur les réponses 401 et 503.
+          # ----------------------------------------------------------------------
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+                allowed-methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
+                allowed-headers: Authorization, Content-Type, X-Lawyer-Id   # X-Lawyer-Id : services avocat
+                exposed-headers: X-Request-Id, Content-Disposition
+                max-age: 3600
+
+          default-filters:
+            # Si un service renvoie quand même des en-têtes CORS, on n'en garde qu'un exemplaire
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
+
+          # ----------------------------------------------------------------------
+          # Routes. Les routes métier ne réécrivent PAS le chemin : chaque service
+          # garde son préfixe (/api/market/secteurs/** arrive tel quel au secteur-service).
+          # metadata.service = nom affiché dans le 503 "Service indisponible".
+          # ----------------------------------------------------------------------
+          routes:
+            # --- Étude de marché : 4 microservices Django (Backend/Market) --------
+            # Ordre important : les chemins les plus précis d'abord
+            # (/api/market/etudes/*/generer-swot/** va à SWOT-SERVICE, pas à ETUDE-SERVICE).
+            # Docs de chaque service : /api/market/<ressource>/docs/ et /schema/.
+
+            # Docs (Swagger UI + schéma OpenAPI) : routes explicites, une par service
+            - id: market-secteur-docs
+              uri: ${launchpad.services.secteur.uri}
+              predicates:
+                - Path=/api/market/secteurs/docs/**, /api/market/secteurs/schema/**
+              metadata:
+                service: SECTEUR-SERVICE
+            - id: market-concurrent-docs
+              uri: ${launchpad.services.concurrent.uri}
+              predicates:
+                - Path=/api/market/concurrents/docs/**, /api/market/concurrents/schema/**
+              metadata:
+                service: CONCURRENT-SERVICE
+            - id: market-swot-docs
+              uri: ${launchpad.services.swot.uri}
+              predicates:
+                - Path=/api/market/swot/docs/**, /api/market/swot/schema/**
+              metadata:
+                service: SWOT-SERVICE
+            - id: market-etude-docs
+              uri: ${launchpad.services.etude.uri}
+              predicates:
+                - Path=/api/market/etudes/docs/**, /api/market/etudes/schema/**
+              metadata:
+                service: ETUDE-SERVICE
+
+            # secteur-service, port 8010 : secteurs, tendances, analyse d'un secteur
+            - id: market-secteur-service
+              uri: ${launchpad.services.secteur.uri}
+              predicates:
+                - Path=/api/market/secteurs/**, /api/market/tendances/**, /api/market/analyse/secteur/**
+              metadata:
+                service: SECTEUR-SERVICE
+
+            # concurrent-service, port 8011
+            - id: market-concurrent-service
+              uri: ${launchpad.services.concurrent.uri}
+              predicates:
+                - Path=/api/market/concurrents/**
+              metadata:
+                service: CONCURRENT-SERVICE
+
+            # swot-service, port 8013 : AVANT etude-service (génération de la SWOT d'une étude)
+            - id: market-swot-service
+              uri: ${launchpad.services.swot.uri}
+              predicates:
+                - Path=/api/market/etudes/*/generer-swot/**, /api/market/swot/**
+              metadata:
+                service: SWOT-SERVICE
+
+            # etude-service, port 8012 : études, personas, analyse d'un projet (AI-Service)
+            - id: market-etude-service
+              uri: ${launchpad.services.etude.uri}
+              predicates:
+                - Path=/api/market/etudes/**, /api/market/personas/**, /api/market/analyse/projet/**
+              metadata:
+                service: ETUDE-SERVICE
+
+            # --- Comptable : Professional-Service, port 8085 --------------------
+            # Docs : /api/comptable/docs et /api/comptable/docs.json (dans le préfixe)
+            - id: accounting-service
+              uri: ${launchpad.services.accounting.uri}
+              predicates:
+                - Path=/api/comptable/**
+              metadata:
+                service: PROFESSIONAL-SERVICE
+
+            # --- Avocat : 3 microservices Spring Boot (Backend/Lawyer-*-Service) ----
+            # Noms Eureka en minuscules. Tous sous /api/lawyer/, découpés par ressource.
+
+            # lawyer-client-service, port 8082 : clients de l'avocat
+            - id: lawyer-client-service
+              uri: ${launchpad.services.lawyer-client.uri}
+              predicates:
+                - Path=/api/lawyer/clients/**
+              metadata:
+                service: lawyer-client-service
+
+            # lawyer-message-service, port 8084 : messages avocat <-> client
+            - id: lawyer-message-service
+              uri: ${launchpad.services.lawyer-message.uri}
+              predicates:
+                - Path=/api/lawyer/messages/**, /api/lawyer/communication/messages/**
+              metadata:
+                service: lawyer-message-service
+
+            # lawyer-docreview-service, port 8086 : revue de documents
+            - id: lawyer-docreview-service
+              uri: ${launchpad.services.lawyer-docreview.uri}
+              predicates:
+                - Path=/api/lawyer/reviews/**, /api/lawyer/document-reviews/**
+              metadata:
+                service: lawyer-docreview-service
+
+            # Docs avocat (springdoc), servies hors préfixe et au MÊME chemin par les 3 services :
+            # exposées sous /docs/lawyer/<service>/.
+            #   /docs/lawyer/<service>/swagger-ui/**  -> /swagger-ui/**
+            #   /docs/lawyer/<service>/v3/api-docs/** -> /v3/api-docs/**
+            - id: lawyer-client-docs
+              uri: ${launchpad.services.lawyer-client.uri}
+              predicates:
+                - Path=/docs/lawyer/client/swagger-ui/**, /docs/lawyer/client/v3/api-docs/**
+              filters:
+                - RewritePath=/docs/lawyer/client/(?<segment>.*), /$\{segment}
+              metadata:
+                service: lawyer-client-service
+            - id: lawyer-message-docs
+              uri: ${launchpad.services.lawyer-message.uri}
+              predicates:
+                - Path=/docs/lawyer/message/swagger-ui/**, /docs/lawyer/message/v3/api-docs/**
+              filters:
+                - RewritePath=/docs/lawyer/message/(?<segment>.*), /$\{segment}
+              metadata:
+                service: lawyer-message-service
+            - id: lawyer-docreview-docs
+              uri: ${launchpad.services.lawyer-docreview.uri}
+              predicates:
+                - Path=/docs/lawyer/docreview/swagger-ui/**, /docs/lawyer/docreview/v3/api-docs/**
+              filters:
+                - RewritePath=/docs/lawyer/docreview/(?<segment>.*), /$\{segment}
+              metadata:
+                service: lawyer-docreview-service
+
+            # La page Swagger UI charge sa configuration et son schéma à l'adresse absolue
+            # /v3/api-docs/** : on l'envoie au service dont la page fait la demande (Referer).
+            - id: lawyer-client-schema
+              uri: ${launchpad.services.lawyer-client.uri}
+              predicates:
+                - Path=/v3/api-docs/**
+                - Header=Referer, .*/docs/lawyer/client/.*
+              metadata:
+                service: lawyer-client-service
+            - id: lawyer-message-schema
+              uri: ${launchpad.services.lawyer-message.uri}
+              predicates:
+                - Path=/v3/api-docs/**
+                - Header=Referer, .*/docs/lawyer/message/.*
+              metadata:
+                service: lawyer-message-service
+            - id: lawyer-docreview-schema
+              uri: ${launchpad.services.lawyer-docreview.uri}
+              predicates:
+                - Path=/v3/api-docs/**
+                - Header=Referer, .*/docs/lawyer/docreview/.*
+              metadata:
+                service: lawyer-docreview-service
+
+            # --- Juridique : Legal-Service, port 3003 ----------------------------
+            - id: legal-service
+              uri: ${launchpad.services.legal.uri}
+              predicates:
+                - Path=/api/legal/**
+              metadata:
+                service: LEGAL-SERVICE
+
+            # Docs juridique, servies hors préfixe par le service :
+            #   /docs/legal/**   -> /api/docs/**
+            #   /docs/legal-json -> /api/docs-json
+            # À supprimer si le Legal-Service passe ses docs sous /api/legal/docs.
+            - id: legal-docs
+              uri: ${launchpad.services.legal.uri}
+              predicates:
+                - Path=/docs/legal, /docs/legal/**
+              filters:
+                - RewritePath=/docs/legal(?<segment>/?.*), /api/docs$\{segment}
+              metadata:
+                service: LEGAL-SERVICE
+            - id: legal-docs-json
+              uri: ${launchpad.services.legal.uri}
+              predicates:
+                - Path=/docs/legal-json
+              filters:
+                - SetPath=/api/docs-json
+              metadata:
+                service: LEGAL-SERVICE
+
+            # --- IA : Co-Fondateur IA, 3 microservices Django (Backend/AI-Service) --
+            # Les 3 services servent leur Swagger UI et leur schéma au MÊME chemin
+            # (/api/ai/docs/ et /api/ai/schema/) : on les expose sous /docs/ai/<service>/.
+            #   /docs/ai/<service>/docs/   -> /api/ai/docs/   (Swagger UI)
+            #   /docs/ai/<service>/schema/ -> /api/ai/schema/ (définition OpenAPI)
+            - id: ai-projet-docs
+              uri: ${launchpad.services.projet.uri}
+              predicates:
+                - Path=/docs/ai/projet/docs/**, /docs/ai/projet/schema/**
+              filters:
+                - RewritePath=/docs/ai/projet/(?<segment>.*), /api/ai/$\{segment}
+              metadata:
+                service: PROJET-SERVICE
+            - id: ai-recommandation-docs
+              uri: ${launchpad.services.recommandation.uri}
+              predicates:
+                - Path=/docs/ai/recommandation/docs/**, /docs/ai/recommandation/schema/**
+              filters:
+                - RewritePath=/docs/ai/recommandation/(?<segment>.*), /api/ai/$\{segment}
+              metadata:
+                service: RECOMMANDATION-SERVICE
+            - id: ai-conversation-docs
+              uri: ${launchpad.services.conversation.uri}
+              predicates:
+                - Path=/docs/ai/conversation/docs/**, /docs/ai/conversation/schema/**
+              filters:
+                - RewritePath=/docs/ai/conversation/(?<segment>.*), /api/ai/$\{segment}
+              metadata:
+                service: CONVERSATION-SERVICE
+
+            # La page Swagger UI charge son schéma à l'adresse absolue /api/ai/schema/ :
+            # on l'envoie au service dont la page fait la demande (en-tête Referer).
+            # Sans Referer correspondant, /api/ai/schema/ va à PROJET-SERVICE (route suivante).
+            - id: ai-recommandation-schema
+              uri: ${launchpad.services.recommandation.uri}
+              predicates:
+                - Path=/api/ai/schema/**
+                - Header=Referer, .*/docs/ai/recommandation/.*
+              metadata:
+                service: RECOMMANDATION-SERVICE
+            - id: ai-conversation-schema
+              uri: ${launchpad.services.conversation.uri}
+              predicates:
+                - Path=/api/ai/schema/**
+                - Header=Referer, .*/docs/ai/conversation/.*
+              metadata:
+                service: CONVERSATION-SERVICE
+
+            # projet-service, port 8006 : projets, analyses. Reçoit aussi /api/ai/health/,
+            # /api/ai/docs/ et /api/ai/schema/, communs aux 3 services (un seul chemin possible).
+            - id: ai-projet-service
+              uri: ${launchpad.services.projet.uri}
+              predicates:
+                - Path=/api/ai/projets/**, /api/ai/analyses/**, /api/ai/health/**, /api/ai/docs/**, /api/ai/schema/**
+              metadata:
+                service: PROJET-SERVICE
+
+            # recommandation-service, port 8007
+            - id: ai-recommandation-service
+              uri: ${launchpad.services.recommandation.uri}
+              predicates:
+                - Path=/api/ai/recommandations/**
+              metadata:
+                service: RECOMMANDATION-SERVICE
+
+            # conversation-service, port 8008 : conversations et leurs messages
+            - id: ai-conversation-service
+              uri: ${launchpad.services.conversation.uri}
+              predicates:
+                - Path=/api/ai/conversations/**
+              metadata:
+                service: CONVERSATION-SERVICE
+
+            # --- Finance : deux services. Document-Service AVANT Prevision-Service :
+            # sinon /api/finance/** capturerait aussi les documents et les notifications.
+            - id: document-service
+              uri: ${launchpad.services.document.uri}
+              predicates:
+                - Path=/api/finance/documents/**, /api/finance/projets/*/documents, /api/finance/projets/*/notifications
+              metadata:
+                service: DOCUMENT-SERVICE
+
+            - id: prevision-service
+              uri: ${launchpad.services.prevision.uri}
+              predicates:
+                - Path=/api/finance/**
+              metadata:
+                service: PREVISION-SERVICE
+
+            # --- Utilisateurs : User-Service Django + Keycloak (Backend/User-Service) --
+            # Nom Eureka en minuscules, port 8001 : inscription, connexion, refresh, logout,
+            # profil, health, liste des avocats (/api/auth/lawyers/).
+            - id: user-service
+              uri: ${launchpad.services.user.uri}
+              predicates:
+                - Path=/api/auth/**
+              metadata:
+                service: user-service
+
+            # Docs utilisateurs (drf-spectacular), servies hors préfixe par le service :
+            #   /docs/user/docs/   -> /api/docs/   (Swagger UI)
+            #   /docs/user/redoc/  -> /api/redoc/  (ReDoc)
+            #   /docs/user/schema/ -> /api/schema/ (définition OpenAPI)
+            - id: user-docs
+              uri: ${launchpad.services.user.uri}
+              predicates:
+                - Path=/docs/user/docs/**, /docs/user/redoc/**, /docs/user/schema/**
+              filters:
+                - RewritePath=/docs/user/(?<segment>.*), /api/$\{segment}
+              metadata:
+                service: user-service
+
+            # Les pages Swagger UI et ReDoc chargent leur schéma à l'adresse absolue /api/schema/ :
+            # on l'envoie au User-Service quand la demande vient de ces pages (Referer).
+            - id: user-schema
+              uri: ${launchpad.services.user.uri}
+              predicates:
+                - Path=/api/schema/**
+                - Header=Referer, .*/docs/user/.*
+              metadata:
+                service: user-service
+
+  # Keycloak : validation des JWT RS256 avec les clés publiques du realm (JWKS).
+  # Utilisé seulement si JWT_ENABLED=true (voir SecurityConfig).
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8080/realms/launchpad/protocol/openid-connect/certs}
+
+launchpad:
+  security:
+    jwt-enabled: ${JWT_ENABLED:false}   # false : tout est ouvert (tests sans Keycloak)
+
+  # URI de chaque service (profil eureka : lb://<NOM-EUREKA>).
+  # Le profil local remplace ces valeurs par des URL directes.
+  services:
+    secteur:
+      uri: ${SECTEUR_SERVICE_URI:lb://SECTEUR-SERVICE}
+    concurrent:
+      uri: ${CONCURRENT_SERVICE_URI:lb://CONCURRENT-SERVICE}
+    etude:
+      uri: ${ETUDE_SERVICE_URI:lb://ETUDE-SERVICE}
+    swot:
+      uri: ${SWOT_SERVICE_URI:lb://SWOT-SERVICE}
+    accounting:
+      uri: ${ACCOUNTING_SERVICE_URI:lb://PROFESSIONAL-SERVICE}
+    lawyer-client:
+      uri: ${LAWYER_CLIENT_SERVICE_URI:lb://lawyer-client-service}
+    lawyer-message:
+      uri: ${LAWYER_MESSAGE_SERVICE_URI:lb://lawyer-message-service}
+    lawyer-docreview:
+      uri: ${LAWYER_DOCREVIEW_SERVICE_URI:lb://lawyer-docreview-service}
+    legal:
+      uri: ${LEGAL_SERVICE_URI:lb://LEGAL-SERVICE}
+    projet:
+      uri: ${PROJET_SERVICE_URI:lb://PROJET-SERVICE}
+    recommandation:
+      uri: ${RECOMMANDATION_SERVICE_URI:lb://RECOMMANDATION-SERVICE}
+    conversation:
+      uri: ${CONVERSATION_SERVICE_URI:lb://CONVERSATION-SERVICE}
+    prevision:
+      uri: ${PREVISION_SERVICE_URI:lb://PREVISION-SERVICE}
+    document:
+      uri: ${DOCUMENT_SERVICE_URI:lb://DOCUMENT-SERVICE}
+    user:
+      uri: ${USER_SERVICE_URI:lb://user-service}
+
+# Actuator : /actuator/health et /actuator/gateway/routes
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, gateway
+  endpoint:
+    gateway:
+      access: read-only     # consultation des routes, pas de modification
+    health:
+      show-details: never
+
+logging:
+  level:
+    com.example.gateway: INFO

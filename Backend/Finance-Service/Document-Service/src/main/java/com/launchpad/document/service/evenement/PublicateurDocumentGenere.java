@@ -1,0 +1,44 @@
+package com.launchpad.document.service.evenement;
+
+import com.launchpad.document.config.RabbitMQConfig;
+import com.launchpad.document.domain.DocumentGenere;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
+
+/**
+ * Producteur RabbitMQ. Il publie sur la queue par son nom, sans la déclarer.
+ * <p>
+ * La publication a lieu APRÈS le commit de la transaction qui a enregistré le document : aucun événement n'est
+ * émis pour un document finalement annulé. Si le broker est indisponible, l'erreur est journalisée mais ne remet
+ * pas en cause le document, déjà enregistré (limite connue : l'événement est alors perdu ; le patron Outbox
+ * lèverait cette limite).
+ */
+@Component
+public class PublicateurDocumentGenere {
+
+    private static final Logger LOG = LoggerFactory.getLogger(PublicateurDocumentGenere.class);
+
+    private final RabbitTemplate rabbitTemplate;
+
+    public PublicateurDocumentGenere(RabbitTemplate rabbitTemplate) {
+        this.rabbitTemplate = rabbitTemplate;
+    }
+
+    /** fallbackExecution : publie aussi lorsqu'aucune transaction n'est active. */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void publier(DocumentGenere evenement) {
+        try {
+            rabbitTemplate.convertAndSend(RabbitMQConfig.DOCUMENT_GENERE_QUEUE, evenement);
+            LOG.info("Événement DocumentGenere publié sur {} : document {}", RabbitMQConfig.DOCUMENT_GENERE_QUEUE,
+                    evenement.documentId());
+        } catch (AmqpException e) {
+            LOG.error("Publication de DocumentGenere impossible (document {} enregistré, événement perdu)",
+                    evenement.documentId(), e);
+        }
+    }
+}
