@@ -25,6 +25,6 @@ export const MENU: ElementMenu[] = [
   { libelle: 'Étude de marché', route: '/etude-marche', icone: 'graphique', roles: ['ENTREPRENEUR', 'ADMIN'] },
   { libelle: 'Finance', route: '/finance', icone: 'carte', roles: ['ENTREPRENEUR', 'FINANCIER', 'ADMIN'] },
   { libelle: 'Juridique', route: '/juridique', icone: 'balance', roles: ['ENTREPRENEUR', 'ADMIN'] },
-  { libelle: 'Comptabilité', route: '/professional/comptabilite', icone: 'calculatrice', roles: ['ACCOUNTANT'] },
+  { libelle: 'Comptabilité', route: '/professional/comptabilite', icone: 'calculatrice', roles: ['ACCOUNTANT', 'ENTREPRENEUR', 'ADMIN'] },
   { libelle: 'Avocat', route: '/professional/avocat', icone: 'mallette', roles: ['LAWYER', 'ENTREPRENEUR', 'ADMIN'] },
 ];

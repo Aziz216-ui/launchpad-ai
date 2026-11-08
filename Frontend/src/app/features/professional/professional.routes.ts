@@ -4,17 +4,19 @@ import { roleGuard } from '../../core/auth/role.guard';
 
 /**
  * Routes du module « Professional » (Professional-Service), chargées à la demande sous
- * /professional. Deux écrans : Comptabilité (rôle ACCOUNTANT) et Avocat.
+ * /professional. Deux écrans : Comptabilité et Avocat.
  * LawyerSpaceComponent sert deux vues selon le rôle (voir son flag isLawyer) : gestion
  * cabinet pour LAWYER, annuaire d'avocats/questions/suivi de dossiers pour ENTREPRENEUR -
  * donc accessible aux deux, pas seulement à LAWYER.
- * Remplacer les pages provisoires par les pages du module (voir README.md).
+ * Comptabilité : accessible à ACCOUNTANT (son espace) et ENTREPRENEUR (suivi de sa propre
+ * comptabilité) - la page elle-même est encore provisoire pour tout le monde (Professional-
+ * Service n'est pas encore branché sur la Gateway/le Frontend, voir README.md).
  */
 export default [
   { path: '', pathMatch: 'full', redirectTo: 'comptabilite' },
   {
     path: 'comptabilite',
-    canActivate: [roleGuard('ACCOUNTANT')],
+    canActivate: [roleGuard('ACCOUNTANT', 'ENTREPRENEUR', 'ADMIN')],
     loadComponent: () => import('./comptabilite-en-cours.page').then((m) => m.ComptabiliteEnCoursPage),
     title: 'Comptabilité · LaunchPad AI',
   },
