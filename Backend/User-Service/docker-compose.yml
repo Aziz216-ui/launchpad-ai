@@ -71,7 +71,7 @@ services:
       keycloak-db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\r\nhost: localhost\r\nConnection: close\r\n\r\n' >&3 && timeout 2 cat <&3 | grep -m 1 -q '\"status\": \"UP\"'"]
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 && echo -e 'GET /health/ready HTTP/1.1\r\nhost: localhost\r\nConnection: close\r\n\r\n' >&3 && timeout 2 cat <&3 | grep -m 1 -q '\"status\": \"UP\"'"]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -90,6 +90,7 @@ services:
       KEYCLOAK_URL: http://keycloak:8080/
       KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD manquant, copier .env.example en .env}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?KEYCLOAK_CLIENT_SECRET manquant, copier .env.example en .env}
     entrypoint: ["python", "setup_keycloak.py"]
     networks:
       - user-service-net

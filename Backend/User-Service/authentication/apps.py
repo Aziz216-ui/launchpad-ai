@@ -19,8 +19,11 @@ class AuthenticationConfig(AppConfig):
     def ready(self):
         commands = sys.argv
         is_runserver = "runserver" in commands
+        # sys.argv[0] is a full path (e.g. "/usr/local/bin/gunicorn"), never the
+        # bare string "gunicorn", so this must be a substring check against each
+        # argv entry, not a list-membership check against the list of commands.
         is_server = is_runserver or any(
-            cmd in commands for cmd in ("gunicorn", "uvicorn", "waitress")
+            name in arg for arg in commands for name in ("gunicorn", "uvicorn", "waitress")
         )
         if not is_server:
             # migrate, test, shell, makemigrations, etc. must not register.

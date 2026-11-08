@@ -57,6 +57,20 @@ def setup():
         else:
             print(f"Realm role '{role}' already exists.")
 
+    # 2b. Disable VERIFY_PROFILE: Keycloak's default User Profile config marks
+    # firstName/lastName as required, and VERIFY_PROFILE enforces that dynamically
+    # at login even when requiredActions is empty on the user. The User-Service's
+    # RegisterSerializer treats first_name/last_name as optional, so a user
+    # registered without them would otherwise get "invalid_grant: Account is not
+    # fully set up" on login.
+    verify_profile = admin_launchpad.get_required_action_by_alias("VERIFY_PROFILE")
+    if verify_profile and verify_profile.get("enabled"):
+        verify_profile["enabled"] = False
+        admin_launchpad.update_required_action("VERIFY_PROFILE", verify_profile)
+        print("Disabled 'VERIFY_PROFILE' required action.")
+    else:
+        print("'VERIFY_PROFILE' required action already disabled.")
+
     # 3. Check/create client
     clients = admin_launchpad.get_clients()
     client_obj = next((c for c in clients if c["clientId"] == CLIENT_ID), None)
