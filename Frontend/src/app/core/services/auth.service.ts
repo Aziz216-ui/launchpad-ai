@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { TokenService } from '../auth/token.service';
 
@@ -43,6 +43,13 @@ export interface RegisterResponse {
 export interface LoginPayload {
   username: string;
   password: string;
+}
+
+export interface RefreshResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in?: number;
 }
 
 const CLE_UTILISATEUR = 'launchpad.current_user';
@@ -104,6 +111,28 @@ export class AuthService {
 
   register(payload: RegisterPayload): Observable<RegisterResponse> {
     return this.http.post<RegisterResponse>(`${this.authUrl}/register/`, payload);
+  }
+
+  /**
+   * Echange le refresh token contre un nouveau jeton d'accès (le jeton d'accès expire au
+   * bout de 5 min côté Keycloak). Utilisé par apiInterceptor sur un 401. L'utilisateur
+   * courant n'est pas renvoyé par /refresh/, donc il reste tel qu'il était déjà stocké.
+   */
+  refresh(): Observable<RefreshResponse> {
+    const refreshToken = this.tokenService.lireRefresh();
+    if (!refreshToken) {
+      return throwError(() => new Error('Aucun refresh token disponible.'));
+    }
+    return this.http.post<RefreshResponse>(`${this.authUrl}/refresh/`, { refresh_token: refreshToken }).pipe(
+      tap((res) => {
+        if (res?.access_token) {
+          this.tokenService.enregistrer(res.access_token);
+        }
+        if (res?.refresh_token) {
+          this.tokenService.enregistrerRefresh(res.refresh_token);
+        }
+      }),
+    );
   }
 
   logout(): void {
