@@ -7,6 +7,10 @@ ADMIN_USERNAME = os.getenv("KEYCLOAK_ADMIN_USER", "admin")
 ADMIN_PASSWORD = os.getenv("KEYCLOAK_ADMIN_PASSWORD", "admin")
 TARGET_REALM = "launchpad"
 CLIENT_ID = "launchpad-client"
+# Secret du client pinné via l'env plutot que laisse Keycloak en generer un aleatoire :
+# le User-Service lit KEYCLOAK_CLIENT_SECRET dans sa propre configuration, les deux
+# doivent donc toujours correspondre pour que le login/refresh fonctionnent.
+CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET")
 
 def setup():
     print(f"Connecting to Keycloak at {KEYCLOAK_URL} as {ADMIN_USERNAME}...")
@@ -71,17 +75,25 @@ def setup():
             "redirectUris": ["http://localhost:*", "http://127.0.0.1:*", "*"],
             "webOrigins": ["*"]
         }
+        if CLIENT_SECRET:
+            client_payload["secret"] = CLIENT_SECRET
         client_id_internal = admin_launchpad.create_client(client_payload)
         client_obj = admin_launchpad.get_client(client_id_internal)
         print(f"Client '{CLIENT_ID}' created with internal ID: {client_id_internal}")
     else:
         client_id_internal = client_obj["id"]
-        # Ensure direct access grants and service accounts are enabled
-        admin_launchpad.update_client(client_id_internal, {
+        # Ensure direct access grants and service accounts are enabled, and that the
+        # secret matches KEYCLOAK_CLIENT_SECRET so the User-Service can always log in
+        # (idempotent: re-running this script keeps correcting drift instead of
+        # leaving a stale secret from a previous environment).
+        update_payload = {
             "directAccessGrantsEnabled": True,
             "serviceAccountsEnabled": True,
             "publicClient": False
-        })
+        }
+        if CLIENT_SECRET:
+            update_payload["secret"] = CLIENT_SECRET
+        admin_launchpad.update_client(client_id_internal, update_payload)
         print(f"Client '{CLIENT_ID}' already exists (internal ID: {client_id_internal}).")
 
     # Get client secret

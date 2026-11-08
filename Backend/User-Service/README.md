@@ -50,11 +50,38 @@ This service automatically registers with **Eureka Discovery Server** on startup
 
 ---
 
-## Running the Server
+## Running the Server (local, without Docker)
 
 ```powershell
 # From Backend/User-Service
 .\venv\Scripts\activate
 python manage.py runserver 8001
+```
+
+## Running with Docker (recommended)
+
+```bash
+# From Backend/User-Service
+cp .env.example .env   # fill in real secrets, never commit .env
+docker compose up -d --build
+```
+
+This starts, in order: the `launchpad` Postgres database, Keycloak (with its own
+`keycloak_db` database), a one-shot `keycloak-init` service that runs
+`setup_keycloak.py` (idempotent: creates the `launchpad` realm, the
+`launchpad-client` client and the `user`/`lawyer`/`admin` roles only if they
+don't already exist), and finally the Django app itself via gunicorn.
+
+Default host ports (override via `.env`, see `.env.example`):
+- `8001` — Django API (matches the API Gateway's `USER_SERVICE_URI`)
+- `8180` — Keycloak admin console / API (`8080` is already used by the API Gateway setup)
+- `5439` — Postgres (`launchpad` db)
+
+`keycloak_db` is not exposed to the host; only the Keycloak container talks to it.
+
+## Running the tests
+
+```bash
+python manage.py test authentication
 ```
 
