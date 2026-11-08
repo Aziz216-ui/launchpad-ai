@@ -1,14 +1,22 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-launchpad-keycloak-user-service-secret")
-
 DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "yes")
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = "django-insecure-launchpad-keycloak-user-service-secret"
+    else:
+        raise ImproperlyConfigured(
+            "SECRET_KEY environment variable must be set when DEBUG is not enabled."
+        )
 
 ALLOWED_HOSTS = ["*"]
 
