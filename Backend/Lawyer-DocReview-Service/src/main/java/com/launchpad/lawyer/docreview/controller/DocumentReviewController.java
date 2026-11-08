@@ -19,7 +19,6 @@ import java.util.List;
 @RestController
 @RequestMapping({"/api/lawyer/reviews", "/api/lawyer/document-reviews"})
 @Tag(name = "Document Review Management", description = "Endpoints for creating review records on mock documents, adding comments, requesting corrections, tracking review decisions, and deleting reviews.")
-@CrossOrigin(origins = "*")
 public class DocumentReviewController {
 
     private final DocumentReviewService documentReviewService;
