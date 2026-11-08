@@ -1,13 +1,20 @@
 import { Routes } from '@angular/router';
 
 /**
- * Routes du module « Authentification » (User-Service), chargées à la demande sous /connexion.
- * Remplacer la page provisoire par les pages du module (voir README.md).
+ * Routes du module « Authentification » (User-Service), chargées à la demande sous
+ * /connexion. Montées hors du AppLayoutComponent (voir app.routes.ts) : pas de barre
+ * latérale/en-tête sur les pages de connexion/inscription.
  */
 export default [
+  { path: '', pathMatch: 'full', redirectTo: 'login' },
   {
-    path: '',
-    loadComponent: () => import('./auth-en-cours.page').then((m) => m.AuthEnCoursPage),
+    path: 'login',
+    loadComponent: () => import('./login.component').then((m) => m.LoginComponent),
     title: 'Connexion · LaunchPad AI',
+  },
+  {
+    path: 'register',
+    loadComponent: () => import('./register.component').then((m) => m.RegisterComponent),
+    title: 'Créer un compte · LaunchPad AI',
   },
 ] satisfies Routes;

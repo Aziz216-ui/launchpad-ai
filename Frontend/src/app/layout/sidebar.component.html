@@ -15,7 +15,7 @@
 
 <nav aria-label="Navigation principale">
   <span class="rubrique">MON ESPACE</span>
-  @for (lien of liens; track lien.route) {
+  @for (lien of liens(); track lien.route) {
     <a [routerLink]="lien.route" routerLinkActive="actif" ariaCurrentWhenActive="page">
       <app-icon [nom]="lien.icone" />{{ lien.libelle }}
     </a>
@@ -31,9 +31,12 @@
 </div>
 
 <div class="compte">
-  <span class="avatar">E</span>
+  <span class="avatar">{{ initiale() }}</span>
   <span class="textes">
-    <span class="nom">Entrepreneur</span>
-    <span class="sous-titre">Compte n°{{ utilisateur.entrepreneurId }}</span>
+    <span class="nom">{{ utilisateurConnecte()?.username || 'Invité' }}</span>
+    <span class="sous-titre">{{ utilisateurConnecte()?.role || '—' }}</span>
   </span>
+  <button type="button" class="deconnexion" title="Se déconnecter" (click)="deconnexion()">
+    <app-icon nom="fermer" [taille]="14" />
+  </button>
 </div>

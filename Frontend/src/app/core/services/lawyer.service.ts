@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of, catchError, map } from 'rxjs';
 import { Client, Message, DocReview, LawyerProfile } from '../models/lawyer.models';
 import { AuthService } from './auth.service';
+import { TokenService } from '../auth/token.service';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
@@ -15,11 +16,15 @@ export class LawyerService {
   private docReviewApi = `${environment.lawyerApiUrl}/reviews`;
   private usersApi = `${environment.userApiUrl}/lawyers/`;
 
-  constructor(private http: HttpClient, private authService: AuthService) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService,
+    private tokenService: TokenService,
+  ) {}
 
   private getHeaders(): HttpHeaders {
     const user = this.authService.currentUserValue;
-    const token = localStorage.getItem('access_token');
+    const token = this.tokenService.lire();
     let headers = new HttpHeaders({
       'Content-Type': 'application/json'
     });
@@ -28,7 +33,7 @@ export class LawyerService {
       headers = headers.set('Authorization', `Bearer ${token}`);
     }
 
-    const lawyerId = user?.role === 'lawyer' ? (user.username || 'lawyer-1') : 'lawyer-1';
+    const lawyerId = user?.role === 'LAWYER' ? (user.username || 'lawyer-1') : 'lawyer-1';
     headers = headers.set('X-Lawyer-Id', lawyerId);
 
     return headers;

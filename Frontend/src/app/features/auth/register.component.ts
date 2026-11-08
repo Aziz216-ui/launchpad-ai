@@ -2,7 +2,15 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { AuthService, RegisterPayload } from '../../core/services/auth.service';
+import { AuthService, RegisterPayload, Role } from '../../core/services/auth.service';
+
+const LABEL_ROLE: Record<Role, string> = {
+  ENTREPRENEUR: 'Fondateur de Startup',
+  LAWYER: 'Avocat / Expert Juridique',
+  ACCOUNTANT: 'Comptable',
+  FINANCIER: 'Financier',
+  ADMIN: 'Administrateur',
+};
 
 @Component({
   selector: 'app-register',
@@ -38,19 +46,33 @@ import { AuthService, RegisterPayload } from '../../core/services/auth.service';
           <div class="role-selector-group">
             <label class="group-label">Je m'inscris en tant que :</label>
             <div class="role-pills">
-              <button 
-                type="button" 
-                class="role-pill" 
-                [class.selected]="formData.role === 'user'" 
-                (click)="formData.role = 'user'">
+              <button
+                type="button"
+                class="role-pill"
+                [class.selected]="formData.role === 'ENTREPRENEUR'"
+                (click)="formData.role = 'ENTREPRENEUR'">
                 🚀 Fondateur de Startup
               </button>
-              <button 
-                type="button" 
-                class="role-pill" 
-                [class.selected]="formData.role === 'lawyer'" 
-                (click)="formData.role = 'lawyer'">
+              <button
+                type="button"
+                class="role-pill"
+                [class.selected]="formData.role === 'LAWYER'"
+                (click)="formData.role = 'LAWYER'">
                 ⚖️ Avocat / Expert Juridique
+              </button>
+              <button
+                type="button"
+                class="role-pill"
+                [class.selected]="formData.role === 'ACCOUNTANT'"
+                (click)="formData.role = 'ACCOUNTANT'">
+                📊 Comptable
+              </button>
+              <button
+                type="button"
+                class="role-pill"
+                [class.selected]="formData.role === 'FINANCIER'"
+                (click)="formData.role = 'FINANCIER'">
+                💰 Financier
               </button>
             </div>
           </div>
@@ -87,14 +109,14 @@ import { AuthService, RegisterPayload } from '../../core/services/auth.service';
           </div>
 
           <button type="submit" class="btn-submit" [disabled]="loading">
-            <span *ngIf="!loading">Créer mon compte ({{ formData.role === 'user' ? 'Fondateur' : 'Avocat' }})</span>
+            <span *ngIf="!loading">Créer mon compte ({{ libelleRole(formData.role) }})</span>
             <span *ngIf="loading">Création du compte en cours...</span>
           </button>
         </form>
 
         <div class="auth-footer">
-          Vous avez déjà un compte ? 
-          <a routerLink="/login" class="link-bold">Se connecter</a>
+          Vous avez déjà un compte ?
+          <a routerLink="/connexion/login" class="link-bold">Se connecter</a>
         </div>
       </div>
     </div>
@@ -301,7 +323,7 @@ export class RegisterComponent {
     first_name: '',
     last_name: '',
     phone_number: '',
-    role: 'user' // Default to Startup Founder
+    role: 'ENTREPRENEUR', // Défaut : Fondateur de Startup
   };
 
   loading = false;
@@ -309,6 +331,10 @@ export class RegisterComponent {
   successMessage = '';
 
   constructor(private authService: AuthService, private router: Router) {}
+
+  protected libelleRole(role?: Role): string {
+    return role ? LABEL_ROLE[role] : LABEL_ROLE.ENTREPRENEUR;
+  }
 
   onSubmit(): void {
     if (!this.formData.username || !this.formData.email || !this.formData.password) {
@@ -323,10 +349,9 @@ export class RegisterComponent {
     this.authService.register(this.formData).subscribe({
       next: () => {
         this.loading = false;
-        const roleLabel = this.formData.role === 'user' ? 'Fondateur de Startup' : 'Avocat';
-        this.successMessage = `Compte ${roleLabel} créé avec succès ! Redirection vers la connexion...`;
+        this.successMessage = `Compte ${this.libelleRole(this.formData.role)} créé avec succès ! Redirection vers la connexion...`;
         setTimeout(() => {
-          this.router.navigate(['/login']);
+          this.router.navigate(['/connexion/login']);
         }, 1200);
       },
       error: (err) => {

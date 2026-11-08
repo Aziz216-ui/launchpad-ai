@@ -755,7 +755,7 @@ export class LawyerSpaceComponent implements OnInit {
 
   ngOnInit(): void {
     this.authService.currentUser$.subscribe(user => {
-      this.isLawyer = user?.role === 'lawyer';
+      this.isLawyer = user?.role === 'LAWYER';
       this.activeTab = this.isLawyer ? 'clients' : 'avocats';
     });
 

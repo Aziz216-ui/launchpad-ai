@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { routeParDefaut } from '../../core/auth/role-routes';
 
 @Component({
   selector: 'app-login',
@@ -23,7 +24,7 @@ import { AuthService } from '../../core/services/auth.service';
 
         <div class="auth-header">
           <h2>Se connecter</h2>
-          <p>Accédez à votre espace LaunchPad AI (Fondateur ou Avocat).</p>
+          <p>Accédez à votre espace LaunchPad AI.</p>
         </div>
 
         <div class="alert error" *ngIf="errorMessage">
@@ -74,8 +75,8 @@ import { AuthService } from '../../core/services/auth.service';
         </div>
 
         <div class="auth-footer">
-          Pas encore de compte ? 
-          <a routerLink="/register" class="link-bold">Créer un compte</a>
+          Pas encore de compte ?
+          <a routerLink="/connexion/register" class="link-bold">Créer un compte</a>
         </div>
       </div>
     </div>
@@ -268,15 +269,9 @@ export class LoginComponent {
     this.authService.login({ username: this.username, password: this.password }).subscribe({
       next: (res) => {
         this.loading = false;
-        // Direction selon le rôle de l'utilisateur connecté :
-        const role = res?.user?.role || this.authService.currentUserValue?.role;
-        if (role === 'lawyer') {
-          // L'avocat est dirigé vers son espace cabinet
-          this.router.navigate(['/lawyer']);
-        } else {
-          // Le fondateur de startup est dirigé vers son tableau de bord / vue fondateur
-          this.router.navigate(['/dashboard']);
-        }
+        // Direction selon le rôle de l'utilisateur connecté (voir core/auth/role-routes.ts).
+        const role = res?.user?.role ?? this.authService.currentUserValue?.role;
+        this.router.navigateByUrl(routeParDefaut(role));
       },
       error: (err) => {
         this.loading = false;

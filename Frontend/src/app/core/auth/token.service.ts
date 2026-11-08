@@ -1,13 +1,12 @@
 import { Injectable } from '@angular/core';
 
 const CLE_TOKEN = 'launchpad.token';
+const CLE_REFRESH = 'launchpad.refresh_token';
 
 /**
- * Stockage du token JWT.
- *
- * Le User-Service n'existe pas encore : aucun token n'est enregistré pour le moment.
- * Quand l'authentification sera prête, la page de connexion appellera `enregistrer()`
- * et l'intercepteur ajoutera automatiquement l'en-tête Authorization.
+ * Stockage du token JWT (et du refresh token). Seul endroit responsable de ces deux
+ * valeurs : AuthService les écrit ici au login/logout, l'intercepteur HTTP les y lit
+ * pour poser l'en-tête Authorization sur chaque requête.
  */
 @Injectable({ providedIn: 'root' })
 export class TokenService {
@@ -27,9 +26,26 @@ export class TokenService {
     }
   }
 
+  lireRefresh(): string | null {
+    try {
+      return localStorage.getItem(CLE_REFRESH);
+    } catch {
+      return null;
+    }
+  }
+
+  enregistrerRefresh(token: string): void {
+    try {
+      localStorage.setItem(CLE_REFRESH, token);
+    } catch {
+      // ignoré
+    }
+  }
+
   effacer(): void {
     try {
       localStorage.removeItem(CLE_TOKEN);
+      localStorage.removeItem(CLE_REFRESH);
     } catch {
       // ignoré
     }

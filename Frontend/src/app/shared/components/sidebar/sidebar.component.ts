@@ -280,19 +280,18 @@ export class SidebarComponent {
 
   isLawyer(): boolean {
     const user = this.authService.currentUserValue;
-    return user?.role === 'lawyer';
+    return user?.role === 'LAWYER';
   }
 
   toggleDemoRole(): void {
     const user = this.authService.currentUserValue;
-    const newRole = user?.role === 'lawyer' ? 'user' : 'lawyer';
+    const newRole = user?.role === 'LAWYER' ? 'ENTREPRENEUR' : 'LAWYER';
     const updatedUser = {
       ...(user || { username: 'demo_user', email: 'demo@launchpad.ai' }),
       role: newRole,
-      first_name: newRole === 'lawyer' ? 'Maître' : 'Amira',
-      last_name: newRole === 'lawyer' ? 'Karoui' : 'Ben Ali'
+      first_name: newRole === 'LAWYER' ? 'Maître' : 'Amira',
+      last_name: newRole === 'LAWYER' ? 'Karoui' : 'Ben Ali'
     };
-    localStorage.setItem('current_user', JSON.stringify(updatedUser));
     (this.authService as any).currentUserSubject.next(updatedUser);
   }
 }
