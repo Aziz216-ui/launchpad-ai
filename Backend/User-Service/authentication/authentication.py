@@ -9,6 +9,12 @@ class KeycloakAuthentication(BaseAuthentication):
     def __init__(self):
         self.keycloak_service = KeycloakService()
 
+    def authenticate_header(self, request):
+        # Without this, DRF returns 403 instead of 401 when no/invalid token is
+        # supplied (it only adds the WWW-Authenticate header, which triggers 401,
+        # when the authenticator defines this method).
+        return 'Bearer realm="launchpad"'
+
     def authenticate(self, request):
         auth_header = request.headers.get("Authorization")
         if not auth_header:
