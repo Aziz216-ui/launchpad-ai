@@ -31,7 +31,7 @@ class KeycloakService:
             verify=True
         )
 
-    def register_user(self, username, email, password, first_name="", last_name="", role="user"):
+    def register_user(self, username, email, password, first_name="", last_name="", role="ENTREPRENEUR"):
         """
         Creates user in Keycloak, sets credentials, and assigns role.
         Returns the Keycloak user ID (UUID string).

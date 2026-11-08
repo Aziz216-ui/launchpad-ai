@@ -10,7 +10,7 @@ class RegisterSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
     phone_number = serializers.CharField(max_length=30, required=False, allow_blank=True, default="")
-    role = serializers.ChoiceField(choices=User.Role.choices, default=User.Role.USER)
+    role = serializers.ChoiceField(choices=User.Role.choices, default=User.Role.ENTREPRENEUR)
 
     def validate_username(self, value):
         if User.objects.filter(username=value).exists():

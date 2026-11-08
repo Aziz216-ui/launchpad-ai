@@ -56,7 +56,7 @@ class RegisterView(APIView):
                 password=data["password"],
                 first_name=data.get("first_name", ""),
                 last_name=data.get("last_name", ""),
-                role=data.get("role", User.Role.USER)
+                role=data.get("role", User.Role.ENTREPRENEUR)
             )
 
             # 2. Persist user in PostgreSQL
@@ -68,7 +68,7 @@ class RegisterView(APIView):
                     first_name=data.get("first_name", ""),
                     last_name=data.get("last_name", ""),
                     phone_number=data.get("phone_number", ""),
-                    role=data.get("role", User.Role.USER),
+                    role=data.get("role", User.Role.ENTREPRENEUR),
                 )
 
             return Response(

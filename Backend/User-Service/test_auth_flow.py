@@ -40,7 +40,7 @@ def test_flow():
         "first_name": "Jean",
         "last_name": "Dupont",
         "phone_number": "+33612345678",
-        "role": "lawyer"
+        "role": "LAWYER"
     }
     res = client.post("/api/auth/register/", reg_payload, format="json")
     print(f"Register status: {res.status_code}, response: {res.data}")
@@ -72,7 +72,7 @@ def test_flow():
     print(f"Profile status: {res.status_code}, data: {res.data}")
     assert res.status_code == 200, f"Profile failed: {res.data}"
     assert res.data["username"] == test_username
-    assert res.data["role"] == "lawyer"
+    assert res.data["role"] == "LAWYER"
 
     print("\n=== 5. Testing Profile Update ===")
     patch_payload = {"phone_number": "+33699887766"}

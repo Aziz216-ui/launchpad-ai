@@ -37,11 +37,15 @@ class KeycloakAuthentication(BaseAuthentication):
         roles = payload.get("realm_access", {}).get("roles", [])
 
         # Map role
-        role = User.Role.USER
-        if "admin" in roles:
+        role = User.Role.ENTREPRENEUR
+        if "ADMIN" in roles:
             role = User.Role.ADMIN
-        elif "lawyer" in roles:
+        elif "LAWYER" in roles:
             role = User.Role.LAWYER
+        elif "ACCOUNTANT" in roles:
+            role = User.Role.ACCOUNTANT
+        elif "FINANCIER" in roles:
+            role = User.Role.FINANCIER
 
         # Get or create local user
         user, created = User.objects.get_or_create(

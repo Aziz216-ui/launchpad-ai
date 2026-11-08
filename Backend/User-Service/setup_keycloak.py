@@ -49,13 +49,25 @@ def setup():
     )
 
     # 2. Check/create roles
+    # LAWYER/ADMIN/ENTREPRENEUR/ACCOUNTANT/FINANCIER couvrent les roles necessaires a tous
+    # les services du repo qui en verifient un : User-Service (authentication/
+    # authentication.py) et Professional-Service (KeycloakRoleMapper, via
+    # KEYCLOAK_ROLE_ACCOUNTANT/ENTREPRENEUR/ADMIN). Aucun autre service ne verifie de role
+    # Keycloak a ce jour.
     existing_roles = [r["name"] for r in admin_launchpad.get_realm_roles()]
-    for role in ["user", "lawyer", "admin"]:
+    for role in ["LAWYER", "ADMIN", "ENTREPRENEUR", "ACCOUNTANT", "FINANCIER"]:
         if role not in existing_roles:
             print(f"Creating realm role '{role}'...")
             admin_launchpad.create_realm_role({"name": role, "description": f"{role.capitalize()} role"})
         else:
             print(f"Realm role '{role}' already exists.")
+
+    # Anciens roles en minuscule (avant unification des noms de role) : supprimes s'ils
+    # existent encore.
+    for old_role in ["user", "lawyer", "admin"]:
+        if old_role in existing_roles:
+            print(f"Removing legacy realm role '{old_role}'...")
+            admin_launchpad.delete_realm_role(old_role)
 
     # 2b. Disable VERIFY_PROFILE: Keycloak's default User Profile config marks
     # firstName/lastName as required, and VERIFY_PROFILE enforces that dynamically

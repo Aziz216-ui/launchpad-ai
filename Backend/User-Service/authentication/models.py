@@ -28,9 +28,11 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     class Role(models.TextChoices):
-        USER = "user", "User"
-        LAWYER = "lawyer", "Lawyer"
-        ADMIN = "admin", "Admin"
+        ENTREPRENEUR = "ENTREPRENEUR", "Entrepreneur"
+        LAWYER = "LAWYER", "Lawyer"
+        ACCOUNTANT = "ACCOUNTANT", "Accountant"
+        FINANCIER = "FINANCIER", "Financier"
+        ADMIN = "ADMIN", "Admin"
 
     keycloak_id = models.CharField(max_length=64, unique=True, db_index=True)
     username = models.CharField(max_length=150, unique=True)
@@ -38,7 +40,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=150, blank=True)
     last_name = models.CharField(max_length=150, blank=True)
     phone_number = models.CharField(max_length=30, blank=True)
-    role = models.CharField(max_length=20, choices=Role.choices, default=Role.USER)
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.ENTREPRENEUR)
     
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

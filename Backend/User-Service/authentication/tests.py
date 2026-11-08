@@ -21,7 +21,7 @@ class RegisterViewTests(APITestCase):
                 "username": "alice",
                 "email": "alice@example.com",
                 "password": "secret123",
-                "role": User.Role.USER,
+                "role": User.Role.ENTREPRENEUR,
             },
             format="json",
         )
@@ -133,7 +133,7 @@ class UserProfileViewTests(APITestCase):
             "email": "carol@example.com",
             "given_name": "Carol",
             "family_name": "Smith",
-            "realm_access": {"roles": ["user"]},
+            "realm_access": {"roles": ["ENTREPRENEUR"]},
         }
 
         response = self.client.get(self.url, HTTP_AUTHORIZATION="Bearer fake-access-token")
