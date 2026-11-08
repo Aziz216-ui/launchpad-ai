@@ -34,7 +34,7 @@ OAuth2 Resource Server (JWT Keycloak).
                                        ▼                                             ▼   (chemin inchangé)
                           ┌────────────────────────┐          ┌──────────────────────────────────────┐
                           │ Eureka :8761           │◄─────────│ Market : 4 services :8010-8013        │
-                          │ registre des services  │ enregis- │ Professional-Service :8085            │
+                          │ registre des services  │ enregis- │ Comptable :8091-8094                  │
                           └────────────────────────┘ trement  │ Lawyer :8082/8084-8086 · Legal :3003… │
                                                               └──────────────────────────────────────┘
 ```
@@ -65,7 +65,10 @@ Fonctionnalités transverses (aucun service n'a à les refaire) :
 | Market : concurrents | `CONCURRENT-SERVICE` | 8011 | `/api/market/concurrents/**` | `market-concurrent-service` | `CONCURRENT_SERVICE_URI` | `/api/market/concurrents/docs/`, `/api/market/concurrents/schema/` |
 | Market : SWOT | `SWOT-SERVICE` | 8013 | `/api/market/etudes/*/generer-swot/**`, `/api/market/swot/**` | `market-swot-service` | `SWOT_SERVICE_URI` | `/api/market/swot/docs/`, `/api/market/swot/schema/` |
 | Market : études, personas | `ETUDE-SERVICE` | 8012 | `/api/market/etudes/**`, `/api/market/personas/**`, `/api/market/analyse/projet/**` | `market-etude-service` | `ETUDE_SERVICE_URI` | `/api/market/etudes/docs/`, `/api/market/etudes/schema/` |
-| Comptable | `PROFESSIONAL-SERVICE` | 8085 | `/api/comptable/**` | `accounting-service` | `ACCOUNTING_SERVICE_URI` | `/api/comptable/docs`, `/api/comptable/docs.json` |
+| Comptable : documents | `ACCOUNTING-DOCUMENT-SERVICE` | 8093 | `/api/comptable/files/*/documents/**`, `/api/comptable/documents/**` | `accounting-document-service` | `ACCOUNTING_DOCUMENT_SERVICE_URI` | (même chemin) |
+| Comptable : messages | `ACCOUNTING-MESSAGE-SERVICE` | 8094 | `/api/comptable/files/*/messages/**`, `/api/comptable/messages/**` | `accounting-message-service` | `ACCOUNTING_MESSAGE_SERVICE_URI` | (même chemin) |
+| Comptable : dossiers | `ACCOUNTING-CLIENT-FILE-SERVICE` | 8092 | `/api/comptable/files/**` | `accounting-client-file-service` | `ACCOUNTING_CLIENT_FILE_SERVICE_URI` | (même chemin) |
+| Comptable : espaces | `ACCOUNTING-WORKSPACE-SERVICE` | 8091 | `/api/comptable/**` (reste : `/me`, `/workspaces/**`, docs, health) | `accounting-workspace-service` | `ACCOUNTING_WORKSPACE_SERVICE_URI` | `/api/comptable/docs`, `/api/comptable/docs.json` |
 | Avocat : clients | `lawyer-client-service` (minuscules) | 8082 | `/api/lawyer/clients/**` | `lawyer-client-service` | `LAWYER_CLIENT_SERVICE_URI` | `/swagger-ui/**`, `/v3/api-docs/**` (hors préfixe) |
 | Avocat : messages | `lawyer-message-service` | 8084 | `/api/lawyer/messages/**`, `/api/lawyer/communication/messages/**` | `lawyer-message-service` | `LAWYER_MESSAGE_SERVICE_URI` | `/swagger-ui/**`, `/v3/api-docs/**` (même chemin) |
 | Avocat : revue de documents | `lawyer-docreview-service` | 8086 | `/api/lawyer/reviews/**`, `/api/lawyer/document-reviews/**` | `lawyer-docreview-service` | `LAWYER_DOCREVIEW_SERVICE_URI` | `/swagger-ui/**`, `/v3/api-docs/**` (même chemin) |
@@ -173,7 +176,7 @@ Tout est dans `src/main/resources/` :
 - **eureka** (par défaut) : la gateway s'enregistre dans Eureka et route en `lb://<NOM-EUREKA>`.
   Le registre est relu toutes les 5 s : un service qui démarre est joignable quelques secondes après.
 - **local** : sans Eureka, URL directes `http://localhost:<port>` pour Market (8010 à 8013),
-  Comptable (8085), Avocat (8082, 8084, 8086), Juridique (3003), Finance prévisions (8081), Finance
+  Comptable (8091-8094), Avocat (8082, 8084, 8086), Juridique (3003), Finance prévisions (8081), Finance
   documents (8083), IA (projets 8006, recommandations 8007, conversations 8008) et
   Utilisateurs (8001).
 
@@ -257,7 +260,7 @@ Avec `JWT_ENABLED=false` (défaut), tout est ouvert : pratique pour tester sans 
    (`/api/comptable/…`, `/api/legal/…`). La gateway ne le retire pas : votre service reçoit
    `/api/comptable/factures` tel quel. Idéalement, servez aussi vos docs sous ce préfixe.
 2. **Nom Eureka** : enregistrez votre service dans Eureka (`http://localhost:8761/eureka/`)
-   sous **exactement** le nom du tableau (`PROFESSIONAL-SERVICE`, `lawyer-client-service`, `LEGAL-SERVICE`…).
+   sous **exactement** le nom du tableau (`ACCOUNTING-WORKSPACE-SERVICE`, `lawyer-client-service`, `LEGAL-SERVICE`…).
    Spring Boot : `spring.application.name` + `spring-cloud-starter-netflix-eureka-client` ;
    Node.js : `eureka-js-client` ; Python : `py-eureka-client` (voir Backend/Market).
 3. **Port** : gardez le port du tableau ; s'il change, prévenez pour mettre à jour le profil local.
@@ -292,8 +295,8 @@ curl -X POST http://localhost:8090/api/market/etudes/1/generer-swot/   # -> SWOT
 # Identifiant de requête renvoyé par la gateway
 curl -i -H "X-Request-Id: test-123" http://localhost:8090/api/market/etudes/health/
 
-# Service absent d'Eureka -> 503 {"service":"PROFESSIONAL-SERVICE","message":"Service indisponible"}
-curl -i http://localhost:8090/api/comptable/factures
+# Service absent d'Eureka -> 503 {"service":"ACCOUNTING-CLIENT-FILE-SERVICE","message":"Service indisponible"}
+curl -i http://localhost:8090/api/comptable/files
 curl -i http://localhost:8090/api/lawyer/clients
 curl -i http://localhost:8090/api/legal/contrats
 

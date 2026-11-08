@@ -21,7 +21,10 @@ services:
       CONCURRENT_SERVICE_URI: http://host.docker.internal:8011
       ETUDE_SERVICE_URI: http://host.docker.internal:8012
       SWOT_SERVICE_URI: http://host.docker.internal:8013
-      # ACCOUNTING_SERVICE_URI: http://host.docker.internal:8085
+      # ACCOUNTING_WORKSPACE_SERVICE_URI: http://host.docker.internal:8091
+      # ACCOUNTING_CLIENT_FILE_SERVICE_URI: http://host.docker.internal:8092
+      # ACCOUNTING_DOCUMENT_SERVICE_URI: http://host.docker.internal:8093
+      # ACCOUNTING_MESSAGE_SERVICE_URI: http://host.docker.internal:8094
       # LAWYER_CLIENT_SERVICE_URI: http://host.docker.internal:8082
       # LAWYER_MESSAGE_SERVICE_URI: http://host.docker.internal:8084
       # LAWYER_DOCREVIEW_SERVICE_URI: http://host.docker.internal:8086
