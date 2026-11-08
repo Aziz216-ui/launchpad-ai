@@ -179,7 +179,8 @@ Le code commun est dans `market_commun/evenements/` ; les handlers de chaque ser
 
 ### Interface RabbitMQ
 
-http://localhost:15672, identifiants `market` / `market` (variables `RABBITMQ_USER` et
+http://localhost:15673 (port par défaut, surchargeable via `MARKET_RABBITMQ_MGMT_PORT`),
+identifiants `market` / `market` (variables `RABBITMQ_USER` et
 `RABBITMQ_PASSWORD`). Onglet **Exchanges** → `market.events` (bindings vers les 5 queues) ;
 onglet **Queues** → messages en attente, consumers connectés, `market.dlq`.
 
@@ -230,7 +231,7 @@ cd ..\Market
 - Eureka : http://localhost:8761 (SECTEUR-SERVICE, CONCURRENT-SERVICE, ETUDE-SERVICE, SWOT-SERVICE : UP)
 - Swagger via la gateway : http://localhost:8090/api/market/etudes/docs/ (et `secteurs`, `concurrents`, `swot`)
 - Analyse d'un projet (AI-Service) : http://localhost:8090/api/market/analyse/projet/1/
-- RabbitMQ : http://localhost:15672 (`market` / `market`)
+- RabbitMQ : http://localhost:15673 (`market` / `market`)
 
 Arrêt : `docker compose down` (les données restent dans les volumes ; `down -v` les supprime).
 

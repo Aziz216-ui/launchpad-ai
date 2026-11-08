@@ -1,5 +1,7 @@
 version: "3.9"
 
+# Port hôte de projet_db surchargeable via PROJET_DB_PORT (défaut 5445, déplacé de 5434
+# pour ne pas entrer en collision avec le défaut de Finance/Document-Service).
 services:
   projet_db:
     image: postgres:16-alpine
@@ -11,7 +13,7 @@ services:
     volumes:
       - projet_db_data:/var/lib/postgresql/data
     ports:
-      - "5434:5432"
+      - "${PROJET_DB_PORT:-5445}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U projet_user -d projet_db"]
       interval: 10s
