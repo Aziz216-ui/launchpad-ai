@@ -13,7 +13,7 @@ import java.util.UUID;
  * avecAnalyse est facultatif (false par défaut) : true ajoute une section « Analyse » rédigée par l'IA.
  */
 public record CreerDocumentRequest(
-        @NotNull UUID projetId,
+        @NotNull Long projetId,
         @NotNull TypeDocument type,
         @PositiveOrZero @Digits(integer = 13, fraction = 2) BigDecimal tresorerieInitiale,
         Boolean avecAnalyse) {

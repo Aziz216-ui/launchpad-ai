@@ -9,7 +9,7 @@ export interface Projection {
 
 export interface Prevision {
   previsionId: string;
-  projetId: string;
+  projetId: number;
   periode: string;
   chiffreAffaires: number;
   coutsDirects: number;
@@ -20,7 +20,7 @@ export interface Prevision {
 }
 
 export interface PrevisionSaisie {
-  projetId: string;
+  projetId: number;
   periode: string;
   chiffreAffaires: number;
   coutsDirects: number;
@@ -83,7 +83,7 @@ export interface ContenuDocument {
 
 export interface DocumentResume {
   documentId: string;
-  projetId: string;
+  projetId: number;
   type: TypeDocument;
   titre: string;
   creeLe: string;
@@ -91,14 +91,14 @@ export interface DocumentResume {
 
 export interface DocumentFinancier {
   documentId: string;
-  projetId: string;
+  projetId: number;
   type: TypeDocument;
   creeLe: string;
   contenu: ContenuDocument;
 }
 
 export interface DocumentSaisie {
-  projetId: string;
+  projetId: number;
   type: TypeDocument;
   tresorerieInitiale?: number | null;
   avecAnalyse: boolean;
@@ -107,6 +107,6 @@ export interface DocumentSaisie {
 export type FormatExport = 'pdf' | 'xlsx';
 
 export interface ReponseAssistant {
-  projetId: string;
+  projetId: number;
   reponse: string;
 }

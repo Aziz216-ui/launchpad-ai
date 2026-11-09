@@ -9,7 +9,7 @@ import java.util.UUID;
 /**
  * Document financier généré pour un projet ; son contenu est conservé tel quel (jsonb).
  */
-public record DocumentFinancier(UUID id, UUID projetId, TypeDocument type, ContenuDocument contenu, Instant creeLe) {
+public record DocumentFinancier(UUID id, Long projetId, TypeDocument type, ContenuDocument contenu, Instant creeLe) {
 
     public DocumentFinancier {
         if (id == null || projetId == null || type == null || contenu == null || creeLe == null) {
@@ -17,7 +17,7 @@ public record DocumentFinancier(UUID id, UUID projetId, TypeDocument type, Conte
         }
     }
 
-    public static DocumentFinancier creer(UUID projetId, TypeDocument type, ContenuDocument contenu) {
+    public static DocumentFinancier creer(Long projetId, TypeDocument type, ContenuDocument contenu) {
         return new DocumentFinancier(UUID.randomUUID(), projetId, type, contenu,
                 Instant.now().truncatedTo(ChronoUnit.MICROS));
     }

@@ -33,7 +33,7 @@ features/finance/
   Prevision-Service (port 8081).
 - Pour tester en local : Eureka (8761), Prevision-Service, Document-Service, API Gateway (8090), puis `ng serve`.
   PostgreSQL (bases `prevision_db` et `document_db`) et RabbitMQ doivent être démarrés.
-- Le projet courant est un **UUID** (les services Finance référencent le projet par identifiant uniquement).
+- Le projet courant est un **entier** (les services Finance référencent le projet par identifiant uniquement, comme Market et AI).
   Il est conservé dans le navigateur ; le bouton « Nouveau projet » en génère un autre.
   À remplacer par le projet de l'utilisateur connecté quand le User-Service sera disponible.
 - Les fonctions IA répondent 503 tant que le backend n'a pas de clé (`SPRING_AI_MODEL_CHAT=openai`, `XAI_API_KEY`).

@@ -13,7 +13,7 @@ import java.util.UUID;
 public class PrevisionEntity extends AuditedEntity {
 
     @Column(name = "projet_id", nullable = false, updatable = false)
-    private UUID projetId;
+    private Long projetId;
 
     @Column(nullable = false, length = 50)
     private String periode;
@@ -30,7 +30,7 @@ public class PrevisionEntity extends AuditedEntity {
     protected PrevisionEntity() {
     }
 
-    public PrevisionEntity(UUID id, UUID projetId, String periode, BigDecimal chiffreAffaires, BigDecimal coutsDirects,
+    public PrevisionEntity(UUID id, Long projetId, String periode, BigDecimal chiffreAffaires, BigDecimal coutsDirects,
                            BigDecimal depenses, Instant createdAt) {
         super(id, createdAt);
         this.projetId = projetId;
@@ -40,7 +40,7 @@ public class PrevisionEntity extends AuditedEntity {
         this.depenses = depenses;
     }
 
-    public UUID getProjetId() {
+    public Long getProjetId() {
         return projetId;
     }
 

@@ -9,7 +9,7 @@ import java.util.UUID;
 
 interface PrevisionJpaRepository extends JpaRepository<PrevisionEntity, UUID> {
 
-    List<PrevisionEntity> findByProjetIdOrderByCreatedAtDesc(UUID projetId);
+    List<PrevisionEntity> findByProjetIdOrderByCreatedAtDesc(Long projetId);
 
-    Optional<PrevisionEntity> findFirstByProjetIdOrderByCreatedAtDesc(UUID projetId);
+    Optional<PrevisionEntity> findFirstByProjetIdOrderByCreatedAtDesc(Long projetId);
 }

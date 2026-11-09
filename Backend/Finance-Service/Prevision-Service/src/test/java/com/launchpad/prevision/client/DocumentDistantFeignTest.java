@@ -6,15 +6,23 @@ import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.cloud.client.ServiceInstance;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
+
+import feign.Feign;
+import feign.Request;
+import feign.Retryer;
+import org.springframework.beans.factory.ObjectFactory;
+import org.springframework.boot.autoconfigure.http.HttpMessageConverters;
+import org.springframework.cloud.openfeign.support.ResponseEntityDecoder;
+import org.springframework.cloud.openfeign.support.SpringDecoder;
+import org.springframework.cloud.openfeign.support.SpringEncoder;
+import org.springframework.cloud.openfeign.support.SpringMvcContract;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -22,16 +30,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.launchpad.prevision.domain.Fixtures.PROJET_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Le Document-Service est simulé par un vrai serveur HTTP local : on vérifie la requête émise et la dégradation
  * (service éteint, en erreur) sans dépendre d'un autre processus.
  */
-class DocumentDistantRestTest {
+class DocumentDistantFeignTest {
 
-    private final DiscoveryClient eureka = mock(DiscoveryClient.class);
     private HttpServer serveur;
 
     @BeforeEach
@@ -49,9 +54,18 @@ class DocumentDistantRestTest {
         return "http://localhost:" + serveur.getAddress().getPort();
     }
 
-    private DocumentDistantRest client(String adresseSecours) {
-        return new DocumentDistantRest(new ResolveurService(eureka), "document-service", adresseSecours,
-                Duration.ofSeconds(2));
+    /** Client Feign construit à la main (sans contexte Spring) : même contrat Spring MVC, URL fixe, timeout 2 s. */
+    private DocumentDistantFeign client(String adresse) {
+        ObjectFactory<HttpMessageConverters> convertisseurs =
+                () -> new HttpMessageConverters(new MappingJackson2HttpMessageConverter());
+        DocumentFeignClient feign = Feign.builder()
+                .contract(new SpringMvcContract())
+                .encoder(new SpringEncoder(convertisseurs))
+                .decoder(new ResponseEntityDecoder(new SpringDecoder(convertisseurs)))
+                .options(new Request.Options(2, TimeUnit.SECONDS, 2, TimeUnit.SECONDS, true))
+                .retryer(Retryer.NEVER_RETRY)
+                .target(DocumentFeignClient.class, adresse);
+        return new DocumentDistantFeign(feign);
     }
 
     private void repondre(int statut, String corps) {
@@ -81,18 +95,6 @@ class DocumentDistantRestTest {
 
         assertThat(resultat).isEqualTo(documentId);
         assertThat(corpsRecu.get()).contains(PROJET_ID.toString()).contains("BUSINESS_PLAN");
-    }
-
-    @Test
-    void prefere_l_adresse_donnee_par_eureka_a_l_adresse_de_secours() {
-        ServiceInstance instance = mock(ServiceInstance.class);
-        when(instance.getUri()).thenReturn(URI.create(adresseServeur()));
-        when(eureka.getInstances("document-service")).thenReturn(List.of(instance));
-        UUID documentId = UUID.randomUUID();
-        repondre(201, "{\"documentId\":\"" + documentId + "\"}");
-
-        assertThat(client("http://adresse-inutilisee.invalid").genererDocument(PROJET_ID, TypeDocument.PLAN_TRESORERIE))
-                .isEqualTo(documentId);
     }
 
     @Test

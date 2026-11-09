@@ -43,7 +43,7 @@ public class PrevisionRepositoryJpa implements PrevisionRepository {
     }
 
     @Override
-    public List<PrevisionFinanciere> findByProjetId(UUID projetId) {
+    public List<PrevisionFinanciere> findByProjetId(Long projetId) {
         List<PrevisionEntity> entites = previsions.findByProjetIdOrderByCreatedAtDesc(projetId);
         if (entites.isEmpty()) {
             return List.of();
@@ -58,7 +58,7 @@ public class PrevisionRepositoryJpa implements PrevisionRepository {
     }
 
     @Override
-    public Optional<PrevisionFinanciere> findLatestByProjetId(UUID projetId) {
+    public Optional<PrevisionFinanciere> findLatestByProjetId(Long projetId) {
         return previsions.findFirstByProjetIdOrderByCreatedAtDesc(projetId)
                 .map(entite -> versDomaine(entite, projections.findByPrevisionIdOrderByAnneeAsc(entite.getId())));
     }

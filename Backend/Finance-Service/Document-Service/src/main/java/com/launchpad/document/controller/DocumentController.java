@@ -54,7 +54,7 @@ public class DocumentController {
 
     @Operation(summary = "Scénario 4 : lister les documents d'un projet")
     @GetMapping("/projets/{projetId}/documents")
-    public List<DocumentResumeResponse> listerDocuments(@PathVariable UUID projetId) {
+    public List<DocumentResumeResponse> listerDocuments(@PathVariable Long projetId) {
         return gestionDocuments.listerDocuments(projetId).stream().map(DocumentResumeResponse::depuis).toList();
     }
 

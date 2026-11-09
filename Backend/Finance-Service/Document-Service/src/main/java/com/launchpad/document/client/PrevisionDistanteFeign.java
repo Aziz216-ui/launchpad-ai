@@ -1,0 +1,81 @@
+package com.launchpad.document.client;
+
+import com.launchpad.document.domain.ProjectionSynthese;
+import com.launchpad.document.domain.SynthesePrevision;
+import com.launchpad.document.exception.PrevisionIntrouvable;
+import com.launchpad.document.exception.ServiceIndisponible;
+import com.launchpad.document.service.PrevisionDistante;
+import feign.FeignException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Adaptateur du port PrevisionDistante : appelle le Prevision-Service par Feign (GET /api/finance/projets/{id}/synthese).
+ * Un service éteint ou lent est signalé par ServiceIndisponible (503) au lieu de bloquer ou de faire planter le service.
+ */
+@Component
+public class PrevisionDistanteFeign implements PrevisionDistante {
+
+    private static final Logger LOG = LoggerFactory.getLogger(PrevisionDistanteFeign.class);
+
+    private final PrevisionFeignClient previsions;
+
+    public PrevisionDistanteFeign(PrevisionFeignClient previsions) {
+        this.previsions = previsions;
+    }
+
+    @Override
+    public SynthesePrevision derniereSynthese(Long projetId) {
+        try {
+            SyntheseJson json = previsions.synthese(projetId);
+            if (json == null || json.prevision() == null || json.marges() == null || json.ecart() == null) {
+                throw new ServiceIndisponible("Réponse inattendue du Prevision-Service");
+            }
+            return json.versDomaine();
+        } catch (FeignException e) {
+            if (e.status() == 404) {
+                throw PrevisionIntrouvable.pourProjet(projetId);
+            }
+            if (e.status() >= 400 && e.status() < 500) {
+                throw new ServiceIndisponible("Prevision-Service a refusé la requête : " + e.status());
+            }
+            // Le détail (adresse, exception) reste dans les journaux : il n'est pas renvoyé au client.
+            LOG.warn("Prevision-Service injoignable ou en erreur (synthèse du projet {})", projetId, e);
+            throw new ServiceIndisponible("Le service des prévisions est momentanément indisponible");
+        }
+    }
+
+    /** Forme JSON de SyntheseResponse (Prevision-Service) ; les champs inconnus sont ignorés. */
+    public record SyntheseJson(PrevisionJson prevision, MargesJson marges, EcartJson ecart) {
+
+        public record PrevisionJson(String periode, BigDecimal chiffreAffaires, BigDecimal coutsDirects, BigDecimal depenses,
+                             BigDecimal resultat, List<ProjectionJson> projections) {
+        }
+
+        public record ProjectionJson(int annee, BigDecimal chiffreAffaires, BigDecimal depenses, BigDecimal marge) {
+        }
+
+        public record MargesJson(BigDecimal margeBrute, BigDecimal margeNette, BigDecimal tauxMargeBrute,
+                          BigDecimal tauxMargeNette) {
+        }
+
+        public record EcartJson(BigDecimal montant, BigDecimal pourcentage, String statut) {
+        }
+
+        SynthesePrevision versDomaine() {
+            List<ProjectionSynthese> projections = prevision.projections() == null ? List.of()
+                    : prevision.projections().stream()
+                            .map(p -> new ProjectionSynthese(p.annee(), p.chiffreAffaires(), p.depenses(), p.marge()))
+                            .toList();
+            return new SynthesePrevision(prevision.periode(), prevision.chiffreAffaires(), prevision.coutsDirects(),
+                    prevision.depenses(), prevision.resultat(), marges.margeBrute(), marges.margeNette(),
+                    marges.tauxMargeBrute(), marges.tauxMargeNette(), ecart.montant(), ecart.pourcentage(),
+                    ecart.statut(), projections);
+        }
+    }
+}

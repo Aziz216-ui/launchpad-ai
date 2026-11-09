@@ -14,7 +14,7 @@ import java.util.UUID;
  */
 public record PrevisionFinanciere(
         UUID id,
-        UUID projetId,
+        Long projetId,
         String periode,
         BigDecimal chiffreAffaires,
         BigDecimal coutsDirects,
@@ -51,7 +51,7 @@ public record PrevisionFinanciere(
     }
 
     /** Nouvelle prévision (identifiant généré, sans projection). */
-    public static PrevisionFinanciere creer(UUID projetId, String periode, BigDecimal chiffreAffaires,
+    public static PrevisionFinanciere creer(Long projetId, String periode, BigDecimal chiffreAffaires,
                                             BigDecimal coutsDirects, BigDecimal depenses) {
         return new PrevisionFinanciere(UUID.randomUUID(), projetId, periode, chiffreAffaires, coutsDirects,
                 depenses, Instant.now().truncatedTo(ChronoUnit.MICROS), List.of());

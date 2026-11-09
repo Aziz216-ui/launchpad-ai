@@ -36,7 +36,7 @@ public class GenerateurDocsFinanciers {
      *
      * @param tresorerieInitiale utilisée par le bilan d'ouverture et le plan de trésorerie ; 0 si null
      */
-    public ContenuDocument generer(TypeDocument type, UUID projetId, BigDecimal tresorerieInitiale) {
+    public ContenuDocument generer(TypeDocument type, Long projetId, BigDecimal tresorerieInitiale) {
         if (type == null) {
             throw new DonneesInvalides("Le type de document est obligatoire");
         }
@@ -49,17 +49,17 @@ public class GenerateurDocsFinanciers {
         };
     }
 
-    public ContenuDocument genererBusinessPlan(UUID projetId) {
+    public ContenuDocument genererBusinessPlan(Long projetId) {
         SynthesePrevision p = prevision(projetId);
         return new ContenuDocument(titre(TypeDocument.BUSINESS_PLAN, p), List.of(
                 sectionPrevision(p), sectionMarges(p), sectionEcart(p), sectionProjections(p)));
     }
 
-    public ContenuDocument genererBilanOuverture(UUID projetId) {
+    public ContenuDocument genererBilanOuverture(Long projetId) {
         return genererBilanOuverture(projetId, null);
     }
 
-    public ContenuDocument genererBilanOuverture(UUID projetId, BigDecimal tresorerieInitiale) {
+    public ContenuDocument genererBilanOuverture(Long projetId, BigDecimal tresorerieInitiale) {
         SynthesePrevision p = prevision(projetId);
         BigDecimal t0 = tresorerieInitiale(tresorerieInitiale);
         return new ContenuDocument(titre(TypeDocument.BILAN_OUVERTURE, p), List.of(
@@ -72,7 +72,7 @@ public class GenerateurDocsFinanciers {
                         List.of("Bilan établi à partir de la seule trésorerie initiale apportée au projet."))));
     }
 
-    public ContenuDocument genererCompteResultat(UUID projetId) {
+    public ContenuDocument genererCompteResultat(Long projetId) {
         SynthesePrevision p = prevision(projetId);
         SectionDocument compte = new SectionDocument("Compte de résultat - " + p.periode(), COLONNE_MONTANT, List.of(
                 LigneDocument.de("Chiffre d'affaires", p.chiffreAffaires()),
@@ -88,7 +88,7 @@ public class GenerateurDocsFinanciers {
         return new ContenuDocument(titre(TypeDocument.COMPTE_RESULTAT, p), sections);
     }
 
-    public ContenuDocument genererPlanTresorerie(UUID projetId) {
+    public ContenuDocument genererPlanTresorerie(Long projetId) {
         return genererPlanTresorerie(projetId, null);
     }
 
@@ -96,7 +96,7 @@ public class GenerateurDocsFinanciers {
      * Par année : encaissements (CA), décaissements (dépenses), solde net et trésorerie cumulée depuis la
      * trésorerie initiale. Sans projection, une seule ligne issue de la prévision.
      */
-    public ContenuDocument genererPlanTresorerie(UUID projetId, BigDecimal tresorerieInitiale) {
+    public ContenuDocument genererPlanTresorerie(Long projetId, BigDecimal tresorerieInitiale) {
         SynthesePrevision p = prevision(projetId);
         BigDecimal cumul = tresorerieInitiale(tresorerieInitiale);
         List<LigneDocument> lignes = new ArrayList<>();
@@ -117,7 +117,7 @@ public class GenerateurDocsFinanciers {
                         List.of("Encaissements = chiffre d'affaires ; décaissements = dépenses de l'année."))));
     }
 
-    public ContenuDocument genererRapportInvestisseur(UUID projetId) {
+    public ContenuDocument genererRapportInvestisseur(Long projetId) {
         SynthesePrevision p = prevision(projetId);
         List<SectionDocument> sections = new ArrayList<>();
         sections.add(new SectionDocument("Indicateurs clés", List.of("Valeur"), List.of(
@@ -142,7 +142,7 @@ public class GenerateurDocsFinanciers {
         return new ContenuDocument(titre(TypeDocument.RAPPORT_INVESTISSEUR, p), sections);
     }
 
-    private SynthesePrevision prevision(UUID projetId) {
+    private SynthesePrevision prevision(Long projetId) {
         if (projetId == null) {
             throw new DonneesInvalides("projetId est obligatoire");
         }

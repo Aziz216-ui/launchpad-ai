@@ -35,7 +35,7 @@ public class AssistantFinancier {
         this.documents = documents;
     }
 
-    public String repondre(UUID projetId, String message) {
+    public String repondre(Long projetId, String message) {
         if (projetId == null) {
             throw new DonneesInvalides("projetId est obligatoire");
         }

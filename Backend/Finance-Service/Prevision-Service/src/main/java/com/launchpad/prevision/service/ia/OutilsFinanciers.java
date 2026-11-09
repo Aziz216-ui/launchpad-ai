@@ -20,12 +20,12 @@ import java.util.UUID;
  */
 public class OutilsFinanciers {
 
-    private final UUID projetId;
+    private final Long projetId;
     private final GestionPrevisions gestionPrevisions;
     private final CalculateurMarge calculateurMarge;
     private final DocumentDistant documents;
 
-    public OutilsFinanciers(UUID projetId, GestionPrevisions gestionPrevisions, CalculateurMarge calculateurMarge,
+    public OutilsFinanciers(Long projetId, GestionPrevisions gestionPrevisions, CalculateurMarge calculateurMarge,
                             DocumentDistant documents) {
         this.projetId = projetId;
         this.gestionPrevisions = gestionPrevisions;

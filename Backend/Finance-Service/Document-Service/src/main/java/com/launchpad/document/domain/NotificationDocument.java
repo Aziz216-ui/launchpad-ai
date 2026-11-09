@@ -6,5 +6,5 @@ import java.util.UUID;
 /**
  * Notification produite à la réception d'un événement DocumentGenere.
  */
-public record NotificationDocument(UUID documentId, UUID projetId, String message, Instant recueLe) {
+public record NotificationDocument(UUID documentId, Long projetId, String message, Instant recueLe) {
 }

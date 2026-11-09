@@ -31,7 +31,7 @@ class DocumentRepositoryJpaTest {
     @Autowired
     private EntityManager entityManager;
 
-    private final UUID projetId = UUID.randomUUID();
+    private final Long projetId = 1L;
 
     private static final ContenuDocument CONTENU = new ContenuDocument("Plan de trésorerie - période 2026", List.of(
             new SectionDocument("Plan de trésorerie", List.of("Encaissements", "Décaissements"),

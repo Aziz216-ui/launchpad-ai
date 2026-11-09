@@ -18,9 +18,9 @@ public interface PrevisionRepository {
     Optional<PrevisionFinanciere> findById(UUID previsionId);
 
     /** Prévisions d'un projet, de la plus récente à la plus ancienne. */
-    List<PrevisionFinanciere> findByProjetId(UUID projetId);
+    List<PrevisionFinanciere> findByProjetId(Long projetId);
 
-    Optional<PrevisionFinanciere> findLatestByProjetId(UUID projetId);
+    Optional<PrevisionFinanciere> findLatestByProjetId(Long projetId);
 
     /** Remplace toutes les projections de la prévision par celles fournies. */
     void replaceProjections(UUID previsionId, List<ProjectionFinanciere> projections);

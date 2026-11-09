@@ -37,7 +37,7 @@ public class GestionPrevisions {
 
     /** Scénario 1 : valide (par le modèle métier), calcule le résultat et sauvegarde. */
     @Transactional
-    public PrevisionFinanciere creerPrevision(UUID projetId, String periode, BigDecimal chiffreAffaires,
+    public PrevisionFinanciere creerPrevision(Long projetId, String periode, BigDecimal chiffreAffaires,
                                               BigDecimal coutsDirects, BigDecimal depenses) {
         PrevisionFinanciere prevision = PrevisionFinanciere.creer(projetId, periode, chiffreAffaires, coutsDirects,
                 depenses);
@@ -48,12 +48,12 @@ public class GestionPrevisions {
         return previsions.findById(previsionId).orElseThrow(() -> new PrevisionIntrouvable(previsionId));
     }
 
-    public List<PrevisionFinanciere> listerPrevisions(UUID projetId) {
+    public List<PrevisionFinanciere> listerPrevisions(Long projetId) {
         return previsions.findByProjetId(projetId);
     }
 
     /** Prévision la plus récente du projet avec ses marges et son écart : consommée par le Document-Service. */
-    public SyntheseFinanciere consulterSynthese(UUID projetId) {
+    public SyntheseFinanciere consulterSynthese(Long projetId) {
         PrevisionFinanciere prevision = previsions.findLatestByProjetId(projetId)
                 .orElseThrow(() -> PrevisionIntrouvable.pourProjet(projetId));
         return new SyntheseFinanciere(prevision, calculateurMarge.calculerMarges(prevision),

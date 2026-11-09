@@ -29,7 +29,7 @@ import static org.mockito.Mockito.verify;
 
 class EvenementsDocumentTest {
 
-    private static DocumentGenere evenement(UUID projetId, String titre) {
+    private static DocumentGenere evenement(Long projetId, String titre) {
         DocumentFinancier document = DocumentFinancier.creer(projetId, TypeDocument.BUSINESS_PLAN,
                 new ContenuDocument(titre, List.of()));
         return DocumentGenere.de(document);
@@ -86,7 +86,7 @@ class EvenementsDocumentTest {
     @Test
     void les_notifications_sont_isolees_par_projet_et_les_plus_recentes_d_abord() {
         JournalNotifications journal = new JournalNotifications();
-        UUID autreProjet = UUID.randomUUID();
+        Long autreProjet = 2L;
         DocumentGenere premier = evenement(PROJET_ID, "premier");
         DocumentGenere second = evenement(PROJET_ID, "second");
         journal.enregistrer(premier);
@@ -119,7 +119,7 @@ class EvenementsDocumentTest {
         String json = new String(message.getBody(), java.nio.charset.StandardCharsets.UTF_8);
 
         assertThat(json).contains("\"documentId\":\"" + evenement.documentId() + "\"")
-                .contains("\"projetId\":\"" + PROJET_ID + "\"")
+                .contains("\"projetId\":" + PROJET_ID)
                 .contains("\"type\":\"BUSINESS_PLAN\"")
                 .contains("\"titre\":\"Business plan - période 2026\"")
                 // Date en texte ISO-8601, comme l'API REST (et non en nombre de secondes).
@@ -135,7 +135,7 @@ class EvenementsDocumentTest {
         proprietes.setContentType("application/json");
         proprietes.setInferredArgumentType(DocumentGenere.class); // type du paramètre du @RabbitListener
         String json = """
-                {"documentId":"3b262c72-2222-4f01-9de3-6fb7669e7ce6","projetId":"%s","type":"COMPTE_RESULTAT",
+                {"documentId":"3b262c72-2222-4f01-9de3-6fb7669e7ce6","projetId":%s,"type":"COMPTE_RESULTAT",
                  "titre":"Publié par un service Python","creeLe":"2026-11-05T13:00:36Z","champFutur":42}
                 """.formatted(PROJET_ID);
 

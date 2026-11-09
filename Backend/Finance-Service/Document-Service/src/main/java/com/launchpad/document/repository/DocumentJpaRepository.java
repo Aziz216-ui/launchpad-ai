@@ -8,5 +8,5 @@ import java.util.UUID;
 
 interface DocumentJpaRepository extends JpaRepository<DocumentEntity, UUID> {
 
-    List<DocumentEntity> findByProjetIdOrderByCreatedAtDesc(UUID projetId);
+    List<DocumentEntity> findByProjetIdOrderByCreatedAtDesc(Long projetId);
 }

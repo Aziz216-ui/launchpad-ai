@@ -18,7 +18,7 @@ import java.util.UUID;
 public class DocumentEntity extends AuditedEntity {
 
     @Column(name = "projet_id", nullable = false, updatable = false)
-    private UUID projetId;
+    private Long projetId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, updatable = false, length = 30)
@@ -32,14 +32,14 @@ public class DocumentEntity extends AuditedEntity {
     protected DocumentEntity() {
     }
 
-    public DocumentEntity(UUID id, UUID projetId, TypeDocument type, ContenuDocument contenu, Instant createdAt) {
+    public DocumentEntity(UUID id, Long projetId, TypeDocument type, ContenuDocument contenu, Instant createdAt) {
         super(id, createdAt);
         this.projetId = projetId;
         this.type = type;
         this.contenu = contenu;
     }
 
-    public UUID getProjetId() {
+    public Long getProjetId() {
         return projetId;
     }
 

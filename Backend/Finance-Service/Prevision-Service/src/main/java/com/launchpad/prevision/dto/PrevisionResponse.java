@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public record PrevisionResponse(
         UUID previsionId,
-        UUID projetId,
+        Long projetId,
         String periode,
         BigDecimal chiffreAffaires,
         BigDecimal coutsDirects,

@@ -43,7 +43,7 @@ class PrevisionControllerTest {
     private GestionPrevisions gestionPrevisions;
 
     private static final String CORPS_PREVISION = """
-            {"projetId":"11111111-1111-1111-1111-111111111111","periode":"2026",
+            {"projetId":1,"periode":"2026",
              "chiffreAffaires":100000,"coutsDirects":40000,"depenses":70000}
             """;
 

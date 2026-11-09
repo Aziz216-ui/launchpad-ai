@@ -21,7 +21,7 @@ Un service Spring peut aussi appeler directement `lb://PREVISION-SERVICE` ou `lb
 ## 2. Conventions
 
 - **JSON** en entrée et en sortie (`Content-Type: application/json`), sauf l'export (fichier).
-- **Identifiants** : UUID (`projetId`, `previsionId`, `documentId`). Le projet n'est référencé que par
+- **Identifiants** : `projetId` est un **entier** (Long, comme dans Market, AI et User) ; `previsionId` et `documentId` sont des UUID. Le projet n'est référencé que par
   son identifiant : Finance ne vérifie pas son existence auprès d'un autre service.
 - **Montants** : nombres décimaux à 2 décimales (`100000.00`), sans devise. Taux en % (`60.00` = 60 %).
 - **Dates** : texte ISO-8601 en UTC (`"2026-11-05T13:00:36.010103Z"`).
@@ -56,7 +56,7 @@ Un service Spring peut aussi appeler directement `lb://PREVISION-SERVICE` ou `lb
 POST /api/finance/previsions
 ```
 ```json
-{ "projetId": "f3645458-1181-46e2-aac3-b012fdbde0f6", "periode": "2026",
+{ "projetId": 42, "periode": "2026",
   "chiffreAffaires": 100000, "coutsDirects": 40000, "depenses": 70000 }
 ```
 Règles : `periode` obligatoire (50 caractères max) ; montants ≥ 0, 13 chiffres et 2 décimales max ;
@@ -64,7 +64,7 @@ Règles : `periode` obligatoire (50 caractères max) ; montants ≥ 0, 13 chiffr
 
 Réponse `201` (en-tête `Location` vers la prévision créée) :
 ```json
-{ "previsionId": "0d1b4c32-b9e5-4223-9ad5-efc92ef32af7", "projetId": "f3645458-1181-46e2-aac3-b012fdbde0f6",
+{ "previsionId": "0d1b4c32-b9e5-4223-9ad5-efc92ef32af7", "projetId": 42,
   "periode": "2026", "chiffreAffaires": 100000.00, "coutsDirects": 40000.00, "depenses": 70000.00,
   "resultat": 30000.00, "creeLe": "2026-11-05T13:00:36.010103Z", "projections": [] }
 ```
@@ -107,7 +107,7 @@ Taux annuels en % (strictement supérieurs à -100) ; `horizon` de 1 à 10 ans. 
 POST /api/finance/documents
 ```
 ```json
-{ "projetId": "f3645458-1181-46e2-aac3-b012fdbde0f6", "type": "COMPTE_RESULTAT",
+{ "projetId": 42, "type": "COMPTE_RESULTAT",
   "tresorerieInitiale": 5000, "avecAnalyse": false }
 ```
 - `type` : `BUSINESS_PLAN`, `BILAN_OUVERTURE`, `COMPTE_RESULTAT`, `PLAN_TRESORERIE`, `RAPPORT_INVESTISSEUR`.
@@ -177,7 +177,7 @@ Publié par le Document-Service **après l'enregistrement** d'un document (jamai
 Corps du message :
 ```json
 { "documentId": "3b262c72-2222-4f01-9de3-6fb7669e7ce6",
-  "projetId": "f3645458-1181-46e2-aac3-b012fdbde0f6",
+  "projetId": 42,
   "type": "COMPTE_RESULTAT",
   "titre": "Compte de résultat prévisionnel - période 2026",
   "creeLe": "2026-11-05T13:00:36.525402Z" }
@@ -186,7 +186,7 @@ Corps du message :
 | Champ | Type | Description |
 |---|---|---|
 | `documentId` | UUID (texte) | Identifiant du document ; clé de dédoublonnage |
-| `projetId` | UUID (texte) | Projet concerné |
+| `projetId` | entier | Projet concerné |
 | `type` | texte | Un des 5 types de document (section 3) |
 | `titre` | texte | Titre lisible du document |
 | `creeLe` | date ISO-8601 UTC | Date de génération |
@@ -207,8 +207,8 @@ Le message ne contient jamais le contenu du document : pour l'obtenir, appelez
 
 - **Pas d'authentification** côté Finance pour l'instant (la passerelle tourne avec `JWT_ENABLED=false`) et pas
   de contrôle du propriétaire du projet : à faire avec le User-Service.
-- **`projetId` est un UUID.** Les services qui utilisent un entier ou une autre forme d'identifiant de projet
-  devront se mettre d'accord avec Finance sur un identifiant commun.
+- **`projetId` est un entier (BIGINT).** Il correspond à l'identifiant du projet dans le Projet-Service (AI) et dans Market.
+  Les anciennes données Finance (projetId UUID) sont supprimées par la migration V3.
 - **IA** (commentaire, analyse, assistant) : `503` tant que le Prevision-Service n'a pas de clé xAI.
 - **Notifications** : gardées en mémoire (50 dernières), perdues au redémarrage du Document-Service.
 - **En-tête `Location` via la passerelle** : il contient pour l'instant l'adresse interne du service

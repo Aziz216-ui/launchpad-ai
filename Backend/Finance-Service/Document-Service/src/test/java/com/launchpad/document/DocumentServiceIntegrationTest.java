@@ -38,8 +38,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import(TestcontainersConfiguration.class)
 class DocumentServiceIntegrationTest {
 
-    private static final UUID PROJET_ID = UUID.randomUUID();
-    private static final UUID PROJET_SANS_PREVISION = UUID.randomUUID();
+    private static final Long PROJET_ID = 1L;
+    private static final Long PROJET_SANS_PREVISION = 999L;
 
     private static final String SYNTHESE_JSON = """
             {"prevision":{"previsionId":"22222222-2222-2222-2222-222222222222","periode":"2026",

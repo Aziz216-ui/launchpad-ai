@@ -1,6 +1,17 @@
 spring:
   application:
     name: document-service
+  cloud:
+    openfeign:
+      client:
+        config:
+          # Timeouts par client Feign (ms) : court pour les données de prévision, long pour l'analyse IA (LLM)
+          prevision:
+            connect-timeout: 5000
+            read-timeout: 5000
+          prevision-analyse:
+            connect-timeout: 5000
+            read-timeout: 45000
   profiles:
     default: dev
   datasource:
@@ -55,13 +66,10 @@ springdoc:
     path: /swagger-ui.html
 
 finance:
-  # Prevision-Service : résolu via Eureka (nom), avec repli sur l'URL (API Gateway ou adresse directe).
-  # Timeout court pour les données de prévision ; plus long pour l'analyse, qui appelle le LLM (30 s côté Prevision).
+  # Prevision-Service : résolu par son nom dans Eureka (Feign + LoadBalancer).
+  # URL facultative : si renseignée, remplace Eureka (tests, exécution sans registre).
   prevision-service:
-    nom: ${PREVISION_SERVICE_NOM:prevision-service}
-    url: ${PREVISION_SERVICE_URL:http://localhost:8081}
-    timeout: 5s
-    timeout-analyse: 45s
+    url: ${PREVISION_SERVICE_URL:}
   stockage:
     # Profil dev : fichiers exportés sur le disque local.
     local:

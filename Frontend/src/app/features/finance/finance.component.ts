@@ -4,7 +4,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { FinanceStore } from './services/finance-store.service';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ENTIER_POSITIF = /^[1-9][0-9]{0,14}$/;
 
 /**
  * Racine du module « Finance » : titre, projet courant, onglets, puis l'écran choisi.
@@ -31,11 +31,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         </div>
         <form class="projet" (ngSubmit)="appliquer()" aria-label="Projet courant">
           <label class="champ">
-            Projet (UUID)
+            Projet (identifiant)
             <input name="projet" [(ngModel)]="saisie" [attr.aria-invalid]="!valide()" autocomplete="off"
               spellcheck="false" />
           </label>
-          <button type="submit" class="btn-secondaire" [disabled]="!valide() || saisie === store.projetId()">
+          <button type="submit" class="btn-secondaire" [disabled]="!valide() || saisie.trim() === '' + store.projetId()">
             Changer
           </button>
           <button type="button" class="btn-secondaire" (click)="nouveau()">Nouveau projet</button>
@@ -100,24 +100,24 @@ export class FinanceComponent implements OnInit {
     { route: 'assistant', libelle: 'Assistant IA' },
   ];
 
-  protected saisie = this.store.projetId();
+  protected saisie = String(this.store.projetId());
 
   ngOnInit(): void {
     this.store.recharger();
   }
 
   protected valide(): boolean {
-    return UUID.test(this.saisie.trim());
+    return ENTIER_POSITIF.test(this.saisie.trim());
   }
 
   protected appliquer(): void {
     if (this.valide()) {
-      this.store.changerProjet(this.saisie.trim().toLowerCase());
+      this.store.changerProjet(Number(this.saisie.trim()));
     }
   }
 
   protected nouveau(): void {
     this.store.nouveauProjet();
-    this.saisie = this.store.projetId();
+    this.saisie = String(this.store.projetId());
   }
 }

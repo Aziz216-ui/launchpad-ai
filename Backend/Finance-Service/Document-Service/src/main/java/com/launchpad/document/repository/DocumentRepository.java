@@ -16,7 +16,7 @@ public interface DocumentRepository {
     Optional<DocumentFinancier> findById(UUID documentId);
 
     /** Documents d'un projet, du plus récent au plus ancien. */
-    List<DocumentFinancier> findByProjetId(UUID projetId);
+    List<DocumentFinancier> findByProjetId(Long projetId);
 
     void deleteById(UUID documentId);
 }

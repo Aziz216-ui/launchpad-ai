@@ -26,7 +26,7 @@ export class FinanceApiService {
 
   // --- Prévisions (scénarios 1 et 2) ------------------------------------------
 
-  listerPrevisions(projetId: string): Observable<Prevision[]> {
+  listerPrevisions(projetId: number): Observable<Prevision[]> {
     return this.http.get<Prevision[]>(`${this.url}/projets/${projetId}/previsions`);
   }
 
@@ -52,7 +52,7 @@ export class FinanceApiService {
 
   // --- Documents (scénarios 3 et 4) -------------------------------------------
 
-  listerDocuments(projetId: string): Observable<DocumentResume[]> {
+  listerDocuments(projetId: number): Observable<DocumentResume[]> {
     return this.http.get<DocumentResume[]>(`${this.url}/projets/${projetId}/documents`);
   }
 
@@ -79,7 +79,7 @@ export class FinanceApiService {
 
   // --- Assistant financier IA -------------------------------------------------
 
-  poserQuestion(projetId: string, message: string): Observable<ReponseAssistant> {
+  poserQuestion(projetId: number, message: string): Observable<ReponseAssistant> {
     return this.http.post<ReponseAssistant>(`${this.url}/projets/${projetId}/assistant`, { message });
   }
 }

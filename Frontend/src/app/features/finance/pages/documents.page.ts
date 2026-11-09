@@ -205,7 +205,7 @@ export class DocumentsPage {
     return titre.startsWith('Analyse');
   }
 
-  private charger(projetId: string): void {
+  private charger(projetId: number): void {
     this.chargement.set(true);
     this.api.listerDocuments(projetId).subscribe({
       next: (liste) => {

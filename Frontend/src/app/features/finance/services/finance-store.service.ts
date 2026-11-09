@@ -6,17 +6,17 @@ import { FinanceApiService } from './finance-api.service';
 const CLE_PROJET = 'launchpad.finance.projetId';
 
 /**
- * État partagé des écrans Finance : projet courant (UUID) et ses prévisions.
+ * État partagé des écrans Finance : projet courant (identifiant entier) et ses prévisions.
  *
- * Le projet est un UUID car le Finance-Service référence le projet par identifiant seulement.
- * En attendant le User-Service, il est conservé dans le navigateur ; un nouvel UUID suffit pour
+ * Le projet est un entier, comme dans les autres services (Market, AI, User).
+ * En attendant le User-Service, il est conservé dans le navigateur ; un nouvel identifiant suffit pour
  * démarrer un projet vierge.
  */
 @Injectable({ providedIn: 'root' })
 export class FinanceStore {
   private readonly api = inject(FinanceApiService);
 
-  readonly projetId = signal<string>(projetInitial());
+  readonly projetId = signal<number>(projetInitial());
   readonly previsions = signal<Prevision[]>([]);
   readonly chargement = signal(false);
   readonly erreur = signal<string | null>(null);
@@ -32,7 +32,7 @@ export class FinanceStore {
     this.previsionChoisie.set(previsionId);
   }
 
-  changerProjet(projetId: string): void {
+  changerProjet(projetId: number): void {
     this.projetId.set(projetId);
     this.previsionChoisie.set(null);
     memoriser(projetId);
@@ -40,7 +40,7 @@ export class FinanceStore {
   }
 
   nouveauProjet(): void {
-    this.changerProjet(crypto.randomUUID());
+    this.changerProjet(nouvelIdentifiant());
   }
 
   recharger(): void {
@@ -70,21 +70,26 @@ export class FinanceStore {
   }
 }
 
-function projetInitial(): string {
+function projetInitial(): number {
   try {
-    const memorise = localStorage.getItem(CLE_PROJET);
-    if (memorise) return memorise;
+    const memorise = Number(localStorage.getItem(CLE_PROJET));
+    if (Number.isSafeInteger(memorise) && memorise > 0) return memorise;
   } catch {
     // Stockage indisponible : un projet éphémère est créé.
   }
-  const nouveau = crypto.randomUUID();
+  const nouveau = nouvelIdentifiant();
   memoriser(nouveau);
   return nouveau;
 }
 
-function memoriser(projetId: string): void {
+/** Identifiant entier positif pour un projet vierge (le Finance-Service attend un BIGINT). */
+function nouvelIdentifiant(): number {
+  return Math.floor(Math.random() * 1_000_000_000) + 1;
+}
+
+function memoriser(projetId: number): void {
   try {
-    localStorage.setItem(CLE_PROJET, projetId);
+    localStorage.setItem(CLE_PROJET, String(projetId));
   } catch {
     // ignoré
   }

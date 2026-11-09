@@ -57,13 +57,13 @@ public class PrevisionController {
 
     @Operation(summary = "Prévisions d'un projet (utilisé par l'Espace Comptable)")
     @GetMapping("/projets/{projetId}/previsions")
-    public List<PrevisionResponse> listerPrevisions(@PathVariable UUID projetId) {
+    public List<PrevisionResponse> listerPrevisions(@PathVariable Long projetId) {
         return gestionPrevisions.listerPrevisions(projetId).stream().map(PrevisionResponse::depuis).toList();
     }
 
     @Operation(summary = "Dernière prévision d'un projet avec marges et écart (utilisé par le Document-Service)")
     @GetMapping("/projets/{projetId}/synthese")
-    public SyntheseResponse consulterSynthese(@PathVariable UUID projetId) {
+    public SyntheseResponse consulterSynthese(@PathVariable Long projetId) {
         return SyntheseResponse.depuis(gestionPrevisions.consulterSynthese(projetId));
     }
 

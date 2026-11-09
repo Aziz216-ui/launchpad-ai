@@ -52,7 +52,7 @@ public class GestionDocuments {
      * Un événement DocumentGenere est ensuite publié ; il n'atteint RabbitMQ qu'une fois la transaction validée.
      */
     @Transactional
-    public DocumentFinancier genererDocument(UUID projetId, TypeDocument type, BigDecimal tresorerieInitiale,
+    public DocumentFinancier genererDocument(Long projetId, TypeDocument type, BigDecimal tresorerieInitiale,
                                              boolean avecAnalyse) {
         ContenuDocument contenu = generateur.generer(type, projetId, tresorerieInitiale);
         if (avecAnalyse) {
@@ -63,7 +63,7 @@ public class GestionDocuments {
         return genere;
     }
 
-    public List<DocumentFinancier> listerDocuments(UUID projetId) {
+    public List<DocumentFinancier> listerDocuments(Long projetId) {
         return documents.findByProjetId(projetId);
     }
 

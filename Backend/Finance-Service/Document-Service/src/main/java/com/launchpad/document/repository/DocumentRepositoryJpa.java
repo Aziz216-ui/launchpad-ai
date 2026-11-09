@@ -36,7 +36,7 @@ public class DocumentRepositoryJpa implements DocumentRepository {
     }
 
     @Override
-    public List<DocumentFinancier> findByProjetId(UUID projetId) {
+    public List<DocumentFinancier> findByProjetId(Long projetId) {
         return documents.findByProjetIdOrderByCreatedAtDesc(projetId).stream()
                 .map(DocumentRepositoryJpa::versDomaine)
                 .toList();

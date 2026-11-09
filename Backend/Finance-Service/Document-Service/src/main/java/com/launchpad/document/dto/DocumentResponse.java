@@ -7,7 +7,7 @@ import com.launchpad.document.domain.TypeDocument;
 import java.time.Instant;
 import java.util.UUID;
 
-public record DocumentResponse(UUID documentId, UUID projetId, TypeDocument type, Instant creeLe,
+public record DocumentResponse(UUID documentId, Long projetId, TypeDocument type, Instant creeLe,
                                ContenuDocument contenu) {
 
     public static DocumentResponse depuis(DocumentFinancier d) {

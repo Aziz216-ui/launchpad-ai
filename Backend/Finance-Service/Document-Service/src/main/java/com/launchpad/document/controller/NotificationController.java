@@ -28,7 +28,7 @@ public class NotificationController {
 
     @Operation(summary = "Notifications d'un projet reçues via RabbitMQ (documents générés)")
     @GetMapping("/projets/{projetId}/notifications")
-    public List<NotificationResponse> notifications(@PathVariable UUID projetId) {
+    public List<NotificationResponse> notifications(@PathVariable Long projetId) {
         return journal.notificationsDuProjet(projetId).stream().map(NotificationResponse::depuis).toList();
     }
 }

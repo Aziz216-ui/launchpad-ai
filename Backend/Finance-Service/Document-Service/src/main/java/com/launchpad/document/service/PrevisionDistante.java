@@ -15,5 +15,5 @@ public interface PrevisionDistante {
      * @throws com.launchpad.document.exception.PrevisionIntrouvable le projet n'a aucune prévision
      * @throws com.launchpad.document.exception.ServiceIndisponible  le Prevision-Service ne répond pas
      */
-    SynthesePrevision derniereSynthese(UUID projetId);
+    SynthesePrevision derniereSynthese(Long projetId);
 }

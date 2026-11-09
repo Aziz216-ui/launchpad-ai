@@ -160,7 +160,7 @@ class GenerateurDocsFinanciersTest {
 
     @Test
     void projet_sans_prevision_leve_prevision_introuvable() {
-        UUID projetSansPrevision = UUID.randomUUID();
+        Long projetSansPrevision = 999L;
         when(previsions.derniereSynthese(projetSansPrevision)).thenThrow(PrevisionIntrouvable.pourProjet(projetSansPrevision));
 
         assertThatThrownBy(() -> generateur.generer(TypeDocument.BUSINESS_PLAN, projetSansPrevision, null))

@@ -47,7 +47,7 @@ public class IaController {
 
     @Operation(summary = "Assistant financier : poser une question sur les finances d'un projet")
     @PostMapping("/projets/{projetId}/assistant")
-    public ReponseAssistantResponse poserQuestion(@PathVariable UUID projetId,
+    public ReponseAssistantResponse poserQuestion(@PathVariable Long projetId,
                                                   @Valid @RequestBody QuestionRequest requete) {
         return new ReponseAssistantResponse(projetId, assistantFinancier.repondre(projetId, requete.message()));
     }

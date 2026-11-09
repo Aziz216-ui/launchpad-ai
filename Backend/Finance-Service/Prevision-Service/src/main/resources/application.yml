@@ -1,6 +1,14 @@
 spring:
   application:
     name: prevision-service
+  cloud:
+    openfeign:
+      client:
+        config:
+          # Timeout court (ms) : un service éteint ne bloque pas l'assistant financier
+          document:
+            connect-timeout: 5000
+            read-timeout: 5000
   profiles:
     default: dev
   datasource:
@@ -63,12 +71,10 @@ springdoc:
     path: /swagger-ui.html
 
 finance:
-  # Document-Service : résolu via Eureka (nom), avec repli sur l'URL (API Gateway ou adresse directe).
-  # Timeout court : un service éteint ne bloque pas l'assistant financier.
+  # Document-Service : résolu par son nom dans Eureka (Feign + LoadBalancer).
+  # URL facultative : si renseignée, remplace Eureka (tests, exécution sans registre).
   document-service:
-    nom: ${DOCUMENT_SERVICE_NOM:document-service}
-    url: ${DOCUMENT_SERVICE_URL:http://localhost:8083}
-    timeout: 5s
+    url: ${DOCUMENT_SERVICE_URL:}
 
 management:
   endpoints:

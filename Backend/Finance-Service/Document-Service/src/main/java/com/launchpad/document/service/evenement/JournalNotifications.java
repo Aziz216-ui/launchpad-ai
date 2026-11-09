@@ -46,7 +46,7 @@ public class JournalNotifications {
     }
 
     /** Notifications d'un projet, de la plus récente à la plus ancienne. */
-    public synchronized List<NotificationDocument> notificationsDuProjet(UUID projetId) {
+    public synchronized List<NotificationDocument> notificationsDuProjet(Long projetId) {
         List<NotificationDocument> liste = new ArrayList<>(
                 notifications.values().stream().filter(n -> n.projetId().equals(projetId)).toList());
         Collections.reverse(liste);
