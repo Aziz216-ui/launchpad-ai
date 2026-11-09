@@ -30,7 +30,7 @@ services:
       # Django
       SECRET_KEY: "docker-secret-key-change-in-production"
       DEBUG: "False"
-      ALLOWED_HOSTS: "localhost,127.0.0.1,0.0.0.0,projet_service"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,0.0.0.0,projet_service,host.docker.internal"
 
       # Base de donnees
       DB_NAME: projet_db

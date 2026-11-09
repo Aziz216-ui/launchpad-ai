@@ -1,218 +1,1097 @@
-version: '3.8'
-
-# ─────────────────────────────────────────────
-#  VARIABLES SURCHARGEABLES (valeurs par défaut ci-dessous)
-# ─────────────────────────────────────────────
-#  POSTGRES_PORT           (5432)  port hôte de la base "legacy" partagée
-#  POSTGRES_CLIENT_PORT     (5444)  port hôte de la base du Lawyer-Client-Service
-#  POSTGRES_MESSAGE_PORT    (5438)  port hôte de la base du Lawyer-Message-Service
-#  POSTGRES_DOCREVIEW_PORT  (5437)  port hôte de la base du Lawyer-DocReview-Service
-#  RABBITMQ_PORT            (5674)  port hôte AMQP du RabbitMQ de ce compose
-#  RABBITMQ_MGMT_PORT       (15674) port hôte de l'interface de gestion RabbitMQ
-#  RABBITMQ_HOST            (rabbitmq) hôte RabbitMQ utilisé par les services avocat ;
-#                           surcharger en host.docker.internal pour pointer vers un
-#                           RabbitMQ déjà lancé en local plutôt que celui de ce compose.
-#  Conteneur nommé "lawyer-rabbitmq" (pas "launchpad-rabbitmq") et ports déplacés de
-#  5672/15672 vers 5674/15674 : Backend/RabbitMQ/docker-compose.yml (broker partagé pour
-#  Legal/Clause/Commentaire-Service) utilise déjà ce nom de conteneur et ces ports par
-#  défaut. Backend/Market/docker-compose.yml publie aussi son propre RabbitMQ sur
-#  5673/15673 (voir ce fichier) : trois brokers indépendants, un par groupe de services.
+# =============================================================================
+#  LaunchPad AI : TOUTE la plateforme dockerisée, lancée par une seule commande
 #
-#  Ports Postgres choisis pour ne pas collisionner avec les autres compose du repo :
-#  Finance/Prevision-Service (5433 par défaut), Finance/Document-Service (5434 par
-#  défaut), AI-Service/Projet-Service (5434), AI-Service/Recommandation-Service (5435),
-#  AI-Service/Conversation-Service (5436), Market (5440-5443).
+#      docker compose up -d --build        (depuis la racine du dépôt)
+#
+#  Puis ouvrir http://localhost:4200  (Frontend Angular)
+#
+#  Architecture :
+#    Navigateur ──► Frontend (nginx :4200) ──► API Gateway (:8090) ──► microservices
+#                                                   │  valide le JWT Keycloak
+#                                                   ▼
+#                                           Keycloak (:8180, realm "launchpad")
+#
+#  - SEUL point d'entrée des API : l'API Gateway (http://localhost:8090). Les microservices
+#    ne publient AUCUN port sur la machine : on ne peut les atteindre qu'à travers la gateway.
+#  - Sécurité : JWT_ENABLED=true, la gateway rejette (401) toute requête sans jeton Keycloak
+#    valide (sauf /api/auth/** : inscription, connexion, et les pages de documentation).
+#  - Communication SYNCHRONE : appels HTTP entre services (Legal -> Clause/Commentaire,
+#    Lawyer-* -> Lawyer-Client, comptabilité /internal/**, AI -> Market / Finance...).
+#  - Communication ASYNCHRONE : RabbitMQ (un seul broker, exchanges par domaine :
+#    market.events, ai.events, finance.events, launchpad.events + queues comptabilité).
+#  - Découverte de services : Eureka (http://localhost:8761).
+#
+#  Ports publiés sur la machine : 4200 (front), 8090 (gateway), 8180 (Keycloak),
+#  8761 (Eureka), 15672 (interface RabbitMQ).
+#
+#  Secrets / réglages : valeurs de démonstration par défaut, surchargeables par un fichier
+#  .env à la racine (voir .env.example).
+# =============================================================================
+
+name: launchpad
+
+x-java-commun: &java-commun
+  restart: unless-stopped
+  networks: [launchpad-net]
+  environment: &java-env
+    JAVA_TOOL_OPTIONS: "-Xmx320m"
+
+x-django-commun: &django-commun
+  restart: unless-stopped
+  networks: [launchpad-net]
+
+x-db: &db
+  image: postgres:16-alpine
+  restart: unless-stopped
+  networks: [launchpad-net]
+
+x-market-env: &market-env
+  DEBUG: "False"
+  SECRET_KEY: ${DJANGO_SECRET_KEY:-launchpad-dev-secret-key-change-me}
+  DB_PORT: "5432"
+  EUREKA_ENABLED: "true"
+  EUREKA_SERVER_URL: http://eureka:8761/eureka/
+  CORS_ALLOWED_ORIGINS: http://localhost:4200
+  SECTEUR_SERVICE_URL: http://secteur-service:8010
+  CONCURRENT_SERVICE_URL: http://concurrent-service:8011
+  ETUDE_SERVICE_URL: http://etude-service:8012
+  SWOT_SERVICE_URL: http://swot-service:8013
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+
+x-ai-env: &ai-env
+  SECRET_KEY: ${DJANGO_SECRET_KEY:-launchpad-dev-secret-key-change-me}
+  DEBUG: "False"
+  DB_PORT: "5432"
+  EUREKA_SERVER: http://eureka:8761/eureka/
+  # Appels synchrones directs entre services (réseau Docker), sans repasser par la gateway
+  MARKET_SERVICE_NAME: ETUDE-SERVICE
+  MARKET_SERVICE_URL: http://etude-service:8012
+  PROJET_SERVICE_NAME: projet-service
+  PROJET_SERVICE_URL: http://projet-service:8006
+  FINANCE_SERVICE_URL: http://prevision-service:8081
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+  LLM_PROVIDER: openai
+  LLM_API_KEY: ${LLM_API_KEY:-}
+  LLM_MODEL: gpt-4o-mini
+  LLM_BASE_URL: https://api.openai.com/v1
+
+x-compta-service: &compta-service
+  restart: unless-stopped
+  networks: [launchpad-net]
+
+x-compta-env: &compta-env
+  APP_ENV: dev
+  APP_SECRET: ${COMPTA_APP_SECRET:-0123456789abcdef0123456789abcdef}
+  APP_HOST: 0.0.0.0
+  KEYCLOAK_BASE_URL: http://keycloak:8080
+  KEYCLOAK_REALM: launchpad
+  KEYCLOAK_CLIENT_ID: launchpad-client
+  EUREKA_ENABLED: "true"
+  EUREKA_SERVER_URL: http://eureka:8761/eureka
+  INTERNAL_API_KEY: ${INTERNAL_API_KEY:-launchpad-dev-internal-key}
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+  WORKSPACE_SERVICE_URL: http://workspace-service:8091
+  CLIENT_FILE_SERVICE_URL: http://client-file-service:8092
+  DOCUMENT_SERVICE_URL: http://accounting-document-service:8093
+
 services:
-  # ─────────────────────────────────────────────
-  #  DATABASES  (one PostgreSQL DB per service)
-  # ─────────────────────────────────────────────
+  # ===========================================================================
+  #  INFRASTRUCTURE
+  # ===========================================================================
 
-  postgres-client:
-    image: postgres:16-alpine
-    container_name: postgres-client
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: launchpad-rabbitmq
+    hostname: rabbitmq
     restart: unless-stopped
     environment:
-      POSTGRES_DB: lawyer_client_db
-      POSTGRES_USER: app_user
-      POSTGRES_PASSWORD: '12345678'
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
     ports:
-      - "${POSTGRES_CLIENT_PORT:-5444}:5432"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"   # interface web : http://localhost:15672
     volumes:
-      - postgres_client_data:/var/lib/postgresql/data
-    networks:
-      - launchpad-net
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    networks: [launchpad-net]
 
-  postgres-message:
-    image: postgres:16-alpine
-    container_name: postgres-message
-    restart: unless-stopped
+  eureka:
+    <<: *java-commun
+    build: ./Backend/Eureka
+    container_name: launchpad-eureka
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8761'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  keycloak-db:
+    <<: *db
+    container_name: keycloak-db
     environment:
-      POSTGRES_DB: lawyer_message_db
-      POSTGRES_USER: app_user
-      POSTGRES_PASSWORD: '12345678'
-    ports:
-      - "${POSTGRES_MESSAGE_PORT:-5438}:5432"
+      POSTGRES_DB: keycloak_db
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak}
     volumes:
-      - postgres_message_data:/var/lib/postgresql/data
-    networks:
-      - launchpad-net
+      - keycloak_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-  postgres-docreview:
-    image: postgres:16-alpine
-    container_name: postgres-docreview
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: launchpad-keycloak
     restart: unless-stopped
+    command: start-dev
     environment:
-      POSTGRES_DB: lawyer_docreview_db
-      POSTGRES_USER: app_user
-      POSTGRES_PASSWORD: '12345678'
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak_db
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HEALTH_ENABLED: "true"
     ports:
-      - "${POSTGRES_DOCREVIEW_PORT:-5437}:5432"
-    volumes:
-      - postgres_docreview_data:/var/lib/postgresql/data
-    networks:
-      - launchpad-net
+      - "${KEYCLOAK_PORT:-8180}:8080"          # console : http://localhost:8180
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nhost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && timeout 2 cat <&3 | grep -m 1 -q '\"status\": \"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+    networks: [launchpad-net]
 
-  # Legacy shared DB (kept for User-Service / Django)
-  postgres:
-    image: postgres:16-alpine
-    container_name: launchpad-postgres
+  # Crée le realm "launchpad", le client "launchpad-client", les rôles
+  # (ADMIN, LAWYER, ENTREPRENEUR, ACCOUNTANT, FINANCIER) et le mapper d'audience, puis s'arrête.
+  keycloak-init:
+    build: ./Backend/User-Service
+    container_name: launchpad-keycloak-init
+    restart: "no"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080/
+      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-launchpad-dev-client-secret}
+    entrypoint: ["python", "setup_keycloak.py"]
+    networks: [launchpad-net]
+
+  # ===========================================================================
+  #  API GATEWAY (point d'entrée unique) + FRONTEND
+  # ===========================================================================
+
+  api-gateway:
+    <<: *java-commun
+    build: ./Backend/API-Gateway
+    container_name: launchpad-api-gateway
+    environment:
+      <<: *java-env
+      SPRING_PROFILES_ACTIVE: eureka
+      EUREKA_SERVER_URL: http://eureka:8761/eureka/
+      EUREKA_INSTANCE_HOST: api-gateway
+      JWT_ENABLED: "true"                       # sécurité Keycloak ACTIVE
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/launchpad/protocol/openid-connect/certs
+      CORS_ALLOWED_ORIGINS: http://localhost:4200
+      # Routage par Eureka : AUCUNE variable *_SERVICE_URI. Les routes restent en lb://<NOM>
+      # et la gateway résout chaque service dans le registre Eureka (voir application.yml).
+      # Un service qui vient de démarrer apparaît dans la gateway après quelques secondes.
+      EUREKA_CLIENT_REGISTRYFETCHINTERVALSECONDS: "5"
+      SPRING_CLOUD_LOADBALANCER_CACHE_TTL: 5s
+    ports:
+      - "8090:8090"
+    depends_on:
+      eureka:
+        condition: service_healthy
+      keycloak-init:
+        condition: service_completed_successfully
+
+  frontend:
+    build: ./Frontend
+    container_name: launchpad-frontend
     restart: unless-stopped
+    ports:
+      - "4200:80"
+    depends_on:
+      - api-gateway
+    networks: [launchpad-net]
+
+  # ===========================================================================
+  #  USER-SERVICE (Django + Keycloak)
+  # ===========================================================================
+
+  user-db:
+    <<: *db
+    container_name: user-db
     environment:
       POSTGRES_DB: launchpad
       POSTGRES_USER: app_user
       POSTGRES_PASSWORD: '12345678'
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - launchpad-net
+      - user_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_user -d launchpad"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-  # ─────────────────────────────────────────────
-  #  RABBITMQ  (async inter-service messaging)
-  # ─────────────────────────────────────────────
-
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: lawyer-rabbitmq
-    restart: unless-stopped
+  user-service:
+    <<: *django-commun
+    build: ./Backend/User-Service
+    container_name: user-service
+    depends_on:
+      user-db:
+        condition: service_healthy
+      keycloak-init:
+        condition: service_completed_successfully
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    ports:
-      - "${RABBITMQ_PORT:-5674}:5672"    # AMQP protocol
-      - "${RABBITMQ_MGMT_PORT:-15674}:15672"  # Management Web UI
+      DEBUG: "False"
+      SECRET_KEY: ${DJANGO_SECRET_KEY:-launchpad-dev-secret-key-change-me}
+      ALLOWED_HOSTS: localhost,127.0.0.1,user-service
+      PORT: "8001"
+      DB_NAME: launchpad
+      DB_USER: app_user
+      DB_PASSWORD: '12345678'
+      DB_HOST: user-db
+      DB_PORT: "5432"
+      KEYCLOAK_SERVER_URL: http://keycloak:8080/
+      KEYCLOAK_REALM: launchpad
+      KEYCLOAK_CLIENT_ID: launchpad-client
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-launchpad-dev-client-secret}
+      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      EUREKA_SERVER_URL: http://eureka:8761/eureka
+      EUREKA_INSTANCE_HOST: user-service
+      # Comptes de démo : ahmed (ADMIN) et adem (ENTREPRENEUR), voir seed_demo_users.py
+      SEED_DEMO_USERS: ${SEED_DEMO_USERS:-true}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-Ahmed@2026!}
+      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-Adem@2026!}
+      EUREKA_ENABLED: "true"
+
+  # ===========================================================================
+  #  ÉTUDE DE MARCHÉ (4 services Django + 4 bases + 3 consommateurs RabbitMQ)
+  # ===========================================================================
+
+  secteur-db:
+    <<: *db
+    container_name: secteur-db
+    environment:
+      POSTGRES_DB: secteur_db
+      POSTGRES_USER: secteur_user
+      POSTGRES_PASSWORD: ${MARKET_DB_PASSWORD:-market-db-pass}
+    volumes: [secteur_db_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U secteur_user -d secteur_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  concurrent-db:
+    <<: *db
+    container_name: concurrent-db
+    environment:
+      POSTGRES_DB: concurrent_db
+      POSTGRES_USER: concurrent_user
+      POSTGRES_PASSWORD: ${MARKET_DB_PASSWORD:-market-db-pass}
+    volumes: [concurrent_db_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U concurrent_user -d concurrent_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  etude-db:
+    <<: *db
+    container_name: etude-db
+    environment:
+      POSTGRES_DB: etude_db
+      POSTGRES_USER: etude_user
+      POSTGRES_PASSWORD: ${MARKET_DB_PASSWORD:-market-db-pass}
+    volumes: [etude_db_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U etude_user -d etude_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  swot-db:
+    <<: *db
+    container_name: swot-db
+    environment:
+      POSTGRES_DB: swot_db
+      POSTGRES_USER: swot_user
+      POSTGRES_PASSWORD: ${MARKET_DB_PASSWORD:-market-db-pass}
+    volumes: [swot_db_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U swot_user -d swot_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  secteur-service:
+    <<: *django-commun
+    build: {context: ./Backend/Market, dockerfile: secteur-service/Dockerfile}
+    container_name: secteur-service
+    environment:
+      <<: *market-env
+      ALLOWED_HOSTS: localhost,127.0.0.1,secteur-service
+      CSRF_TRUSTED_ORIGINS: http://localhost:8090,http://localhost:4200
+      EUREKA_INSTANCE_HOST: secteur-service
+      DB_HOST: secteur-db
+      DB_NAME: secteur_db
+      DB_USER: secteur_user
+      DB_PASSWORD: ${MARKET_DB_PASSWORD:-market-db-pass}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8010/api/market/secteurs/health/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      secteur-db: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+
+  concurrent-service:
+    <<: *django-commun
+    build: {context: ./Backend/Market, dockerfile: concurrent-service/Dockerfile}
+    container_name: concurrent-service
+    environment:
+      <<: *market-env
+      ALLOWED_HOSTS: localhost,127.0.0.1,concurrent-service
+      CSRF_TRUSTED_ORIGINS: http://localhost:8090,http://localhost:4200
+      EUREKA_INSTANCE_HOST: concurrent-service
+      DB_HOST: concurrent-db
+      DB_NAME: concurrent_db
+      DB_USER: concurrent_user
+      DB_PASSWORD: ${MARKET_DB_PASSWORD:-market-db-pass}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8011/api/market/concurrents/health/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      concurrent-db: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+
+  etude-service:
+    <<: *django-commun
+    build: {context: ./Backend/Market, dockerfile: etude-service/Dockerfile}
+    container_name: etude-service
+    environment:
+      <<: *market-env
+      ALLOWED_HOSTS: localhost,127.0.0.1,etude-service
+      CSRF_TRUSTED_ORIGINS: http://localhost:8090,http://localhost:4200
+      EUREKA_INSTANCE_HOST: etude-service
+      DB_HOST: etude-db
+      DB_NAME: etude_db
+      DB_USER: etude_user
+      DB_PASSWORD: ${MARKET_DB_PASSWORD:-market-db-pass}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8012/api/market/etudes/health/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      etude-db: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+
+  swot-service:
+    <<: *django-commun
+    build: {context: ./Backend/Market, dockerfile: swot-service/Dockerfile}
+    container_name: swot-service
+    environment:
+      <<: *market-env
+      ALLOWED_HOSTS: localhost,127.0.0.1,swot-service
+      CSRF_TRUSTED_ORIGINS: http://localhost:8090,http://localhost:4200
+      EUREKA_INSTANCE_HOST: swot-service
+      DB_HOST: swot-db
+      DB_NAME: swot_db
+      DB_USER: swot_user
+      DB_PASSWORD: ${MARKET_DB_PASSWORD:-market-db-pass}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8013/api/market/swot/health/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      swot-db: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+
+  # Consommateurs RabbitMQ (asynchrone) : même image que le service, autre commande
+  concurrent-consumer:
+    <<: *django-commun
+    build: {context: ./Backend/Market, dockerfile: concurrent-service/Dockerfile}
+    container_name: concurrent-consumer
+    command: ["python", "manage.py", "consume_events"]
+    environment:
+      <<: *market-env
+      EUREKA_ENABLED: "false"
+      DB_HOST: concurrent-db
+      DB_NAME: concurrent_db
+      DB_USER: concurrent_user
+      DB_PASSWORD: ${MARKET_DB_PASSWORD:-market-db-pass}
+    depends_on:
+      concurrent-service: {condition: service_healthy}
+
+  etude-consumer:
+    <<: *django-commun
+    build: {context: ./Backend/Market, dockerfile: etude-service/Dockerfile}
+    container_name: etude-consumer
+    command: ["python", "manage.py", "consume_events"]
+    environment:
+      <<: *market-env
+      EUREKA_ENABLED: "false"
+      DB_HOST: etude-db
+      DB_NAME: etude_db
+      DB_USER: etude_user
+      DB_PASSWORD: ${MARKET_DB_PASSWORD:-market-db-pass}
+    depends_on:
+      etude-service: {condition: service_healthy}
+
+  swot-consumer:
+    <<: *django-commun
+    build: {context: ./Backend/Market, dockerfile: swot-service/Dockerfile}
+    container_name: swot-consumer
+    command: ["python", "manage.py", "consume_events"]
+    environment:
+      <<: *market-env
+      EUREKA_ENABLED: "false"
+      DB_HOST: swot-db
+      DB_NAME: swot_db
+      DB_USER: swot_user
+      DB_PASSWORD: ${MARKET_DB_PASSWORD:-market-db-pass}
+    depends_on:
+      swot-service: {condition: service_healthy}
+
+  # ===========================================================================
+  #  IA (Projet, Recommandation, Conversation)
+  # ===========================================================================
+
+  projet-db:
+    <<: *db
+    container_name: projet-db
+    environment:
+      POSTGRES_DB: projet_db
+      POSTGRES_USER: projet_user
+      POSTGRES_PASSWORD: projet_password
+    volumes: [projet_db_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U projet_user -d projet_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  recommandation-db:
+    <<: *db
+    container_name: recommandation-db
+    environment:
+      POSTGRES_DB: recommandation_db
+      POSTGRES_USER: recommandation_user
+      POSTGRES_PASSWORD: recommandation_password
+    volumes: [recommandation_db_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recommandation_user -d recommandation_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  conversation-db:
+    <<: *db
+    container_name: conversation-db
+    environment:
+      POSTGRES_DB: conversation_db
+      POSTGRES_USER: conversation_user
+      POSTGRES_PASSWORD: conversation_password
+    volumes: [conversation_db_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U conversation_user -d conversation_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  projet-service:
+    <<: *django-commun
+    build: ./Backend/AI-Service/Projet-Service
+    container_name: projet-service
+    environment:
+      <<: *ai-env
+      ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,projet-service
+      DB_NAME: projet_db
+      DB_USER: projet_user
+      DB_PASSWORD: projet_password
+      DB_HOST: projet-db
+      APP_NAME: projet-service
+      APP_PORT: "8006"
+      HOST_IP: projet-service
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py seed_projet &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8006 --workers 1 --timeout 120"
+    depends_on:
+      projet-db: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+
+  projet-consumer:
+    <<: *django-commun
+    build: ./Backend/AI-Service/Projet-Service
+    container_name: projet-consumer
+    environment:
+      <<: *ai-env
+      ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,projet-service
+      DB_NAME: projet_db
+      DB_USER: projet_user
+      DB_PASSWORD: projet_password
+      DB_HOST: projet-db
+      APP_NAME: projet-consumer
+      APP_PORT: "8006"
+      HOST_IP: projet-consumer
+      EUREKA_ENABLED: "false"
+    command: ["sh", "-c", "sleep 25 && python manage.py consume_events"]
+    depends_on:
+      projet-service: {condition: service_started}
+
+  recommandation-service:
+    <<: *django-commun
+    build: ./Backend/AI-Service/Recommandation-Service
+    container_name: recommandation-service
+    environment:
+      <<: *ai-env
+      ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,recommandation-service
+      DB_NAME: recommandation_db
+      DB_USER: recommandation_user
+      DB_PASSWORD: recommandation_password
+      DB_HOST: recommandation-db
+      APP_NAME: recommandation-service
+      APP_PORT: "8007"
+      HOST_IP: recommandation-service
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py seed_recommandation &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8007 --workers 1 --timeout 120"
+    depends_on:
+      recommandation-db: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+
+  recommandation-consumer:
+    <<: *django-commun
+    build: ./Backend/AI-Service/Recommandation-Service
+    container_name: recommandation-consumer
+    environment:
+      <<: *ai-env
+      ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,recommandation-service
+      DB_NAME: recommandation_db
+      DB_USER: recommandation_user
+      DB_PASSWORD: recommandation_password
+      DB_HOST: recommandation-db
+      APP_NAME: recommandation-consumer
+      APP_PORT: "8007"
+      HOST_IP: recommandation-consumer
+      EUREKA_ENABLED: "false"
+    command: ["sh", "-c", "sleep 25 && python manage.py consume_events"]
+    depends_on:
+      recommandation-service: {condition: service_started}
+
+  conversation-service:
+    <<: *django-commun
+    build: ./Backend/AI-Service/Conversation-Service
+    container_name: conversation-service
+    environment:
+      <<: *ai-env
+      ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,conversation-service
+      DB_NAME: conversation_db
+      DB_USER: conversation_user
+      DB_PASSWORD: conversation_password
+      DB_HOST: conversation-db
+      APP_NAME: conversation-service
+      APP_PORT: "8008"
+      HOST_IP: conversation-service
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py seed_conversation &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8008 --workers 1 --timeout 120"
+    depends_on:
+      conversation-db: {condition: service_healthy}
+
+  # ===========================================================================
+  #  FINANCE (Prévision + Document, Spring Boot)
+  # ===========================================================================
+
+  prevision-db:
+    <<: *db
+    container_name: prevision-db
+    environment:
+      POSTGRES_DB: prevision_db
+      POSTGRES_USER: prevision
+      POSTGRES_PASSWORD: prevision
+    volumes: [prevision_db_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prevision -d prevision_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  document-db:
+    <<: *db
+    container_name: document-db
+    environment:
+      POSTGRES_DB: document_db
+      POSTGRES_USER: document
+      POSTGRES_PASSWORD: document
+    volumes: [document_db_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U document -d document_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  prevision-service:
+    <<: *java-commun
+    build: ./Backend/Finance-Service/Prevision-Service
+    container_name: prevision-service
+    environment:
+      <<: *java-env
+      DB_URL: jdbc:postgresql://prevision-db:5432/prevision_db
+      DB_USERNAME: prevision
+      DB_PASSWORD: prevision
+      EUREKA_SERVER_URL: http://eureka:8761/eureka/
+      EUREKA_INSTANCE_HOST: prevision-service
+      SPRING_AI_MODEL_CHAT: none
+      XAI_API_KEY: ${XAI_API_KEY:-}
+    depends_on:
+      prevision-db: {condition: service_healthy}
+
+  document-service:
+    <<: *java-commun
+    build: ./Backend/Finance-Service/Document-Service
+    container_name: document-service
+    environment:
+      <<: *java-env
+      DB_URL: jdbc:postgresql://document-db:5432/document_db
+      DB_USERNAME: document
+      DB_PASSWORD: document
+      EUREKA_SERVER_URL: http://eureka:8761/eureka/
+      EUREKA_INSTANCE_HOST: document-service
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: ${RABBITMQ_USER:-guest}
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - launchpad-net
+      - document_files:/app/data/documents
+    depends_on:
+      document-db: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
 
-  # ─────────────────────────────────────────────
-  #  EUREKA DISCOVERY SERVER
-  # ─────────────────────────────────────────────
+  # ===========================================================================
+  #  ESPACE AVOCAT (Spring Boot) : Client, Message, DocReview
+  # ===========================================================================
 
-  eureka-server:
-    build:
-      context: ./Backend/Eureka
-      dockerfile: Dockerfile
-    container_name: launchpad-eureka
-    ports:
-      - "8761:8761"
-    networks:
-      - launchpad-net
-    profiles:
-      - full-stack
+  postgres-client:
+    <<: *db
+    container_name: postgres-client
+    environment:
+      POSTGRES_DB: lawyer_client_db
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: '12345678'
+    volumes: [postgres_client_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_user -d lawyer_client_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-  # ─────────────────────────────────────────────
-  #  LAWYER MICROSERVICES
-  # ─────────────────────────────────────────────
+  postgres-message:
+    <<: *db
+    container_name: postgres-message
+    environment:
+      POSTGRES_DB: lawyer_message_db
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: '12345678'
+    volumes: [postgres_message_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_user -d lawyer_message_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres-docreview:
+    <<: *db
+    container_name: postgres-docreview
+    environment:
+      POSTGRES_DB: lawyer_docreview_db
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: '12345678'
+    volumes: [postgres_docreview_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_user -d lawyer_docreview_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   lawyer-client-service:
-    build:
-      context: ./Backend/Lawyer-Client-Service
-      dockerfile: Dockerfile
+    <<: *java-commun
+    build: ./Backend/Lawyer-Client-Service
     container_name: lawyer-client-service
-    restart: unless-stopped
     environment:
+      <<: *java-env
       DB_HOST: postgres-client
-      DB_PORT: 5432
       DB_NAME: lawyer_client_db
       DB_USER: app_user
       DB_PASSWORD: '12345678'
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
-      EUREKA_INSTANCE_HOSTNAME: localhost
-    ports:
-      - "8082:8082"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      EUREKA_SERVER_URL: http://eureka:8761/eureka
+      EUREKA_INSTANCE_HOSTNAME: lawyer-client-service
     depends_on:
-      - postgres-client
-      - rabbitmq
-    networks:
-      - launchpad-net
-    profiles:
-      - full-stack
+      postgres-client: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
 
   lawyer-message-service:
-    build:
-      context: ./Backend/Lawyer-Message-Service
-      dockerfile: Dockerfile
+    <<: *java-commun
+    build: ./Backend/Lawyer-Message-Service
     container_name: lawyer-message-service
-    restart: unless-stopped
     environment:
+      <<: *java-env
       DB_HOST: postgres-message
-      DB_PORT: 5432
       DB_NAME: lawyer_message_db
       DB_USER: app_user
       DB_PASSWORD: '12345678'
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
-      EUREKA_INSTANCE_HOSTNAME: localhost
-      CLIENT_SERVICE_URL: http://lawyer-client-service:8082
-    ports:
-      - "8084:8084"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      EUREKA_SERVER_URL: http://eureka:8761/eureka
+      EUREKA_INSTANCE_HOSTNAME: lawyer-message-service
     depends_on:
-      - postgres-message
-      - rabbitmq
-      - lawyer-client-service
-    networks:
-      - launchpad-net
-    profiles:
-      - full-stack
+      postgres-message: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+      lawyer-client-service: {condition: service_started}
 
   lawyer-docreview-service:
-    build:
-      context: ./Backend/Lawyer-DocReview-Service
-      dockerfile: Dockerfile
+    <<: *java-commun
+    build: ./Backend/Lawyer-DocReview-Service
     container_name: lawyer-docreview-service
-    restart: unless-stopped
     environment:
+      <<: *java-env
       DB_HOST: postgres-docreview
-      DB_PORT: 5432
       DB_NAME: lawyer_docreview_db
       DB_USER: app_user
       DB_PASSWORD: '12345678'
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
-      EUREKA_INSTANCE_HOSTNAME: localhost
-      CLIENT_SERVICE_URL: http://lawyer-client-service:8082
-    ports:
-      - "8086:8086"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      EUREKA_SERVER_URL: http://eureka:8761/eureka
+      EUREKA_INSTANCE_HOSTNAME: lawyer-docreview-service
     depends_on:
-      - postgres-docreview
-      - rabbitmq
-      - lawyer-client-service
-    networks:
-      - launchpad-net
-    profiles:
-      - full-stack
+      postgres-docreview: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+      lawyer-client-service: {condition: service_started}
+
+  # ===========================================================================
+  #  LEGAL / CLAUSE / COMMENTAIRE (NestJS)
+  # ===========================================================================
+
+  legal-postgres:
+    <<: *db
+    container_name: legal-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: legal_db
+    volumes: [legal_pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d legal_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  clause-postgres:
+    <<: *db
+    container_name: clause-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: clause_db
+    volumes: [clause_pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d clause_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  commentaire-postgres:
+    <<: *db
+    container_name: commentaire-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: commentaire_db
+    volumes: [commentaire_pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d commentaire_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  legal-service:
+    <<: *django-commun
+    build: ./Backend/Legal-Service
+    container_name: legal-service
+    environment:
+      PORT: 3003
+      NODE_ENV: production
+      GLOBAL_PREFIX: api/legal
+      DB_HOST: legal-postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgrespassword
+      DB_NAME: legal_db
+      DB_SYNCHRONIZE: "true"
+      DB_LOGGING: "false"
+      EUREKA_ENABLED: "true"
+      EUREKA_HOST: eureka
+      EUREKA_PORT: 8761
+      EUREKA_APP_NAME: LEGAL-SERVICE
+      EUREKA_CLIENT_HOST: legal-service
+      RABBITMQ_ENABLED: "true"
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672
+      RABBITMQ_EXCHANGE: launchpad.events
+      CLAUSE_SERVICE_URL: http://clause-service:3004/api/clauses
+      COMMENTAIRE_SERVICE_URL: http://commentaire-service:3005/api/commentaires
+    depends_on:
+      legal-postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+      clause-service: {condition: service_started}
+      commentaire-service: {condition: service_started}
+
+  clause-service:
+    <<: *django-commun
+    build: ./Backend/Clause-Service
+    container_name: clause-service
+    environment:
+      PORT: 3004
+      NODE_ENV: production
+      GLOBAL_PREFIX: api/clauses
+      DB_HOST: clause-postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgrespassword
+      DB_NAME: clause_db
+      DB_SYNCHRONIZE: "true"
+      DB_LOGGING: "false"
+      EUREKA_ENABLED: "true"
+      EUREKA_HOST: eureka
+      EUREKA_PORT: 8761
+      EUREKA_APP_NAME: CLAUSE-SERVICE
+      EUREKA_CLIENT_HOST: clause-service
+      RABBITMQ_ENABLED: "true"
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672
+      RABBITMQ_EXCHANGE: launchpad.events
+    depends_on:
+      clause-postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+
+  commentaire-service:
+    <<: *django-commun
+    build: ./Backend/Commentaire-Service
+    container_name: commentaire-service
+    environment:
+      PORT: 3005
+      NODE_ENV: production
+      GLOBAL_PREFIX: api/commentaires
+      DB_HOST: commentaire-postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgrespassword
+      DB_NAME: commentaire_db
+      DB_SYNCHRONIZE: "true"
+      DB_LOGGING: "false"
+      EUREKA_ENABLED: "true"
+      EUREKA_HOST: eureka
+      EUREKA_PORT: 8761
+      EUREKA_APP_NAME: COMMENTAIRE-SERVICE
+      EUREKA_CLIENT_HOST: commentaire-service
+      RABBITMQ_ENABLED: "true"
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672
+      RABBITMQ_EXCHANGE: launchpad.events
+    depends_on:
+      commentaire-postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+
+  # ===========================================================================
+  #  ESPACE COMPTABLE (Symfony) : 4 services + MariaDB + 2 consommateurs RabbitMQ
+  # ===========================================================================
+
+  compta-db:
+    image: mariadb:10.11
+    container_name: compta-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${COMPTA_DB_PASSWORD:-compta-root-pass}
+    volumes:
+      - compta_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [launchpad-net]
+
+  workspace-service:
+    <<: *compta-service
+    build: {context: ./Backend/Professional-Service}
+    image: launchpad/accounting:latest
+    container_name: workspace-service
+    environment:
+      <<: *compta-env
+      APP_PORT: "8091"
+      APP_SERVICE_NAME: workspace-service
+      SERVICE: workspace-service
+      EUREKA_INSTANCE_HOST: workspace-service
+      EUREKA_INSTANCE_IP: workspace-service
+      DATABASE_URL: "mysql://root:${COMPTA_DB_PASSWORD:-compta-root-pass}@compta-db:3306/workspace_db?serverVersion=10.11.0-MariaDB&charset=utf8mb4"
+    depends_on:
+      compta-db: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+
+  client-file-service:
+    <<: *compta-service
+    build: {context: ./Backend/Professional-Service}
+    image: launchpad/accounting:latest
+    container_name: client-file-service
+    environment:
+      <<: *compta-env
+      APP_PORT: "8092"
+      APP_SERVICE_NAME: client-file-service
+      SERVICE: client-file-service
+      EUREKA_INSTANCE_HOST: client-file-service
+      EUREKA_INSTANCE_IP: client-file-service
+      DATABASE_URL: "mysql://root:${COMPTA_DB_PASSWORD:-compta-root-pass}@compta-db:3306/client_file_db?serverVersion=10.11.0-MariaDB&charset=utf8mb4"
+    depends_on:
+      compta-db: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+      workspace-service: {condition: service_started}
+
+  accounting-document-service:
+    <<: *compta-service
+    build: {context: ./Backend/Professional-Service}
+    image: launchpad/accounting:latest
+    container_name: accounting-document-service
+    environment:
+      <<: *compta-env
+      APP_PORT: "8093"
+      APP_SERVICE_NAME: document-service
+      SERVICE: document-service
+      EUREKA_INSTANCE_HOST: accounting-document-service
+      EUREKA_INSTANCE_IP: accounting-document-service
+      DATABASE_URL: "mysql://root:${COMPTA_DB_PASSWORD:-compta-root-pass}@compta-db:3306/document_db?serverVersion=10.11.0-MariaDB&charset=utf8mb4"
+    volumes:
+      - compta_document_files:/app/document-service/var/uploads
+    depends_on:
+      compta-db: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+      client-file-service: {condition: service_started}
+
+  accounting-message-service:
+    <<: *compta-service
+    build: {context: ./Backend/Professional-Service}
+    image: launchpad/accounting:latest
+    container_name: accounting-message-service
+    environment:
+      <<: *compta-env
+      APP_PORT: "8094"
+      APP_SERVICE_NAME: message-service
+      SERVICE: message-service
+      EUREKA_INSTANCE_HOST: accounting-message-service
+      EUREKA_INSTANCE_IP: accounting-message-service
+      DATABASE_URL: "mysql://root:${COMPTA_DB_PASSWORD:-compta-root-pass}@compta-db:3306/message_db?serverVersion=10.11.0-MariaDB&charset=utf8mb4"
+    depends_on:
+      compta-db: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+      accounting-document-service: {condition: service_started}
+
+  # Consommateurs RabbitMQ de la comptabilité : même image, commande d'écoute des queues
+  client-file-consumer:
+    <<: *compta-service
+    build: {context: ./Backend/Professional-Service}
+    image: launchpad/accounting:latest
+    container_name: client-file-consumer
+    command: ["php", "bin/console", "app:rabbitmq:consume"]
+    environment:
+      <<: *compta-env
+      APP_PORT: "8092"
+      APP_SERVICE_NAME: client-file-service
+      SERVICE: client-file-service
+      EUREKA_ENABLED: "false"
+      RUN_MIGRATIONS: "false"
+      DATABASE_URL: "mysql://root:${COMPTA_DB_PASSWORD:-compta-root-pass}@compta-db:3306/client_file_db?serverVersion=10.11.0-MariaDB&charset=utf8mb4"
+    depends_on:
+      client-file-service: {condition: service_started}
+
+  message-consumer:
+    <<: *compta-service
+    build: {context: ./Backend/Professional-Service}
+    image: launchpad/accounting:latest
+    container_name: message-consumer
+    command: ["php", "bin/console", "app:rabbitmq:consume"]
+    environment:
+      <<: *compta-env
+      APP_PORT: "8094"
+      APP_SERVICE_NAME: message-service
+      SERVICE: message-service
+      EUREKA_ENABLED: "false"
+      RUN_MIGRATIONS: "false"
+      DATABASE_URL: "mysql://root:${COMPTA_DB_PASSWORD:-compta-root-pass}@compta-db:3306/message_db?serverVersion=10.11.0-MariaDB&charset=utf8mb4"
+    depends_on:
+      accounting-message-service: {condition: service_started}
 
 volumes:
-  postgres_data:
+  rabbitmq_data:
+  keycloak_db_data:
+  user_db_data:
+  secteur_db_data:
+  concurrent_db_data:
+  etude_db_data:
+  swot_db_data:
+  projet_db_data:
+  recommandation_db_data:
+  conversation_db_data:
+  prevision_db_data:
+  document_db_data:
+  document_files:
   postgres_client_data:
   postgres_message_data:
   postgres_docreview_data:
-  rabbitmq_data:
+  legal_pgdata:
+  clause_pgdata:
+  commentaire_pgdata:
+  compta_db_data:
+  compta_document_files:
 
 networks:
   launchpad-net:
+    name: launchpad-net
     driver: bridge
