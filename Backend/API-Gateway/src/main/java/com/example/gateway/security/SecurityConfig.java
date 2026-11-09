@@ -58,6 +58,7 @@ public class SecurityConfig {
             "/actuator/health", "/actuator/health/**");
 
     static final String UNAUTHORIZED_MESSAGE = "Token manquant ou invalide";
+    static final String FORBIDDEN_MESSAGE = "Acces refuse : role insuffisant";
 
     @Bean
     SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
@@ -88,13 +89,21 @@ public class SecurityConfig {
         return http
                 .authorizeExchange(auth -> auth
                         .matchers(publicRoutes).permitAll()
+                        // Autorisation par rôle : un utilisateur connecté ne peut pas supprimer,
+                        // seul un ADMIN (rôle Keycloak) le peut. Les autres méthodes restent
+                        // ouvertes à tout utilisateur authentifié (contrôles fins dans les services).
+                        .pathMatchers(HttpMethod.DELETE, "/**").hasRole("ADMIN")
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(Customizer.withDefaults())
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(new KeycloakRoleConverter()))
                         .bearerTokenConverter(exchange -> publicRoutes.matches(exchange)
                                 .flatMap(match -> match.isMatch() ? Mono.empty() : bearer.convert(exchange)))
                         .authenticationEntryPoint(unauthorized))
-                .exceptionHandling(errors -> errors.authenticationEntryPoint(unauthorized))
+                .exceptionHandling(errors -> errors
+                        .authenticationEntryPoint(unauthorized)
+                        // Authentifié mais rôle insuffisant : 403 (et non 401)
+                        .accessDeniedHandler((exchange, ex) -> JsonResponses.write(
+                                exchange.getResponse(), HttpStatus.FORBIDDEN, Map.of("message", FORBIDDEN_MESSAGE))))
                 .build();
     }
 

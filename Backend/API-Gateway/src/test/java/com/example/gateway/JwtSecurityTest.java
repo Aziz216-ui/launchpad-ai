@@ -156,11 +156,39 @@ class JwtSecurityTest extends GatewayTestSupport {
         return request.getHeader(HttpHeaders.AUTHORIZATION);
     }
 
-    private static String token(RSAKey key, long secondsUntilExpiry) {
+    @Test
+    void deleteWithUserRoleGives403() {
+        client.delete().uri("/api/market/etudes/1/")
+                .headers(h -> h.setBearerAuth(token(keycloakKey, 300, "ENTREPRENEUR"))).exchange()
+                .expectStatus().isForbidden()
+                .expectBody().jsonPath("$.message").isEqualTo("Acces refuse : role insuffisant");
+    }
+
+    @Test
+    void deleteWithoutTokenGives401() {
+        client.delete().uri("/api/market/etudes/1/").exchange().expectStatus().isUnauthorized();
+    }
+
+    @Test
+    void deleteWithAdminRoleIsForwarded() {
+        client.delete().uri("/api/market/etudes/1/")
+                .headers(h -> h.setBearerAuth(token(keycloakKey, 300, "ADMIN"))).exchange()
+                .expectStatus().isOk();
+    }
+
+    @Test
+    void nonDeleteMethodsStayOpenToAnyAuthenticatedRole() {
+        client.get().uri("/api/market/etudes/")
+                .headers(h -> h.setBearerAuth(token(keycloakKey, 300, "ENTREPRENEUR"))).exchange()
+                .expectStatus().isOk();
+    }
+
+    private static String token(RSAKey key, long secondsUntilExpiry, String... roles) {
         try {
             JWTClaimsSet claims = new JWTClaimsSet.Builder()
                     .subject("entrepreneur-101")
                     .issuer("http://localhost:8080/realms/launchpad")
+                    .claim("realm_access", java.util.Map.of("roles", java.util.List.of(roles)))
                     .issueTime(new Date())
                     .expirationTime(Date.from(Instant.now().plusSeconds(secondsUntilExpiry)))
                     .build();

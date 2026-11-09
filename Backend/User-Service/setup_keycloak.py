@@ -122,6 +122,25 @@ def setup():
         admin_launchpad.update_client(client_id_internal, update_payload)
         print(f"Client '{CLIENT_ID}' already exists (internal ID: {client_id_internal}).")
 
+    # Audience : les services Symfony (Professional-Service) exigent que le claim "aud" du jeton
+    # contienne leur KEYCLOAK_AUDIENCE. Un mapper d'audience ajoute le client au jeton d'accès.
+    mapper_name = "launchpad-client-audience"
+    existing_mappers = admin_launchpad.get_client(client_id_internal).get("protocolMappers") or []
+    if not any(m.get("name") == mapper_name for m in existing_mappers):
+        admin_launchpad.add_mapper_to_client(client_id_internal, {
+            "name": mapper_name,
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "config": {
+                "included.client.audience": CLIENT_ID,
+                "id.token.claim": "false",
+                "access.token.claim": "true",
+            },
+        })
+        print(f"Audience mapper '{mapper_name}' added.")
+    else:
+        print(f"Audience mapper '{mapper_name}' already exists.")
+
     # Get client secret
     secrets = admin_launchpad.get_client_secrets(client_id_internal)
     client_secret = secrets.get("value")
