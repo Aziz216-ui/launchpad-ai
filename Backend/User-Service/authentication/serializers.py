@@ -10,7 +10,12 @@ class RegisterSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
     phone_number = serializers.CharField(max_length=30, required=False, allow_blank=True, default="")
-    role = serializers.ChoiceField(choices=User.Role.choices, default=User.Role.ENTREPRENEUR)
+    # ADMIN exclu : l'inscription est publique, un compte ADMIN ne doit jamais pouvoir s'auto-créer
+    # (il est créé par la commande seed_demo_users ou depuis la console Keycloak).
+    role = serializers.ChoiceField(
+        choices=[c for c in User.Role.choices if c[0] != User.Role.ADMIN],
+        default=User.Role.ENTREPRENEUR,
+    )
 
     def validate_username(self, value):
         if User.objects.filter(username=value).exists():

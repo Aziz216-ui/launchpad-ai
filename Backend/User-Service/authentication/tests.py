@@ -30,6 +30,21 @@ class RegisterViewTests(APITestCase):
         self.assertTrue(User.objects.filter(username="alice", keycloak_id="kc-uuid-1").exists())
 
     @patch("authentication.views.KeycloakService")
+    def test_register_as_admin_is_rejected(self, mock_keycloak_service):
+        """Inscription publique : on ne peut pas s'auto-attribuer le rôle ADMIN."""
+        response = self.client.post(
+            self.url,
+            {"username": "mallory", "email": "m@example.com", "password": "secret123",
+             "role": User.Role.ADMIN},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("role", response.data)
+        mock_keycloak_service.return_value.register_user.assert_not_called()
+        self.assertFalse(User.objects.filter(username="mallory").exists())
+
+    @patch("authentication.views.KeycloakService")
     def test_register_duplicate_username_rejected(self, mock_keycloak_service):
         User.objects.create(keycloak_id="existing-id", username="alice", email="old@example.com")
 

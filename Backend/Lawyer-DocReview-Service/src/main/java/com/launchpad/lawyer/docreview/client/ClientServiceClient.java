@@ -5,7 +5,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-@FeignClient(name = "lawyer-client-service", url = "${client-service.url:http://localhost:8082}")
+// Pas de url= : Feign résout "lawyer-client-service" dans Eureka (équilibrage via Spring Cloud LoadBalancer)
+@FeignClient(name = "lawyer-client-service")
 public interface ClientServiceClient {
 
     record ClientDto(

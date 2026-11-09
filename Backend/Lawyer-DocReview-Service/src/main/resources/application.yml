@@ -42,9 +42,6 @@ eureka:
     prefer-ip-address: ${EUREKA_PREFER_IP:false}
     instance-id: ${spring.application.name}:${server.port}
 
-client-service:
-  url: ${CLIENT_SERVICE_URL:http://localhost:8082}
-
 springdoc:
   api-docs:
     path: /v3/api-docs
