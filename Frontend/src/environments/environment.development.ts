@@ -11,10 +11,10 @@ export const environment = {
   aiApiUrl: 'http://localhost:8090/api/ai',
   /** Finance : Prevision-Service et Document-Service, via l'API Gateway (module Finance, features/finance). */
   financeApiUrl: 'http://localhost:8090/api/finance',
-  /** Legal-Service (module Juridique, features/legal) : à remplir par le membre concerné. */
-  legalApiUrl: '',
-  /** Professional-Service (Comptabilité et Avocat, features/professional) : à remplir par le membre concerné. */
-  professionalApiUrl: '',
+  /** Legal-Service (module Juridique, features/legal), via l'API Gateway. */
+  legalApiUrl: 'http://localhost:8090/api/legal',
+  /** Espace comptable (4 microservices Symfony, features/professional), via l'API Gateway. */
+  professionalApiUrl: 'http://localhost:8090/api/comptable',
   /** Espace avocat : 3 microservices (clients, messages, revue de documents), via l'API Gateway. */
   lawyerApiUrl: 'http://localhost:8090/api/lawyer',
   /** User-Service (comptes, authentification Keycloak, features/auth), via l'API Gateway. */

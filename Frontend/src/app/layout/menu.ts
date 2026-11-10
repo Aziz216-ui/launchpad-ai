@@ -27,4 +27,6 @@ export const MENU: ElementMenu[] = [
   { libelle: 'Juridique', route: '/juridique', icone: 'balance', roles: ['ENTREPRENEUR', 'ADMIN'] },
   { libelle: 'Comptabilité', route: '/professional/comptabilite', icone: 'calculatrice', roles: ['ACCOUNTANT', 'ENTREPRENEUR', 'ADMIN'] },
   { libelle: 'Avocat', route: '/professional/avocat', icone: 'mallette', roles: ['LAWYER', 'ENTREPRENEUR', 'ADMIN'] },
+  // Avocat : revue des documents juridiques envoyés par les entrepreneurs (features/legal, /juridique/revue)
+  { libelle: 'Documents', route: '/juridique/revue', icone: 'document', roles: ['LAWYER'] },
 ];

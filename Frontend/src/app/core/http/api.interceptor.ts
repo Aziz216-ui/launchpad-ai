@@ -1,4 +1,4 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { HttpContextToken, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, switchMap, throwError } from 'rxjs';
@@ -10,6 +10,13 @@ import { ApiError } from './api-error';
 
 /** Endpoints d'auth exclus du rafraîchissement automatique, pour éviter une boucle infinie. */
 const ENDPOINTS_SANS_RAFRAICHISSEMENT = ['/login/', '/register/', '/refresh/', '/logout/'];
+
+/**
+ * Requêtes de fond (ex. interrogation périodique des notifications) : pas de toast d'erreur,
+ * sinon un service arrêté afficherait une alerte toutes les 30 secondes.
+ * Usage : this.http.get(url, { context: new HttpContext().set(SANS_TOAST_ERREUR, true) }).
+ */
+export const SANS_TOAST_ERREUR = new HttpContextToken<boolean>(() => false);
 
 /**
  * Intercepteur commun à tous les appels HTTP :
@@ -53,7 +60,7 @@ export const apiInterceptor: HttpInterceptorFn = (requete, suivant) => {
         return throwError(() => erreur);
       }
       const apiError = ApiError.depuis(erreur);
-      if (apiError.statut === 0 || apiError.statut >= 500) {
+      if ((apiError.statut === 0 || apiError.statut >= 500) && !requete.context.get(SANS_TOAST_ERREUR)) {
         notifications.erreur(apiError.message);
       }
       return throwError(() => apiError);
