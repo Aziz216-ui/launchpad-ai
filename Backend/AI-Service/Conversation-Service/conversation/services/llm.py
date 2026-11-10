@@ -49,14 +49,26 @@ def repondre_chat_llm(
     historique: list,
     analyse_data: dict | None = None,
     donnees_marche: dict | None = None,
+    donnees_finance: dict | None = None,
 ) -> str | None:
     if donnees_marche is None:
         donnees_marche = {}
+    if donnees_finance is None:
+        donnees_finance = {}
 
     concurrents = donnees_marche.get("concurrents", [])
     tendances = donnees_marche.get("tendances", [])
     concurrence_info = f"{donnees_marche.get('niveau_concurrence', 'inconnu')} ({len(concurrents)} concurrents répertoriés)"
     tendances_str = ", ".join([f"{t.get('titre')} [{t.get('impact')}]" for t in tendances[:3] if isinstance(t, dict)])
+
+    # Données financières
+    prev = donnees_finance.get("prevision") or {}
+    marges = donnees_finance.get("marges") or {}
+    ecart = donnees_finance.get("ecart") or {}
+    ca = donnees_finance.get("ca") or prev.get("chiffreAffaires")
+    tm = donnees_finance.get("taux_marge") or marges.get("tauxMargeBrute")
+    statut = donnees_finance.get("statut") or ecart.get("statut")
+    finance_str = f"CA prévisionnel: {ca or 'N/A'} TND | Taux marge brute: {tm or 'N/A'}% | Statut: {statut or 'N/A'}"
 
     contexte = (
         f"Projet : {projet_data.get('titre', 'N/A')} | Stade : {projet_data.get('stade', 'N/A')} | Secteur : {projet_data.get('secteur', 'N/A')}\n"
@@ -66,6 +78,7 @@ def repondre_chat_llm(
         f"Budget : {projet_data.get('budget_estime', 'N/A')}\n"
         f"Concurrence (ETUDE-SERVICE) : {concurrence_info}\n"
         f"Tendances marché : {tendances_str or 'N/A'}\n"
+        f"Finances (FINANCE-SERVICE) : {finance_str}\n"
     )
     if analyse_data:
         contexte += f"Score : {analyse_data.get('score_global')}/100 | Forces : {analyse_data.get('forces', [])[:2]} | Faiblesses : {analyse_data.get('faiblesses', [])[:2]}\n"

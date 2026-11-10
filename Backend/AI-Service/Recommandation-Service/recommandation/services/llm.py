@@ -49,10 +49,13 @@ def generer_recommandations_llm(
     projet_data: dict,
     analyse_data: dict | None = None,
     donnees_marche: dict | None = None,
+    donnees_finance: dict | None = None,
 ) -> list[dict] | None:
-    """Génère des recommandations ordonnées via LLM avec données de marché."""
+    """Génère des recommandations ordonnées via LLM avec données de marché et de finance."""
     if donnees_marche is None:
         donnees_marche = {}
+    if donnees_finance is None:
+        donnees_finance = {}
 
     forces = analyse_data.get("forces", []) if analyse_data else []
     faiblesses = analyse_data.get("faiblesses", []) if analyse_data else []
@@ -61,6 +64,15 @@ def generer_recommandations_llm(
 
     concurrence_info = f"{donnees_marche.get('niveau_concurrence', 'inconnu')} ({len(concurrents)} concurrents réels)"
     tendances_str = ", ".join([f"{t.get('titre')} ({t.get('impact')})" for t in tendances[:4] if isinstance(t, dict)])
+
+    # Données financières
+    prev = donnees_finance.get("prevision") or {}
+    marges = donnees_finance.get("marges") or {}
+    ecart = donnees_finance.get("ecart") or {}
+    ca = donnees_finance.get("ca") or prev.get("chiffreAffaires")
+    tm = donnees_finance.get("taux_marge") or marges.get("tauxMargeBrute")
+    statut = donnees_finance.get("statut") or ecart.get("statut")
+    finance_info = f"CA: {ca or 'N/A'}, Marge brute: {tm or 'N/A'}%, Statut: {statut or 'N/A'}"
 
     prompt = f"""Génère des recommandations pour ce projet et retourne UNIQUEMENT ce format JSON :
 [
@@ -72,8 +84,9 @@ Forces actuelles : {forces[:3]}
 Faiblesses actuelles : {faiblesses[:3]}
 Concurrence (ETUDE-SERVICE) : {concurrence_info}
 Tendances marché : {tendances_str or 'non précisées'}
+Données financières (FINANCE-SERVICE) : {finance_info}
 
-Génère entre 4 et 6 recommandations ordonnées (prochaines étapes concrètes et adaptées au marché)."""
+Génère entre 4 et 6 recommandations ordonnées (prochaines étapes concrètes, adaptées au marché et aux finances, incluant la catégorie financier)."""
 
     messages = [{"role": "system", "content": PROMPT_SYSTEME}, {"role": "user", "content": prompt}]
     contenu = _appel_llm(messages, max_tokens=1000)
