@@ -1,0 +1,163 @@
+<div class="page">
+  <nav class="fil-ariane" aria-label="Fil d'Ariane">
+    <a routerLink="/">{{ estAvocat ? 'Espace avocat' : 'Espace startup' }}</a><span aria-hidden="true">/</span>
+    <a [routerLink]="retour()" [queryParams]="{ onglet: estAvocat ? null : 'demandes' }">{{ estAvocat ? 'Demandes' : 'Demande revue' }}</a>
+    @if (demande(); as d) { <span aria-hidden="true">/</span><span class="courant">{{ d.documentTitle }}</span> }
+  </nav>
+
+  @if (chargement()) {
+    <app-loader texte="Chargement de la demande…" />
+  } @else if (erreur() || !demande()) {
+    <div class="etat carte">
+      <p>{{ erreur() }}</p>
+      <a class="btn-secondaire" [routerLink]="retour()">← Retour</a>
+    </div>
+  } @else {
+    @let d = demande()!;
+    <header class="entete">
+      <div class="titre">
+        <div class="nom">
+          <h1>{{ d.documentTitle }}</h1>
+          <app-badge [variante]="statutsDemande[d.status].variante" [petit]="true">{{ libelleStatutDemande(d) }}</app-badge>
+        </div>
+        <p>
+          {{ typesJuridiques[d.documentType] ?? d.documentType }} ·
+          @if (estAvocat) { demandée par {{ d.clientName }} ({{ d.clientEmail }}) } @else { envoyée à Maître {{ d.lawyerId }} }
+          · le {{ d.createdAt | date: 'dd/MM/y à HH:mm' }}
+        </p>
+      </div>
+      @if (estAvocat) {
+        <div class="actions-entete">
+          @if (d.status === 'PENDING') {
+            <button type="button" class="btn-danger" (click)="ouvrirDecision('refuser')" [disabled]="decisionEnCours()">Refuser</button>
+            <button type="button" class="btn-primaire" (click)="accepter()" [disabled]="decisionEnCours()">Accepter la demande</button>
+          } @else if (enRevue()) {
+            <button type="button" class="btn-danger" (click)="ouvrirDecision('rejeter')">Rejeter</button>
+            <button type="button" class="btn-secondaire" (click)="ouvrirDecision('corrections')">Demander des corrections</button>
+            <button type="button" class="btn-primaire" (click)="ouvrirDecision('approuver')">Approuver</button>
+          }
+        </div>
+      }
+    </header>
+
+    @switch (d.status) {
+      @case ('PENDING') {
+        <p class="bandeau attention">
+          @if (estAvocat) { Nouvelle demande : lisez la question et le document, puis acceptez ou refusez. }
+          @else { En attente de réponse de l'avocat. }
+        </p>
+      }
+      @case ('IN_PROGRESS') {
+        <p class="bandeau info">
+          @if (estAvocat) { Demande acceptée : laissez votre avis puis rendez votre décision. }
+          @else { L'avocat a accepté votre demande et revoit votre document. }
+        </p>
+      }
+      @case ('NEEDS_CORRECTION') {
+        <p class="bandeau attention"><strong>Corrections demandées.</strong>@if (derniereRaison()) { {{ derniereRaison() }} }</p>
+      }
+      @case ('APPROVED') {
+        <p class="bandeau succes"><strong>Document approuvé par l'avocat.</strong>@if (derniereRaison() && derniereRaison() !== 'Approuver le document') { {{ derniereRaison() }} }</p>
+      }
+      @case ('REJECTED') {
+        <p class="bandeau danger"><strong>{{ libelleStatutDemande(d) }}.</strong>@if (derniereRaison()) { Motif : {{ derniereRaison() }} }</p>
+      }
+    }
+
+    <div class="colonnes">
+      <section class="principale carte">
+        <div class="section-entete">
+          <h2>Document</h2>
+          @if (idDoc()) {
+            <button type="button" class="lien" (click)="ouvrirDocument()">
+              {{ estAvocat && document()?.statut === 'EN_VALIDATION' ? 'Corriger dans Documents →' : 'Ouvrir le document →' }}
+            </button>
+          }
+        </div>
+        @if (document(); as doc) {
+          <p class="meta">
+            {{ typesJuridiques[doc.type] ?? doc.type }} · {{ statutsJuridiques[doc.statut] ?? doc.statut }} · version {{ doc.version }}
+          </p>
+          <ol class="clauses">
+            @for (c of doc.clauses; track c.id) {
+              <li>
+                <span class="numero">Article {{ c.numero }}</span>
+                @if (c.titre) { <h3>{{ c.titre }}</h3> }
+                <p>{{ c.texte }}</p>
+              </li>
+            }
+          </ol>
+        } @else if (erreurDocument()) {
+          <p class="discret">Le document lié n'est plus disponible.</p>
+        } @else if (idDoc()) {
+          <app-loader texte="Chargement du document…" />
+        } @else {
+          <p class="discret">Aucun document juridique lié ({{ d.documentUrl }}).</p>
+        }
+      </section>
+
+      <aside class="laterale">
+        <section class="carte">
+          <h2>Question et avis</h2>
+          @if (commentaires().length) {
+            <ol class="fil">
+              @for (c of commentaires(); track c.id; let premier = $first) {
+                <li [class.avocat]="estDeLAvocat(c.author)" [class.correction]="c.correctionRequested">
+                  <header>
+                    <strong>{{ c.author }}</strong>
+                    @if (premier && !estDeLAvocat(c.author)) { <span class="etiquette">Question</span> }
+                    @if (c.correctionRequested) { <span class="etiquette correction">Correction demandée</span> }
+                    <time>{{ c.createdAt | date: 'dd/MM HH:mm' }}</time>
+                  </header>
+                  <p>{{ c.commentText }}</p>
+                </li>
+              }
+            </ol>
+          } @else {
+            <p class="discret">Aucun échange pour le moment.</p>
+          }
+
+          @if ((estAvocat && enRevue()) || (!estAvocat && !terminee())) {
+            <form class="reponse" (ngSubmit)="envoyerCommentaire()">
+              <label for="commentaire">{{ estAvocat ? 'Ajouter un avis' : "Répondre à l'avocat" }}</label>
+              <textarea id="commentaire" name="commentaire" [(ngModel)]="commentaire" rows="4" maxlength="4000"
+                [placeholder]="estAvocat ? 'Ex. : l\'article 3 doit préciser la durée de la clause de non-concurrence…' : 'Apportez les précisions demandées…'"></textarea>
+              @if (estAvocat) {
+                <label class="case">
+                  <input type="checkbox" name="correction" [(ngModel)]="correction" />
+                  Correction demandée à l'entrepreneur
+                </label>
+              }
+              @if (erreurCommentaire()) { <p class="alerte" role="alert">{{ erreurCommentaire() }}</p> }
+              <button type="submit" class="btn-primaire" [disabled]="envoiCommentaire() || !commentaire.trim()">
+                {{ envoiCommentaire() ? 'Envoi…' : estAvocat ? "Publier l'avis" : 'Envoyer' }}
+              </button>
+            </form>
+          } @else if (estAvocat && d.status === 'PENDING') {
+            <p class="discret">Acceptez la demande pour laisser votre avis.</p>
+          }
+        </section>
+
+        <section class="carte">
+          <h2>Historique</h2>
+          <ol class="historique">
+            @for (h of historique(); track h.id) {
+              <li>
+                <time>{{ h.timestamp | date: 'dd/MM/y HH:mm' }}</time>
+                <strong>{{ libelleStatut(h.oldStatus) }} → {{ libelleStatut(h.newStatus) }}</strong>
+                @if (h.reason && h.reason !== 'Document review record created') { <span>{{ h.reason }}</span> }
+                <small>par {{ h.changedBy }}</small>
+              </li>
+            }
+          </ol>
+        </section>
+      </aside>
+    </div>
+  }
+</div>
+
+@if (textesDecision(); as t) {
+  <app-saisie-modal [titre]="t.titre" [texte]="t.texte" [libelleChamp]="t.champ" [obligatoire]="t.obligatoire"
+    [libelleConfirmer]="t.confirmer" [variante]="t.variante" [enCours]="decisionEnCours()" [erreur]="erreurDecision()"
+    (confirmer)="confirmerDecision($event)" (annuler)="decision.set(null)" />
+}

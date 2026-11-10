@@ -1,0 +1,161 @@
+<div class="page">
+  <nav class="fil-ariane" aria-label="Fil d'Ariane">
+    <a routerLink="/">Espace avocat</a><span aria-hidden="true">/</span><span class="courant">Avocat</span>
+  </nav>
+
+  <header class="entete">
+    <div class="titre">
+      <h1>Mon cabinet</h1>
+      <p>Répondez aux demandes des entrepreneurs, revoyez leurs documents et échangez avec vos clients.</p>
+    </div>
+    <a class="btn-secondaire" routerLink="/juridique/revue">Documents juridiques</a>
+  </header>
+
+  <div class="onglets" role="tablist" aria-label="Espace avocat">
+    <button type="button" role="tab" [attr.aria-selected]="onglet() === 'demandes'" [class.actif]="onglet() === 'demandes'" (click)="choisirOnglet('demandes')">
+      Demandes @if (compteurs()['attente']) { <span class="pastille">{{ compteurs()['attente'] }}</span> } @else { <span class="nombre">{{ demandes().length }}</span> }
+    </button>
+    <button type="button" role="tab" [attr.aria-selected]="onglet() === 'messagerie'" [class.actif]="onglet() === 'messagerie'" (click)="choisirOnglet('messagerie')">
+      Messagerie @if (totalNonLus()) { <span class="pastille">{{ totalNonLus() }}</span> }
+    </button>
+    <button type="button" role="tab" [attr.aria-selected]="onglet() === 'clients'" [class.actif]="onglet() === 'clients'" (click)="choisirOnglet('clients')">
+      Clients <span class="nombre">{{ clients().length }}</span>
+    </button>
+  </div>
+
+  @if (chargement()) {
+    <app-loader texte="Chargement de votre cabinet…" />
+  } @else if (erreur()) {
+    <div class="etat carte">
+      <p>{{ erreur() }}</p>
+      <button type="button" class="btn-secondaire" (click)="charger()">Réessayer</button>
+    </div>
+  } @else {
+    @switch (onglet()) {
+      @case ('demandes') {
+        <div class="filtres" role="group" aria-label="Filtrer les demandes">
+          @for (f of filtresDemandes; track f.cle) {
+            <button type="button" [class.actif]="filtre() === f.cle" [attr.aria-pressed]="filtre() === f.cle" (click)="filtre.set(f.cle)">
+              {{ f.libelle }} <span>{{ compteurs()[f.cle] }}</span>
+            </button>
+          }
+        </div>
+
+        <section class="carte-tableau">
+          @if (!demandesFiltrees().length) {
+            <div class="etat">
+              <p>
+                @switch (filtre()) {
+                  @case ('attente') { Aucune nouvelle demande. }
+                  @case ('revue') { Aucun document en cours de revue. }
+                  @default { Aucune demande terminée. }
+                }
+              </p>
+            </div>
+          } @else {
+            <div class="tableau-defilement">
+              <table>
+                <thead>
+                  <tr><th>Document</th><th>Entrepreneur</th><th>Statut</th><th>Reçue le</th><th><span class="masque">Actions</span></th></tr>
+                </thead>
+                <tbody>
+                  @for (d of demandesFiltrees(); track d.id) {
+                    <tr (click)="ouvrir(d)">
+                      <td>
+                        <div class="principal">
+                          <a [routerLink]="['/professional/avocat/demandes', d.id]" (click)="$event.stopPropagation()">{{ d.documentTitle }}</a>
+                          <span>{{ typesJuridiques[d.documentType] ?? d.documentType }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="principal">
+                          <strong>{{ d.clientName }}</strong>
+                          <span>{{ d.clientEmail }}</span>
+                        </div>
+                      </td>
+                      <td><app-badge [variante]="statutsDemande[d.status].variante" [petit]="true">{{ libelleStatutDemande(d) }}</app-badge></td>
+                      <td>{{ d.createdAt | date: 'd MMM y, HH:mm' }}</td>
+                      <td class="actions">
+                        @if (d.status === 'PENDING') {
+                          <button type="button" class="btn-mini secondaire" (click)="demanderRefus(d, $event)" [disabled]="actionEnCours() === d.id">Refuser</button>
+                          <button type="button" class="btn-mini" (click)="accepter(d, $event)" [disabled]="actionEnCours() === d.id">Accepter</button>
+                        } @else if (d.status === 'IN_PROGRESS' || d.status === 'NEEDS_CORRECTION') {
+                          <a class="btn-mini" [routerLink]="['/professional/avocat/demandes', d.id]" (click)="$event.stopPropagation()">Revoir</a>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+      }
+
+      @case ('messagerie') {
+        <section class="messagerie">
+          @if (!clients().length) {
+            <div class="etat"><p>Aucun client pour l'instant : les entrepreneurs qui vous écrivent ou vous envoient une demande apparaîtront ici.</p></div>
+          } @else {
+            <ul class="conversations" aria-label="Conversations">
+              @for (c of clients(); track c.id) {
+                <li>
+                  <button type="button" [class.actif]="c.id === clientActif()" (click)="ouvrirConversation(c.id)" [attr.aria-current]="c.id === clientActif() ? 'true' : null">
+                    <span class="avatar" aria-hidden="true">{{ initiales(c.fullName) }}</span>
+                    <span class="texte"><strong>{{ c.fullName }}</strong><small>{{ c.company || c.email }}</small></span>
+                    @if (nonLus()[c.id]) { <span class="non-lus">{{ nonLus()[c.id] }}</span> }
+                  </button>
+                </li>
+              }
+            </ul>
+            @if (clientCourant(); as c) {
+              <app-conversation [messages]="messages()" [interlocuteur]="c.fullName" [sousTitre]="c.email" monRole="LAWYER"
+                [chargement]="chargementMessages()" [envoi]="envoi()" [erreur]="erreurEnvoi()" (envoye)="envoyer($event)" />
+            } @else {
+              <div class="etat"><p>Choisissez une conversation.</p></div>
+            }
+          }
+        </section>
+      }
+
+      @case ('clients') {
+        <section class="carte-tableau">
+          @if (!clients().length) {
+            <div class="etat"><p>Aucun client pour l'instant.</p></div>
+          } @else {
+            <div class="tableau-defilement">
+              <table>
+                <thead><tr><th>Client</th><th>Entreprise</th><th>Demandes</th><th>Client depuis</th><th><span class="masque">Actions</span></th></tr></thead>
+                <tbody>
+                  @for (c of clients(); track c.id) {
+                    <tr (click)="ecrireA(c)">
+                      <td>
+                        <div class="client">
+                          <span class="avatar-mini" aria-hidden="true">{{ initiales(c.fullName) }}</span>
+                          <div class="principal"><strong>{{ c.fullName }}</strong><span>{{ c.email }}</span></div>
+                        </div>
+                      </td>
+                      <td>{{ c.company || '—' }}</td>
+                      <td>{{ compterDemandes(c.id) }}</td>
+                      <td>{{ c.createdAt | date: 'd MMM y' }}</td>
+                      <td class="actions">
+                        <button type="button" class="btn-mini secondaire" (click)="ecrireA(c); $event.stopPropagation()">Écrire</button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+      }
+    }
+  }
+</div>
+
+@if (aRefuser(); as d) {
+  <app-saisie-modal [titre]="'Refuser la demande « ' + d.documentTitle + ' »'"
+    [texte]="(d.clientName ?? 'L\'entrepreneur') + ' verra ce motif et pourra s\'adresser à un autre avocat.'"
+    libelleChamp="Motif du refus" [obligatoire]="true" libelleConfirmer="Refuser" variante="danger"
+    [enCours]="actionEnCours() === d.id" [erreur]="erreurRefus()" (confirmer)="refuser($event)" (annuler)="aRefuser.set(null)" />
+}

@@ -1,0 +1,176 @@
+// Règles communes aux pages du module Juridique (incluses par chaque page avec `@use '../commun';`).
+@use 'variables' as *;
+
+:host {
+  display: block;
+}
+
+.page {
+  padding: 24px 32px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1240px;
+  width: 100%;
+
+  @media (max-width: $mobile) {
+    padding: 20px 16px 40px;
+  }
+}
+
+.fil-ariane {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  color: $gris;
+
+  a {
+    color: $gris;
+    text-decoration: none;
+
+    &:hover {
+      color: $primaire-fonce;
+    }
+  }
+  .courant {
+    color: $texte-secondaire;
+  }
+}
+
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+
+  .titre {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 600;
+  }
+  p {
+    margin: 0;
+    font-size: 14px;
+    color: $texte-secondaire;
+  }
+}
+
+.btn-primaire,
+.btn-secondaire {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: $rayon-champ;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  &:focus-visible {
+    outline: 3px solid rgba($primaire, 0.35);
+    outline-offset: 2px;
+  }
+}
+
+.btn-primaire {
+  border: 0;
+  background: $primaire;
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    background: $primaire-fonce;
+  }
+}
+
+.btn-secondaire {
+  border: 1px solid $bordure-champ;
+  background: $fond-carte;
+  color: $texte;
+
+  &:hover:not(:disabled) {
+    border-color: $primaire;
+  }
+}
+
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid #f0c9c9;
+  border-radius: $rayon-champ;
+  background: $fond-carte;
+  color: $rouge;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: $rouge-clair;
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.carte {
+  border: 1px solid $bordure;
+  border-radius: $rayon-carte;
+  background: $fond-carte;
+  padding: 22px 24px;
+
+  h2 {
+    margin: 0 0 16px;
+    font-size: 17px;
+    font-weight: 600;
+  }
+}
+
+.bandeau {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: $rayon-kpi;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+
+  &.attention { background: $orange-tres-clair; color: $orange-fonce; }
+  &.danger { background: $rouge-clair; color: $rouge-fonce; }
+  &.succes { background: $vert-clair; color: $vert-fonce; }
+  &.info { background: $primaire-clair; color: $primaire-tres-fonce; }
+  &.neutre { background: $fond-neutre; color: $texte-secondaire; }
+}
+
+.etat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 16px;
+  color: $gris;
+  text-align: center;
+
+  p {
+    margin: 0;
+    font-size: 15px;
+    color: $texte-secondaire;
+  }
+}

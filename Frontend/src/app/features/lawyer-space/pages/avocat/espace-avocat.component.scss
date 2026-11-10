@@ -1,0 +1,111 @@
+@use 'variables' as *;
+@use '../commun';
+
+.filtres {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 0 14px;
+    border: 1px solid $bordure;
+    border-radius: 999px;
+    background: $fond-carte;
+    color: $texte-secondaire;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+
+    span {
+      color: $gris;
+    }
+    &:hover {
+      border-color: $primaire;
+    }
+    &.actif {
+      border-color: $primaire;
+      background: $primaire-clair;
+      color: $primaire-tres-fonce;
+
+      span {
+        color: $primaire-fonce;
+      }
+    }
+  }
+}
+
+.actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+
+  > * + * {
+    margin-left: 8px;
+  }
+}
+
+.btn-mini {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: $primaire;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: $primaire-fonce;
+  }
+  &.secondaire {
+    border: 1px solid $bordure-champ;
+    background: $fond-carte;
+    color: $texte;
+
+    &:hover:not(:disabled) {
+      border-color: $primaire;
+      background: $fond-carte;
+    }
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.client {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar-mini {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: $primaire-clair;
+  color: $primaire-fonce;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.masque {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
