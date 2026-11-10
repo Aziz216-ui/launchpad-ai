@@ -225,21 +225,45 @@
         </div>
         <div class="champ">
           <label for="objectifs">Objectifs (séparez chaque objectif par une nouvelle ligne)</label>
-          <textarea id="objectifs" rows="3" [value]="saisie().objectifs ?? ''"
+          <textarea id="objectifs" rows="4" [value]="saisie().objectifs ?? ''"
             (input)="mettreAJourSaisie('objectifs', $any($event.target).value)"></textarea>
         </div>
         <div class="ligne-2">
+          <!-- Secteur : uniquement ceux des études de marché du projet -->
           <div class="champ">
             <label for="secteur">Secteur</label>
-            <input id="secteur" type="text" [value]="saisie().secteur ?? ''"
-              (input)="mettreAJourSaisie('secteur', $any($event.target).value)" />
+            @if (chargementSecteurs()) {
+              <select id="secteur" disabled>
+                <option>Chargement des secteurs…</option>
+              </select>
+            } @else if (erreurSecteurs(); as erreurS) {
+              <select id="secteur" disabled>
+                <option>{{ p.secteur || '—' }}</option>
+              </select>
+              <p class="aide-champ aide-erreur" role="alert">{{ erreurS }}</p>
+            } @else if (secteursEtudes().length === 0) {
+              <select id="secteur" disabled aria-describedby="secteur-aide">
+                <option>Aucun secteur disponible</option>
+              </select>
+              <p id="secteur-aide" class="aide-champ">
+                Aucune étude de marché pour ce projet.
+                <a routerLink="/etude-marche/nouvelle" (click)="fermerModale()">Créer une étude de marché</a>
+              </p>
+            } @else {
+              <select id="secteur" (change)="choisirSecteur($any($event.target).value)">
+                <option value="" disabled [selected]="saisie().secteur_id == null">Choisir un secteur</option>
+                @for (s of secteursEtudes(); track s.id) {
+                  <option [value]="s.id" [selected]="s.id === saisie().secteur_id">{{ s.nom }}</option>
+                }
+              </select>
+              <p class="aide-champ">Secteurs des études de marché de ce projet.</p>
+            }
           </div>
           <div class="champ">
             <label for="stade">Stade</label>
-            <select id="stade" [value]="saisie().stade"
-              (change)="mettreAJourSaisie('stade', $any($event.target).value)">
+            <select id="stade" (change)="mettreAJourSaisie('stade', $any($event.target).value)">
               @for (s of stades; track s[0]) {
-                <option [value]="s[0]">{{ s[1] }}</option>
+                <option [value]="s[0]" [selected]="s[0] === saisie().stade">{{ s[1] }}</option>
               }
             </select>
           </div>
@@ -258,7 +282,9 @@
 
       <div class="modale-pied">
         <button type="button" class="btn-secondaire" (click)="fermerModale()">Annuler</button>
-        <button type="button" class="btn-primaire" (click)="enregistrer()">Enregistrer</button>
+        <button type="button" class="btn-primaire" (click)="enregistrer()" [disabled]="enregistrementEnCours()">
+          {{ enregistrementEnCours() ? 'Enregistrement…' : 'Enregistrer' }}
+        </button>
       </div>
     </div>
   </div>

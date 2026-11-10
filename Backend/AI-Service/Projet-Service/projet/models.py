@@ -29,6 +29,12 @@ class Projet(models.Model):
     idee = models.TextField(verbose_name="Description de l'idee", blank=True)
     objectifs = models.TextField(verbose_name="Objectifs", blank=True)
     secteur = models.CharField(max_length=100, verbose_name="Secteur", blank=True)
+    # Id du secteur dans le secteur-service (domaine Etude de marche), pas de FK :
+    # il doit correspondre a un secteur d'une etude de marche du projet.
+    # "secteur" garde son nom pour l'affichage.
+    secteur_id = models.PositiveIntegerField(
+        null=True, blank=True, verbose_name="ID secteur (Etude de marche)"
+    )
     stade = models.CharField(
         max_length=20, choices=Stade.choices, default=Stade.IDEE, verbose_name="Stade"
     )

@@ -15,7 +15,10 @@ export interface Projet {
   titre: string;
   idee: string;
   objectifs: string;
+  /** Nom du secteur (affichage). Recopié par le Projet-Service depuis l'étude de marché choisie. */
   secteur: string;
+  /** Id du secteur (secteur-service) : doit être celui d'une étude de marché du projet. */
+  secteur_id: number | null;
   stade: StadeProjet;
   public_cible: string;
   budget_estime: number | null;
@@ -25,6 +28,12 @@ export interface Projet {
 }
 
 export type ProjetSaisie = Omit<Projet, 'id' | 'entrepreneur_id' | 'statut' | 'date_creation' | 'date_mise_a_jour'>;
+
+/** Secteur d'une étude de marché du projet (champ "secteurs" de /api/market/analyse/projet/{id}/). */
+export interface SecteurEtude {
+  id: number;
+  nom: string;
+}
 
 export interface AnalyseProjet {
   id: number;

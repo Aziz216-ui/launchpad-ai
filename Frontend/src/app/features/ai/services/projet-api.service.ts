@@ -3,16 +3,18 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
-import { AnalyseProjet, Projet, ProjetSaisie } from '../models/ai.models';
+import { AnalyseProjet, Projet, ProjetSaisie, SecteurEtude } from '../models/ai.models';
 
 /**
  * Accès REST au Projet-Service et aux analyses via l'API Gateway.
  * Préfixe : environment.aiApiUrl + /projets/ et /analyses/.
+ * Lecture des secteurs des études de marché du projet : environment.marketApiUrl.
  */
 @Injectable()
 export class ProjetApiService {
   private readonly http = inject(HttpClient);
   private readonly url = environment.aiApiUrl;
+  private readonly marketUrl = environment.marketApiUrl;
 
   // ─── Projets ───────────────────────────────────────────────────────────────
 
@@ -44,6 +46,13 @@ export class ProjetApiService {
 
   analyserProjet(id: number): Observable<AnalyseProjet> {
     return this.http.post<AnalyseProjet>(`${this.url}/projets/${id}/analyser/`, {});
+  }
+
+  /** Secteurs des études de marché du projet (triés par nom côté Étude de marché). */
+  listerSecteursEtudes(projetId: number): Observable<SecteurEtude[]> {
+    return this.http
+      .get<{ secteurs?: SecteurEtude[] }>(`${this.marketUrl}/analyse/projet/${projetId}/`)
+      .pipe(map((res) => (res?.secteurs ?? []).map((s) => ({ id: s.id, nom: s.nom }))));
   }
 
   // ─── Analyses ──────────────────────────────────────────────────────────────

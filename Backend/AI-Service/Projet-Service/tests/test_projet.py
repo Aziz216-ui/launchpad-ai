@@ -144,6 +144,117 @@ class ProjetAPITest(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
 
 
+# ── Secteur du projet : limité aux secteurs de ses études de marché ──────────
+
+def reponse_etude_service(*secteurs):
+    """Réponse d'ETUDE-SERVICE (analyse/projet) avec les secteurs (id, nom) donnés."""
+    return {
+        **ETUDE_SERVICE_REPONSE_VIDE,
+        "nombre_etudes": len(secteurs),
+        "secteurs": [
+            {"id": sid, "nom": nom, "nombre_concurrents": 0, "concurrents": [], "tendances": []}
+            for sid, nom in secteurs
+        ],
+    }
+
+
+# Eureka désactivé : l'appel passe par requests.get (mocké) sur l'URL de repli.
+@patch("projet.services.market_client._appeler_via_eureka", return_value=None)
+class SecteurClientTest(TestCase):
+    @patch("requests.get")
+    def test_secteurs_du_projet(self, mock_get, _eureka):
+        mock_get.return_value.json.return_value = reponse_etude_service((1, "FinTech"), (2, "EdTech"))
+        self.assertEqual(
+            market_client.recuperer_secteurs_projet(7),
+            [{"id": 1, "nom": "FinTech"}, {"id": 2, "nom": "EdTech"}],
+        )
+        self.assertTrue(mock_get.call_args.args[0].endswith("/api/market/analyse/projet/7/"))
+
+    @patch("requests.get")
+    def test_projet_sans_etude_liste_vide(self, mock_get, _eureka):
+        mock_get.return_value.json.return_value = ETUDE_SERVICE_REPONSE_VIDE
+        self.assertEqual(market_client.recuperer_secteurs_projet(7), [])
+
+    @patch("requests.get", side_effect=requests.exceptions.ConnectionError("refused"))
+    def test_service_injoignable_leve_une_erreur(self, _get, _eureka):
+        with self.assertRaises(market_client.MarcheIndisponible):
+            market_client.recuperer_secteurs_projet(7)
+
+    @patch("requests.get")
+    def test_reponse_sans_secteurs_leve_une_erreur(self, mock_get, _eureka):
+        mock_get.return_value.json.return_value = {"detail": "inattendu"}
+        with self.assertRaises(market_client.MarcheIndisponible):
+            market_client.recuperer_secteurs_projet(7)
+
+
+@patch("projet.services.market_client._appeler_via_eureka", return_value=None)
+class ProjetSecteurAPITest(APITestCase):
+    def setUp(self):
+        self.projet = creer_projet(statut="actif", secteur="Technologie / Marketplace")
+        self.url = f"/api/ai/projets/{self.projet.id}/"
+
+    @patch("requests.get")
+    def test_patch_secteur_valide(self, mock_get, _eureka):
+        mock_get.return_value.json.return_value = reponse_etude_service((1, "FinTech"), (2, "EdTech"))
+        res = self.client.patch(self.url, {"secteur_id": 2}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["secteur_id"], 2)
+        self.assertEqual(res.data["secteur"], "EdTech")
+        self.projet.refresh_from_db()
+        self.assertEqual((self.projet.secteur_id, self.projet.secteur), (2, "EdTech"))
+
+    @patch("requests.get")
+    def test_put_secteur_valide(self, mock_get, _eureka):
+        mock_get.return_value.json.return_value = reponse_etude_service((1, "FinTech"))
+        donnees = {
+            "entrepreneur_id": 1, "titre": "Projet renommé", "stade": "prototype",
+            "statut": "actif", "secteur": "texte ignoré", "secteur_id": 1,
+        }
+        res = self.client.put(self.url, donnees, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual((res.data["secteur_id"], res.data["secteur"]), (1, "FinTech"))
+
+    @patch("requests.get")
+    def test_patch_secteur_sans_etude_refuse(self, mock_get, _eureka):
+        mock_get.return_value.json.return_value = reponse_etude_service((1, "FinTech"))
+        res = self.client.patch(self.url, {"secteur_id": 3, "titre": "Ne doit pas changer"}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(res.data["secteur_id"], ["Ce secteur n'a pas d'étude de marché pour ce projet."])
+        self.projet.refresh_from_db()
+        self.assertEqual(self.projet.titre, "Projet Test")
+        self.assertIsNone(self.projet.secteur_id)
+
+    @patch("requests.get")
+    def test_patch_projet_sans_aucune_etude_refuse(self, mock_get, _eureka):
+        mock_get.return_value.json.return_value = ETUDE_SERVICE_REPONSE_VIDE
+        res = self.client.patch(self.url, {"secteur_id": 1}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch("requests.get", side_effect=requests.exceptions.ConnectionError("refused"))
+    def test_etude_service_indisponible_503_sans_modification(self, _get, _eureka):
+        res = self.client.patch(self.url, {"secteur_id": 1, "titre": "Ne doit pas changer"}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertIn("Étude de marché est indisponible", res.data["detail"])
+        self.projet.refresh_from_db()
+        self.assertEqual(self.projet.titre, "Projet Test")
+        self.assertEqual(self.projet.secteur, "Technologie / Marketplace")
+        self.assertIsNone(self.projet.secteur_id)
+
+    @patch("requests.get")
+    def test_patch_sans_secteur_id_n_appelle_pas_le_marche(self, mock_get, _eureka):
+        res = self.client.patch(self.url, {"stade": "lancement"}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        mock_get.assert_not_called()
+
+    @patch("requests.get")
+    def test_creation_avec_secteur_id_refusee(self, mock_get, _eureka):
+        res = self.client.post(
+            "/api/ai/projets/", {"entrepreneur_id": 1, "titre": "Nouveau", "secteur_id": 1}, format="json"
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_get.assert_not_called()
+
+
 class HealthCheckTest(APITestCase):
     def test_health(self):
         res = self.client.get("/api/ai/health/")

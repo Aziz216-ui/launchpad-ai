@@ -563,8 +563,19 @@
     transition: border-color 0.15s;
 
     &:focus { border-color: $primaire; }
+    &:disabled { color: $gris; cursor: not-allowed; }
   }
 }
+
+.aide-champ {
+  margin: 0;
+  font-size: 12px;
+  color: $gris;
+
+  a { color: $primaire; font-weight: 600; }
+}
+
+.aide-erreur { color: #b23a3a; }
 
 .ligne-2 {
   display: grid;

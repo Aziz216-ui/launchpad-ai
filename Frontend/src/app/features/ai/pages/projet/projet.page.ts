@@ -6,6 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 
 import { environment } from '../../../../../environments/environment';
@@ -15,7 +16,7 @@ import { IconComponent } from '../../../../shared/components/icon.component';
 import { LoaderComponent } from '../../../../shared/components/loader.component';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { ProjetApiService } from '../../services/projet-api.service';
-import { AnalyseProjet, Projet, ProjetSaisie, StadeProjet } from '../../models/ai.models';
+import { AnalyseProjet, Projet, ProjetSaisie, SecteurEtude, StadeProjet } from '../../models/ai.models';
 import { STADES, STATUTS_PROJET } from '../../models/libelles';
 
 /**
@@ -46,6 +47,12 @@ export class ProjetPage {
   protected readonly activationEnCours = signal(false);
   protected readonly modaleOuverte = signal(false);
   protected readonly saisie = signal<Partial<ProjetSaisie>>({});
+  protected readonly enregistrementEnCours = signal(false);
+
+  /** Secteurs proposés dans la modale : ceux des études de marché du projet. */
+  protected readonly secteursEtudes = signal<SecteurEtude[]>([]);
+  protected readonly chargementSecteurs = signal(false);
+  protected readonly erreurSecteurs = signal<string | null>(null);
 
   protected readonly scoreLabel = computed(() => {
     const s = this.analyse()?.score_global;
@@ -95,15 +102,6 @@ export class ProjetPage {
     this.api.lireProjet(this.projetId).subscribe({
       next: (projet) => {
         this.projet.set(projet);
-        this.saisie.set({
-          titre: projet.titre,
-          idee: projet.idee,
-          objectifs: projet.objectifs,
-          secteur: projet.secteur,
-          stade: projet.stade,
-          public_cible: projet.public_cible,
-          budget_estime: projet.budget_estime ?? undefined,
-        });
         this.chargement.set(false);
         this.chargerDerniereAnalyse();
       },
@@ -162,27 +160,82 @@ export class ProjetPage {
     });
   }
 
+  /** Ouvre la modale pré-remplie avec les valeurs actuelles du projet (stade, un objectif par ligne). */
   protected ouvrirModale(): void {
+    const p = this.projet();
+    if (!p) return;
+    this.saisie.set({
+      titre: p.titre,
+      idee: p.idee,
+      objectifs: this.listeObjectifs().join('\n'),
+      secteur_id: p.secteur_id,
+      stade: p.stade,
+      public_cible: p.public_cible,
+      budget_estime: p.budget_estime ?? undefined,
+    });
     this.modaleOuverte.set(true);
+    this.chargerSecteursEtudes(p.id);
+  }
+
+  private chargerSecteursEtudes(projetId: number): void {
+    this.chargementSecteurs.set(true);
+    this.erreurSecteurs.set(null);
+    this.secteursEtudes.set([]);
+    this.api.listerSecteursEtudes(projetId).subscribe({
+      next: (secteurs) => {
+        this.secteursEtudes.set(secteurs);
+        this.chargementSecteurs.set(false);
+      },
+      error: () => {
+        this.erreurSecteurs.set(
+          "Impossible de charger les secteurs : le service Étude de marché est indisponible.",
+        );
+        this.chargementSecteurs.set(false);
+      },
+    });
   }
 
   protected fermerModale(): void {
     this.modaleOuverte.set(false);
   }
 
+  /**
+   * Envoie la saisie. Le nom du secteur n'est jamais envoyé : le Projet-Service le déduit
+   * de secteur_id, qui n'est envoyé que s'il a changé (il est alors vérifié côté Étude de marché).
+   */
   protected enregistrer(): void {
     const p = this.projet();
-    if (!p) return;
-    this.api.modifierProjet(p.id, this.saisie()).subscribe({
+    if (!p || this.enregistrementEnCours()) return;
+    const { secteur: _nomIgnore, secteur_id, ...reste } = this.saisie();
+    const donnees: Partial<ProjetSaisie> = { ...reste };
+    if (secteur_id != null && secteur_id !== p.secteur_id) donnees.secteur_id = secteur_id;
+
+    this.enregistrementEnCours.set(true);
+    this.api.modifierProjet(p.id, donnees).subscribe({
       next: (mis_a_jour) => {
         this.projet.set(mis_a_jour);
+        this.enregistrementEnCours.set(false);
         this.fermerModale();
         this.notifications.succes('Projet mis à jour.');
       },
-      error: () => {
-        this.notifications.erreur('Impossible de mettre à jour le projet.');
+      error: (e: unknown) => {
+        this.enregistrementEnCours.set(false);
+        this.notifications.erreur(this.messageErreur(e));
       },
     });
+  }
+
+  /** Message renvoyé par le Projet-Service (400 secteur sans étude, 503 Étude de marché indisponible). */
+  private messageErreur(e: unknown): string {
+    const corps = e instanceof HttpErrorResponse ? e.error : null;
+    const secteur = corps?.secteur_id;
+    if (Array.isArray(secteur) && secteur.length) return String(secteur[0]);
+    if (typeof corps?.detail === 'string') return corps.detail;
+    return 'Impossible de mettre à jour le projet.';
+  }
+
+  protected choisirSecteur(valeur: string): void {
+    this.mettreAJourSaisie('secteur_id', valeur ? Number(valeur) : null);
   }
 
   protected mettreAJourSaisie(champ: keyof ProjetSaisie, valeur: unknown): void {
