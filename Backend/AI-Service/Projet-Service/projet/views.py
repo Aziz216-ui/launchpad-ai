@@ -113,7 +113,7 @@ class ProjetViewSet(viewsets.ModelViewSet):
         donnees_finance = finance_client.recuperer_synthese_financiere(projet.pk) or {}
 
         # Tentative LLM, repli sur les regles
-        resultat = llm.analyser_projet_llm(projet, donnees_marche)
+        resultat = llm.analyser_projet_llm(projet, donnees_marche, donnees_finance)
         source = AnalyseProjet.Source.LLM if resultat else AnalyseProjet.Source.REGLES
         if resultat is None:
             resultat = regles.analyser_projet(projet, donnees_marche, donnees_finance)

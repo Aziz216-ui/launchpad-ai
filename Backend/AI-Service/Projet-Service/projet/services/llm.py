@@ -45,10 +45,13 @@ PROMPT_SYSTEME = (
 )
 
 
-def analyser_projet_llm(projet, donnees_marche: dict) -> dict | None:
+def analyser_projet_llm(projet, donnees_marche: dict, donnees_finance: dict | None = None) -> dict | None:
     """
-    Analyse un projet avec le LLM en injectant les données de l'ETUDE-SERVICE.
+    Analyse un projet avec le LLM en injectant les données de l'ETUDE-SERVICE et de FINANCE-SERVICE.
     """
+    if donnees_finance is None:
+        donnees_finance = {}
+
     concurrents = donnees_marche.get("concurrents", [])
     nb_concurrents = len(concurrents)
     etudes = donnees_marche.get("etudes", [])
@@ -70,7 +73,23 @@ def analyser_projet_llm(projet, donnees_marche: dict) -> dict | None:
         for t in tendances[:5] if isinstance(t, dict)
     ]
 
-    prompt = f"""Analyse ce projet entrepreneurial en tenant compte des données de marché réelles.
+    # Données financières (Finance-Service)
+    infos_finance = []
+    prev = donnees_finance.get("prevision") or {}
+    marges = donnees_finance.get("marges") or {}
+    ecart = donnees_finance.get("ecart") or {}
+    ca = donnees_finance.get("ca") or prev.get("chiffreAffaires")
+    if ca:
+        infos_finance.append(f"Chiffre d'affaires prévisionnel : {ca} TND")
+    marge_brute = donnees_finance.get("marge_brute") or marges.get("margeBrute")
+    taux_marge = donnees_finance.get("taux_marge") or marges.get("tauxMargeBrute")
+    if taux_marge:
+        infos_finance.append(f"Taux de marge brute : {taux_marge}%")
+    statut_ecart = donnees_finance.get("statut") or ecart.get("statut")
+    if statut_ecart:
+        infos_finance.append(f"Statut d'exploitation : {statut_ecart}")
+
+    prompt = f"""Analyse ce projet entrepreneurial en tenant compte des données de marché et financières réelles.
 Retourne UNIQUEMENT ce format JSON (aucun autre texte) :
 {{
   "forces": ["force1", "force2"],
@@ -91,7 +110,10 @@ Données Étude de Marché (ETUDE-SERVICE) :
 - Niveau de concurrence : {donnees_marche.get('niveau_concurrence', 'inconnu')}
 - Nombre de concurrents réels : {nb_concurrents}
 - Études sectorielles : {', '.join(infos_etudes) if infos_etudes else 'aucune'}
-- Tendances avec impact : {', '.join(infos_tendances) if infos_tendances else 'aucune'}"""
+- Tendances avec impact : {', '.join(infos_tendances) if infos_tendances else 'aucune'}
+
+Données Financières (FINANCE-SERVICE) :
+- {', '.join(infos_finance) if infos_finance else 'aucune donnée financière disponible pour l instant'}"""
 
     messages = [{"role": "system", "content": PROMPT_SYSTEME}, {"role": "user", "content": prompt}]
     contenu = _appel_llm(messages, max_tokens=800)
