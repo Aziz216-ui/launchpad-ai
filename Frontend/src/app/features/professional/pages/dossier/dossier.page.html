@@ -1,0 +1,332 @@
+<div class="page">
+  @if (chargement()) {
+    <app-loader texte="Chargement du dossier…" />
+  } @else if (erreur() || !dossier()) {
+    <nav class="fil-ariane" aria-label="Fil d'Ariane">
+      <a routerLink="/">{{ espace }}</a><span aria-hidden="true">/</span>
+      <a routerLink="/professional/comptabilite">{{ estComptable ? 'Dossiers' : 'Comptabilité' }}</a>
+    </nav>
+    <div class="etat">
+      <p>{{ erreur() }}</p>
+      <a class="btn-secondaire" routerLink="/professional/comptabilite">← Retour aux dossiers</a>
+    </div>
+  } @else {
+    @let d = dossier()!;
+    <nav class="fil-ariane" aria-label="Fil d'Ariane">
+      <a routerLink="/">{{ espace }}</a><span aria-hidden="true">/</span>
+      <a routerLink="/professional/comptabilite">{{ estComptable ? 'Dossiers' : 'Comptabilité' }}</a><span aria-hidden="true">/</span>
+      <span class="courant">{{ d.reference }}</span>
+    </nav>
+
+    <header class="entete">
+      <div class="titre">
+        <div class="nom">
+          <h1>{{ d.startupName }}</h1>
+          <app-badge [variante]="varianteDossier(d.status)" [petit]="true">{{ libelleDossier(d.status) }}</app-badge>
+        </div>
+        <p>{{ d.reference }} · Comptable : {{ d.workspace.displayName }} · créé le {{ d.createdAt | date: 'dd/MM/y' }}</p>
+      </div>
+      @if (estComptable) {
+        <div class="actions-entete">
+          @if (d.status === 'PENDING') {
+            <button type="button" class="btn-secondaire" (click)="ouvrirAction({ type: 'refuser' })" [disabled]="actionEnCours()">Refuser</button>
+            <button type="button" class="btn-primaire" (click)="accepter()" [disabled]="actionEnCours()">Accepter la demande</button>
+          } @else if (d.status === 'ACTIVE') {
+            <button type="button" class="btn-secondaire" (click)="ouvrirAction({ type: 'cloturer' })">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+              Clôturer
+            </button>
+          }
+        </div>
+      }
+    </header>
+
+    @if (d.status === 'PENDING') {
+      <p class="bandeau attention">
+        @if (estComptable) {
+          Nouvelle demande : acceptez-la pour que l'entrepreneur puisse déposer ses documents.
+        } @else {
+          Demande en attente : {{ d.workspace.displayName }} doit l'accepter avant le dépôt de documents. Vous pouvez déjà lui écrire.
+        }
+      </p>
+    } @else if (d.status === 'REJECTED') {
+      <p class="bandeau danger">Demande refusée{{ d.rejectionReason ? ' : ' + d.rejectionReason : '.' }}</p>
+    } @else if (d.status === 'CLOSED') {
+      <p class="bandeau neutre">Dossier clôturé{{ d.closedAt ? ' le ' + (d.closedAt | date: 'dd/MM/y') : '' }} : consultation seule.</p>
+    }
+
+    <div class="onglets" role="tablist" aria-label="Contenu du dossier">
+      <button type="button" role="tab" [attr.aria-selected]="onglet() === 'documents'" [class.actif]="onglet() === 'documents'" (click)="choisirOnglet('documents')">Documents</button>
+      <button type="button" role="tab" [attr.aria-selected]="onglet() === 'messages'" [class.actif]="onglet() === 'messages'" (click)="choisirOnglet('messages')">
+        Messages <span class="nombre">{{ totalMessages() ?? '' }}</span>
+      </button>
+    </div>
+
+    <div class="grille-kpi">
+      <div class="kpi">
+        <div class="kpi-haut">
+          <span>Documents à valider</span>
+          <span class="kpi-icone"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4V3h6v1M15 15a3 3 0 1 0 0-.1M15 13.5V15l1 .7"></path></svg></span>
+        </div>
+        <strong>{{ compteur('PENDING') }}</strong>
+        <small>En attente du comptable</small>
+      </div>
+      <div class="kpi">
+        <div class="kpi-haut">
+          <span>Documents validés</span>
+          <span class="kpi-icone"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 12.5l2.5 2.5L16 9.5"></path></svg></span>
+        </div>
+        <strong>{{ compteur('VALIDATED') }}</strong>
+        <small>Dernières versions</small>
+      </div>
+      <div class="kpi">
+        <div class="kpi-haut">
+          <span>Documents rejetés</span>
+          <span class="kpi-icone"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7c2 0 3.7.7 5.1 1.6M22 12s-3.6 7-10 7c-2 0-3.7-.7-5.1-1.6M3 3l18 18"></path></svg></span>
+        </div>
+        <strong>{{ compteur('REJECTED') }}</strong>
+        <small>À corriger par l'entrepreneur</small>
+      </div>
+      <button type="button" class="kpi cliquable" (click)="choisirOnglet('messages')">
+        <div class="kpi-haut">
+          <span>Messages</span>
+          <span class="kpi-icone"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM18 9h2a2 2 0 0 1 2 2v9l-3-2h-6"></path></svg></span>
+        </div>
+        <strong>{{ totalMessages() ?? '—' }}</strong>
+        <small>Échanges sur ce dossier</small>
+      </button>
+    </div>
+
+    <div class="colonnes">
+      <section class="principale carte">
+        @if (onglet() === 'documents') {
+          <div class="barre-documents">
+            <label class="select-flottant">
+              <span>Statut</span>
+              <select [ngModel]="filtreStatut()" (ngModelChange)="changerFiltre($event)">
+                <option [ngValue]="null">Tous</option>
+                @for (s of statutsDocument; track s.statut) {
+                  <option [ngValue]="s.statut">{{ s.libelle }}</option>
+                }
+              </select>
+            </label>
+            <button type="button" class="interrupteur" role="switch" [attr.aria-checked]="historique()" (click)="basculerHistorique()">
+              <span class="piste" aria-hidden="true"><span class="pouce"></span></span>
+              Anciennes versions
+            </button>
+            @if (actif()) {
+              <button type="button" class="btn-primaire depot" (click)="depot.set({ precedent: null })">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M12 18v-6M9 15l3-3 3 3"></path></svg>
+                Déposer
+              </button>
+            }
+          </div>
+
+          @if (chargementDocuments()) {
+            <app-loader texte="Chargement des documents…" />
+          } @else if (!documents().length) {
+            <div class="etat vide">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path></svg>
+              <p>{{ filtreStatut() ? 'Aucun document avec ce statut.' : 'Aucun document déposé pour le moment.' }}</p>
+            </div>
+          } @else {
+            <div class="tableau-defilement">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Document</th>
+                    <th>Statut</th>
+                    <th>Déposé le</th>
+                    <th><span class="visuellement-cache">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (doc of documents(); track doc.id) {
+                    <tr [class.ancienne]="estRemplace(doc)">
+                      <td>
+                        <div class="doc">
+                          <span class="doc-icone" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M9 13h6M9 17h4"></path></svg></span>
+                          <div>
+                            <strong>{{ doc.title }}</strong>
+                            <span>
+                              {{ libelleType(doc) }} · v{{ doc.versionNumber }}
+                              @if (doc.periodStart || doc.periodEnd) {
+                                · {{ doc.periodStart ? (doc.periodStart | date: 'dd/MM/yy') : '…' }} → {{ doc.periodEnd ? (doc.periodEnd | date: 'dd/MM/yy') : '…' }}
+                              }
+                              @if (estRemplace(doc)) { · remplacée }
+                            </span>
+                            <span>
+                              @if (doc.file) { Fichier · {{ doc.file.originalFilename }} }
+                              @else if (doc.external) { Externe · {{ doc.external.service }} ({{ doc.external.ref }}) }
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td><app-badge [variante]="varianteDocument(doc.status)">{{ libelleDocument(doc.status) }}</app-badge></td>
+                      <td class="date">
+                        {{ doc.uploadedAt | date: 'dd/MM/y' }}
+                        <span>{{ deposant(doc) }}</span>
+                      </td>
+                      <td class="actions">
+                        @if (peutDecider(doc) && doc.status === 'PENDING') {
+                          <button type="button" class="icone valider" [attr.aria-label]="'Valider ' + doc.title" title="Valider"
+                            [disabled]="decisionEnCours() === doc.id" (click)="valider(doc)">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M8 12.5l2.5 2.5L16 9.5"></path></svg>
+                          </button>
+                          <button type="button" class="icone rejeter" [attr.aria-label]="'Rejeter ' + doc.title" title="Rejeter"
+                            [disabled]="decisionEnCours() === doc.id" (click)="ouvrirAction({ type: 'rejeter', document: doc })">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M9 9l6 6M15 9l-6 6"></path></svg>
+                          </button>
+                        }
+                        <div class="menu">
+                          <button type="button" class="icone" [attr.aria-label]="'Plus d\'actions pour ' + doc.title" aria-haspopup="menu"
+                            [attr.aria-expanded]="menuOuvert() === doc.id" (click)="basculerMenu(doc.id, $event)">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="19" r="1.8"></circle></svg>
+                          </button>
+                          @if (menuOuvert() === doc.id) {
+                            <ul role="menu" (click)="$event.stopPropagation()" [style.right.px]="positionMenu().right"
+                              [style.top.px]="positionMenu().top" [style.bottom.px]="positionMenu().bottom">
+                              @if (doc.file) {
+                                <li><button type="button" role="menuitem" (click)="menuOuvert.set(null); telecharger(doc)">Télécharger</button></li>
+                              }
+                              <li><button type="button" role="menuitem" (click)="menuOuvert.set(null); historiqueDe.set(doc)">Historique des décisions</button></li>
+                              @if (peutDecider(doc) && doc.status !== 'PENDING') {
+                                <li><button type="button" role="menuitem" (click)="ouvrirAction({ type: 'reviser', document: doc })">Réviser la décision</button></li>
+                              }
+                              @if (peutNouvelleVersion(doc)) {
+                                <li><button type="button" role="menuitem" (click)="menuOuvert.set(null); depot.set({ precedent: doc })">Déposer une nouvelle version</button></li>
+                              }
+                              @if (peutSupprimer(doc)) {
+                                <li><button type="button" role="menuitem" class="danger" (click)="ouvrirAction({ type: 'supprimer', document: doc })">Supprimer</button></li>
+                              }
+                            </ul>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        } @else {
+          <div class="fil" #fil aria-live="polite">
+            @if (chargementMessages()) {
+              <app-loader texte="Chargement des messages…" />
+            } @else if (!messages().length) {
+              <div class="etat vide">
+                <p>Aucun message pour le moment.</p>
+                @if (peutEcrire()) { <span>Écrivez le premier message ci-dessous.</span> }
+              </div>
+            } @else {
+              @for (m of messages(); track m.id) {
+                @let moi = estMoi(m.senderId);
+                <article class="message" [class.moi]="moi" [class.auto]="m.automatic">
+                  <header>
+                    <strong>{{ moi && !m.automatic ? 'Vous' : auteur(m) }}</strong>
+                    <time>{{ m.createdAt | date: 'dd/MM/y HH:mm' }}</time>
+                  </header>
+                  <div class="bulle">
+                    <p>{{ m.content }}</p>
+                    @if (documentCite(m.documentId); as cite) {
+                      <button type="button" class="piece" (click)="cite.file ? telecharger(cite) : null" [disabled]="!cite.file">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11l-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"></path></svg>
+                        {{ cite.title }} (v{{ cite.versionNumber }})
+                      </button>
+                    }
+                  </div>
+                  @if (moi && !m.automatic) {
+                    <small class="lu">{{ m.readAt ? 'Lu le ' + (m.readAt | date: 'dd/MM HH:mm') : 'Non lu' }}</small>
+                  }
+                </article>
+              }
+            }
+          </div>
+
+          @if (peutEcrire()) {
+            <form class="composer" (ngSubmit)="envoyerMessage()">
+              <label class="visuellement-cache" for="message">Votre message</label>
+              <textarea id="message" name="texte" [(ngModel)]="texteMessage" rows="3" maxlength="5000"
+                placeholder="Votre message*" (keydown)="toucheMessage($event)"></textarea>
+              <div class="composer-bas">
+                <small>Ctrl + Entrée pour envoyer</small>
+                <div class="composer-actions">
+                  <select name="document" [(ngModel)]="documentMessage" aria-label="Document concerné">
+                    <option [ngValue]="null">Document concerné</option>
+                    @for (doc of documentsCitables(); track doc.id) {
+                      <option [ngValue]="doc.id">{{ doc.title }} (v{{ doc.versionNumber }})</option>
+                    }
+                  </select>
+                  <button type="submit" class="btn-primaire" [disabled]="envoiMessage() || !texteMessage.trim()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"></path></svg>
+                    {{ envoiMessage() ? 'Envoi…' : 'Envoyer' }}
+                  </button>
+                </div>
+              </div>
+              @if (erreurMessage()) { <p class="alerte" role="alert">{{ erreurMessage() }}</p> }
+            </form>
+          } @else {
+            <p class="lecture-seule">Ce dossier est en lecture seule : l'envoi de messages est fermé.</p>
+          }
+        }
+      </section>
+
+      <aside class="laterale">
+        <section class="carte infos">
+          <h2>Informations</h2>
+          <dl>
+            <div><dt>Entrepreneur</dt><dd>{{ d.entrepreneurDisplayName ?? '—' }}</dd></div>
+            <div><dt>Comptable</dt><dd>{{ d.workspace.displayName }}</dd></div>
+            <div><dt>Identifiant projet</dt><dd>{{ d.startupId ?? '—' }}</dd></div>
+            <div><dt>Décision</dt><dd>{{ d.decidedAt ? (d.decidedAt | date: 'dd/MM/y HH:mm') : 'En attente' }}</dd></div>
+            @if (d.closedAt) {
+              <div><dt>Clôture</dt><dd>{{ d.closedAt | date: 'dd/MM/y HH:mm' }}</dd></div>
+            }
+          </dl>
+          @if (d.requestMessage) {
+            <div class="encadre">
+              <strong>Message de demande</strong>
+              <p>{{ d.requestMessage }}</p>
+            </div>
+          }
+          @if (d.rejectionReason) {
+            <div class="encadre refus">
+              <strong>Motif du refus</strong>
+              <p>{{ d.rejectionReason }}</p>
+            </div>
+          }
+        </section>
+
+        <section class="carte">
+          <h2>Historique d'affectation</h2>
+          @if (!affectations().length) {
+            <p class="discret">Aucune affectation : la demande attend la réponse du comptable.</p>
+          } @else {
+            <ol class="affectations">
+              @for (a of affectations(); track a.id) {
+                <li>
+                  <time>{{ a.assignedAt | date: 'dd/MM/y HH:mm' }}</time>
+                  <strong>{{ libelleAffectation(a) }}</strong>
+                  <span>{{ nomComptable(a.newAccountantId) }}</span>
+                  @if (a.reason) { <span class="discret">{{ a.reason }}</span> }
+                </li>
+              }
+            </ol>
+          }
+        </section>
+      </aside>
+    </div>
+  }
+</div>
+
+@if (depot(); as dep) {
+  <app-depot-document-modal [dossierId]="dossier()!.id" [precedent]="dep.precedent" (depose)="documentDepose($event)" (annuler)="depot.set(null)" />
+}
+@if (historiqueDe(); as h) {
+  <app-historique-document-modal [document]="h" (fermer)="historiqueDe.set(null)" />
+}
+@if (textesAction(); as t) {
+  <app-saisie-modal [titre]="t.titre" [texte]="t.texte" [libelleChamp]="t.champ" [obligatoire]="t.obligatoire"
+    [libelleConfirmer]="t.confirmer" [variante]="t.variante" [enCours]="actionEnCours()" [erreur]="erreurAction()"
+    (confirmer)="confirmerAction($event)" (annuler)="action.set(null)" />
+}

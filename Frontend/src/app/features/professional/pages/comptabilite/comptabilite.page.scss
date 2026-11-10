@@ -1,0 +1,238 @@
+@use 'variables' as *;
+@use '../commun';
+
+.onglets {
+  display: flex;
+  gap: 28px;
+  border-bottom: 1px solid $bordure;
+  overflow-x: auto;
+
+  button {
+    position: relative;
+    padding: 10px 2px 12px;
+    border: 0;
+    background: none;
+    color: $texte-secondaire;
+    font-size: 15px;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &:hover {
+      color: $primaire-fonce;
+    }
+    &.actif {
+      color: $primaire-fonce;
+      font-weight: 500;
+
+      &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: 2px;
+        background: $primaire;
+      }
+    }
+  }
+  .nombre {
+    margin-left: 4px;
+    color: $gris;
+  }
+}
+
+.grille-kpi {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 20px;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 22px;
+  border: 1px solid $bordure;
+  border-radius: $rayon-carte;
+  background: $fond-carte;
+  color: $texte;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    border-color: $bordure-champ;
+    box-shadow: 0 4px 14px rgba(29, 43, 47, 0.06);
+  }
+
+  .kpi-haut {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 15px;
+    color: $texte-secondaire;
+  }
+  .kpi-icone {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: $primaire-clair;
+    color: $primaire-fonce;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  strong {
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  small {
+    font-size: 13px;
+    color: $gris;
+  }
+}
+
+.carte-tableau {
+  border: 1px solid $bordure;
+  border-radius: $rayon-carte;
+  background: $fond-carte;
+  overflow: hidden;
+}
+
+.tableau-entete {
+  padding: 24px 24px 20px;
+
+  h2 {
+    margin: 0 0 8px;
+    font-size: 17px;
+    font-weight: 600;
+  }
+  p {
+    margin: 0;
+    color: $texte-secondaire;
+  }
+}
+
+.tableau-defilement {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+
+  th,
+  td {
+    padding: 14px 20px;
+    text-align: left;
+    vertical-align: top;
+    font-size: 14px;
+  }
+  th {
+    font-weight: 500;
+    color: $texte-secondaire;
+    border-bottom: 1px solid $bordure;
+  }
+  tbody tr {
+    border-bottom: 1px solid $bordure-legere;
+
+    &:hover {
+      background: $fond-doux;
+    }
+    &.cliquable {
+      cursor: pointer;
+    }
+  }
+  .reference {
+    color: $texte;
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+      color: $primaire-fonce;
+      text-decoration: underline;
+    }
+  }
+  .secondaire {
+    display: block;
+    max-width: 260px;
+    margin-top: 4px;
+    font-size: 12px;
+    color: $gris;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.etat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 16px;
+  color: $gris;
+  text-align: center;
+
+  p {
+    margin: 0;
+    font-size: 15px;
+    color: $texte-secondaire;
+  }
+  .lien {
+    color: $primaire-fonce;
+    font-weight: 600;
+    text-decoration: none;
+  }
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 24px;
+  border-top: 1px solid $bordure-legere;
+  font-size: 14px;
+  color: $texte-secondaire;
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  select {
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid $bordure-champ;
+    border-radius: $rayon-champ;
+    background: $fond-carte;
+  }
+  .fleches {
+    display: flex;
+    gap: 6px;
+  }
+  .fleches button {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: $texte-secondaire;
+    font-size: 20px;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: $fond-neutre;
+    }
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+  }
+}

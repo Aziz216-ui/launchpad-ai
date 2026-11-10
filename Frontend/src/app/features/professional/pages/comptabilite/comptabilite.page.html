@@ -1,0 +1,161 @@
+<div class="page">
+  <nav class="fil-ariane" aria-label="Fil d'Ariane">
+    <a routerLink="/">{{ espace }}</a><span aria-hidden="true">/</span><span class="courant">Comptabilité</span>
+  </nav>
+
+  <header class="entete">
+    <div class="titre">
+      <h1>Comptabilité</h1>
+      <p>
+        @if (estEntrepreneur) {
+          Suivez vos dossiers avec votre comptable, déposez vos pièces et échangez avec lui.
+        } @else {
+          Suivez les dossiers des startups qui vous sont confiés.
+        }
+      </p>
+    </div>
+    @if (estEntrepreneur) {
+      <a class="btn-primaire" routerLink="comptables">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="10" cy="8" r="4"></circle><path d="M3 20c0-3.3 3.1-6 7-6 1.1 0 2.2.2 3.1.6"></path>
+          <path d="M18 15v6M15 18h6"></path>
+        </svg>
+        Demander un comptable
+      </a>
+    }
+  </header>
+
+  <div class="onglets" role="tablist" aria-label="Filtrer par statut">
+    <button type="button" role="tab" [attr.aria-selected]="filtre() === null" [class.actif]="filtre() === null"
+      (click)="choisirFiltre(null)">
+      Tous <span class="nombre">{{ compteur('ALL') }}</span>
+    </button>
+    @for (s of statuts; track s.statut) {
+      <button type="button" role="tab" [attr.aria-selected]="filtre() === s.statut"
+        [class.actif]="filtre() === s.statut" (click)="choisirFiltre(s.statut)">
+        {{ s.libelle }}
+      </button>
+    }
+  </div>
+
+  <div class="grille-kpi">
+    <button type="button" class="kpi" (click)="choisirFiltre('ACTIVE')">
+      <div class="kpi-haut">
+        <span>Dossiers actifs</span>
+        <span class="kpi-icone">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1H3z"></path><path d="M3 10h18l-2 9H5z"></path></svg>
+        </span>
+      </div>
+      <strong>{{ compteur('ACTIVE') }}</strong>
+      <small>Suivis par un comptable</small>
+    </button>
+    <button type="button" class="kpi" (click)="choisirFiltre('PENDING')">
+      <div class="kpi-haut">
+        <span>Demandes en attente</span>
+        <span class="kpi-icone">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12M6 21h12M7 3c0 5 10 5 10 9s-10 4-10 9M17 3c0 5-10 5-10 9s10 4 10 9"></path></svg>
+        </span>
+      </div>
+      <strong>{{ compteur('PENDING') }}</strong>
+      <small>En attente de réponse</small>
+    </button>
+    <button type="button" class="kpi" (click)="choisirFiltre('CLOSED')">
+      <div class="kpi-haut">
+        <span>Dossiers clôturés</span>
+        <span class="kpi-icone">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1"></rect><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"></path></svg>
+        </span>
+      </div>
+      <strong>{{ compteur('CLOSED') }}</strong>
+      <small>En lecture seule</small>
+    </button>
+    <button type="button" class="kpi" (click)="choisirFiltre('REJECTED')">
+      <div class="kpi-haut">
+        <span>Demandes refusées</span>
+        <span class="kpi-icone">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M5.7 5.7l12.6 12.6"></path></svg>
+        </span>
+      </div>
+      <strong>{{ compteur('REJECTED') }}</strong>
+      <small>Avec motif communiqué</small>
+    </button>
+  </div>
+
+  <section class="carte-tableau">
+    <div class="tableau-entete">
+      <h2>{{ titreTableau() }}</h2>
+      <p>{{ total() }} dossier(s)</p>
+    </div>
+
+    <div class="tableau-defilement">
+      <table>
+        <thead>
+          <tr>
+            <th>Référence</th>
+            <th>Startup</th>
+            <th>{{ estEntrepreneur ? 'Comptable' : 'Entrepreneur' }}</th>
+            <th>Statut</th>
+            <th>Créé le</th>
+          </tr>
+        </thead>
+        @if (!chargement() && dossiers().length) {
+          <tbody>
+            @for (d of dossiers(); track d.id) {
+              <tr class="cliquable" (click)="ouvrir(d)">
+                <td><a class="reference" [routerLink]="['dossiers', d.id]" (click)="$event.stopPropagation()">{{ d.reference }}</a></td>
+                <td>
+                  {{ d.startupName }}
+                  @if (d.startupId) {
+                    <span class="secondaire">Projet {{ d.startupId }}</span>
+                  }
+                </td>
+                <td>{{ estEntrepreneur ? d.workspace.displayName : (d.entrepreneurDisplayName ?? '—') }}</td>
+                <td>
+                  <app-badge [variante]="variante(d.status)" [petit]="true">{{ libelle(d.status) }}</app-badge>
+                  @if (d.status === 'REJECTED' && d.rejectionReason) {
+                    <span class="secondaire" [title]="d.rejectionReason">{{ d.rejectionReason }}</span>
+                  }
+                </td>
+                <td>{{ d.createdAt | date: 'd MMM y' }}</td>
+              </tr>
+            }
+          </tbody>
+        }
+      </table>
+
+      @if (chargement()) {
+        <app-loader texte="Chargement des dossiers…" />
+      } @else if (erreur()) {
+        <div class="etat">
+          <p>{{ erreur() }}</p>
+          <button type="button" class="btn-secondaire" (click)="recharger()">Réessayer</button>
+        </div>
+      } @else if (!dossiers().length) {
+        <div class="etat">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8M21 19H5a2 2 0 0 1-2-2V7M3 3l18 18"></path></svg>
+          <p>Aucun dossier pour le moment.</p>
+          @if (estEntrepreneur && filtre() === null) {
+            <a class="lien" routerLink="comptables">Demander un comptable →</a>
+          }
+        </div>
+      }
+    </div>
+
+    <footer class="pagination">
+      <label>
+        Éléments par page
+        <select [ngModel]="limite()" (ngModelChange)="changerLimite($event)">
+          @for (t of taillesPage; track t) {
+            <option [ngValue]="t">{{ t }}</option>
+          }
+        </select>
+      </label>
+      <span>{{ plage() }}</span>
+      <div class="fleches">
+        <button type="button" aria-label="Page précédente" [disabled]="page() <= 1" (click)="allerPage(page() - 1)">‹</button>
+        <button type="button" aria-label="Page suivante" [disabled]="page() >= pages()" (click)="allerPage(page() + 1)">›</button>
+      </div>
+    </footer>
+  </section>
+</div>

@@ -1,0 +1,108 @@
+// Règles communes aux pages Comptabilité (incluses par chaque page avec `@use '../commun';`).
+@use 'variables' as *;
+
+:host {
+  display: block;
+}
+
+.page {
+  padding: 24px 32px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1240px;
+  width: 100%;
+
+  @media (max-width: $mobile) {
+    padding: 20px 16px 40px;
+  }
+}
+
+.fil-ariane {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  color: $gris;
+
+  a {
+    color: $gris;
+    text-decoration: none;
+
+    &:hover {
+      color: $primaire-fonce;
+    }
+  }
+  .courant {
+    color: $texte-secondaire;
+  }
+}
+
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+
+  .titre {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 600;
+  }
+  p {
+    margin: 0;
+    font-size: 14px;
+    color: $texte-secondaire;
+  }
+}
+
+.btn-primaire,
+.btn-secondaire {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: $rayon-champ;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  &:focus-visible {
+    outline: 3px solid rgba($primaire, 0.35);
+    outline-offset: 2px;
+  }
+}
+
+.btn-primaire {
+  border: 0;
+  background: $primaire;
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    background: $primaire-fonce;
+  }
+}
+
+.btn-secondaire {
+  border: 1px solid $bordure-champ;
+  background: $fond-carte;
+  color: $texte;
+
+  &:hover:not(:disabled) {
+    border-color: $primaire;
+  }
+}
