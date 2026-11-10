@@ -25,4 +25,13 @@ final class LocalClientFileDirectory implements ClientFileDirectory
 
         return $this->files->find($fileId)?->toContext();
     }
+
+    public function participantFiles(string $userId, bool $accountant): array
+    {
+        $query = $accountant
+            ? $this->files->createFilteredQuery(accountantId: $userId)
+            : $this->files->createFilteredQuery(entrepreneurId: $userId);
+
+        return array_map(static fn ($file): FileContext => $file->toContext(), $query->setMaxResults(500)->getQuery()->getResult());
+    }
 }

@@ -1,6 +1,6 @@
 # Installe les 4 microservices : dépendances, base de données, migrations et données de démonstration.
 # Usage (depuis Backend/Professional-Service) :  .\scripts\install.ps1  [-NoFixtures]
-# Prérequis : PHP 8.2+ et Composer dans le PATH, MySQL/MariaDB démarré, .env.local de chaque service renseigné.
+# Prérequis : PHP 8.4+ et Composer dans le PATH, MySQL/MariaDB démarré, .env.local de chaque service renseigné.
 param([switch]$NoFixtures)
 
 $ErrorActionPreference = 'Stop'

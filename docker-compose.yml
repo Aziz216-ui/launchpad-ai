@@ -265,6 +265,8 @@ services:
         condition: service_healthy
       keycloak-init:
         condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
     environment:
       DEBUG: "False"
       SECRET_KEY: ${DJANGO_SECRET_KEY:-launchpad-dev-secret-key-change-me}
@@ -283,11 +285,18 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       EUREKA_SERVER_URL: http://eureka:8761/eureka
       EUREKA_INSTANCE_HOST: user-service
-      # Comptes de démo : ahmed (ADMIN) et adem (ENTREPRENEUR), voir seed_demo_users.py
+      # Comptes de démo : ahmed (ADMIN), adem (ENTREPRENEUR), nadia et walid (ACCOUNTANT), sarra (LAWYER), voir seed_demo_users.py
       SEED_DEMO_USERS: ${SEED_DEMO_USERS:-true}
       DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-Ahmed@2026!}
       DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-Adem@2026!}
+      DEMO_ACCOUNTANT_PASSWORD: ${DEMO_ACCOUNTANT_PASSWORD:-Comptable@2026!}
+      DEMO_LAWYER_PASSWORD: ${DEMO_LAWYER_PASSWORD:-Avocat@2026!}
       EUREKA_ENABLED: "true"
+      # Événement accountant.registered -> workspace-service (espace comptable créé à l'inscription)
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
 
   # ===========================================================================
   #  ÉTUDE DE MARCHÉ (4 services Django + 4 bases + 3 consommateurs RabbitMQ)
@@ -1034,6 +1043,24 @@ services:
       accounting-document-service: {condition: service_started}
 
   # Consommateurs RabbitMQ de la comptabilité : même image, commande d'écoute des queues
+  # workspace-consumer : crée l'espace d'un comptable à son inscription (événement publié par user-service)
+  workspace-consumer:
+    <<: *compta-service
+    build: {context: ./Backend/Professional-Service}
+    image: launchpad/accounting:latest
+    container_name: workspace-consumer
+    command: ["php", "bin/console", "app:rabbitmq:consume"]
+    environment:
+      <<: *compta-env
+      APP_PORT: "8091"
+      APP_SERVICE_NAME: workspace-service
+      SERVICE: workspace-service
+      EUREKA_ENABLED: "false"
+      RUN_MIGRATIONS: "false"
+      DATABASE_URL: "mysql://root:${COMPTA_DB_PASSWORD:-compta-root-pass}@compta-db:3306/workspace_db?serverVersion=10.11.0-MariaDB&charset=utf8mb4"
+    depends_on:
+      workspace-service: {condition: service_started}
+
   client-file-consumer:
     <<: *compta-service
     build: {context: ./Backend/Professional-Service}

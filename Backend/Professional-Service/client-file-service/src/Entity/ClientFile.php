@@ -154,6 +154,7 @@ class ClientFile
             entrepreneurId: $this->entrepreneurId,
             accountantId: $this->accountantId,
             workspaceActive: $this->workspaceActive,
+            startupName: $this->startupName,
         );
     }
 

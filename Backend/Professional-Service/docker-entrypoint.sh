@@ -1,6 +1,6 @@
 #!/bin/sh
 # Démarrage d'un microservice comptable en conteneur :
-#   1. attend la base MySQL, 2. applique les migrations, 3. charge les données de démo (une fois),
+#   1. attend la base MySQL, 2. applique les migrations, 3. charge les données de démo (base vide seulement),
 #   4. déclare les queues RabbitMQ, 5. lance la commande demandée (serveur HTTP ou consommateur).
 set -e
 cd "/app/${SERVICE}"
@@ -13,8 +13,10 @@ if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     sleep 2
   done
   php bin/console doctrine:migrations:migrate --no-interaction
-  if [ "${LOAD_FIXTURES:-true}" = "true" ] && [ ! -f var/.fixtures-loaded ]; then
-    php bin/console doctrine:fixtures:load --no-interaction && mkdir -p var && touch var/.fixtures-loaded
+  # Données de démo seulement si la base est vide : fixtures:load vide la base avant de la remplir,
+  # un marqueur dans le conteneur ne suffit pas (il disparaît à chaque recréation du conteneur).
+  if [ "${LOAD_FIXTURES:-true}" = "true" ]; then
+    php bin/console app:fixtures:load-if-empty --no-interaction
   fi
   # Déclare les queues RabbitMQ du service (ignoré si le broker n'est pas encore prêt)
   php bin/console app:rabbitmq:consume --setup || true

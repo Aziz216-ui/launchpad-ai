@@ -15,4 +15,17 @@ final class Queues
 
     /** document-service → message-service : un comptable a validé / rejeté un document. */
     public const MESSAGE_DOCUMENT_DECIDED = 'message.document_decided';
+
+    /**
+     * client-file-service, document-service → message-service : activité sur un dossier à signaler à l'autre
+     * participant (nouvelle demande, demande acceptée / refusée, dossier clôturé, document déposé).
+     * Devient un message automatique du fil, donc une notification sous la cloche du destinataire.
+     */
+    public const MESSAGE_FILE_ACTIVITY = 'message.file_activity';
+
+    /**
+     * User-Service → workspace-service : un utilisateur s'est inscrit avec le rôle ACCOUNTANT.
+     * Nom partagé avec Backend/User-Service/authentication/events.py (ACCOUNTANT_REGISTERED_QUEUE).
+     */
+    public const WORKSPACE_ACCOUNTANT_REGISTERED = 'workspace.accountant_registered';
 }

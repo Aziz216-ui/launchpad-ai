@@ -13,7 +13,10 @@ use App\Remote\WorkspaceDirectory;
 use App\Remote\WorkspaceInfo;
 use App\Repository\ClientFileRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Launchpad\Common\Enum\UserRole;
 use Launchpad\Common\Exception\ApiException;
+use Launchpad\Common\Messaging\FileActivityNotifier;
+use Launchpad\Common\Messaging\Message\FileActivity;
 use Launchpad\Common\Security\KeycloakUser;
 
 /**
@@ -26,6 +29,7 @@ final class ClientFileService
         private readonly EntityManagerInterface $em,
         private readonly ClientFileRepository $files,
         private readonly WorkspaceDirectory $workspaces,
+        private readonly FileActivityNotifier $activity,
     ) {
     }
 
@@ -52,6 +56,16 @@ final class ClientFileService
 
         $this->em->persist($file);
         $this->em->flush();
+
+        // Notification du comptable (cloche + fil du dossier), via message-service
+        $this->activity->notify(
+            $file->getId()->toRfc4122(),
+            FileActivity::REQUESTED,
+            $entrepreneur->getId(),
+            UserRole::ENTREPRENEUR,
+            sprintf('Nouvelle demande de suivi comptable pour « %s ».', $file->getStartupName())
+                .(null !== $request->requestMessage && '' !== trim($request->requestMessage) ? "\n".trim($request->requestMessage) : ''),
+        );
 
         return $file;
     }
@@ -86,6 +100,14 @@ final class ClientFileService
             assignedBy: $accountant->getId(),
         ));
         $this->em->flush();
+
+        $this->activity->notify(
+            $file->getId()->toRfc4122(),
+            FileActivity::ACCEPTED,
+            $accountant->getId(),
+            UserRole::ACCOUNTANT,
+            sprintf('Demande acceptée : %s suit désormais la comptabilité de « %s ». Vous pouvez déposer vos documents.', $file->getAccountantDisplayName(), $file->getStartupName()),
+        );
     }
 
     public function reject(ClientFile $file, string $reason): void
@@ -94,6 +116,14 @@ final class ClientFileService
 
         $file->reject($reason);
         $this->em->flush();
+
+        $this->activity->notify(
+            $file->getId()->toRfc4122(),
+            FileActivity::REJECTED,
+            $file->getAccountantId(),
+            UserRole::ACCOUNTANT,
+            sprintf("Demande refusée pour « %s ».\nMotif : %s\nVous pouvez choisir un autre comptable.", $file->getStartupName(), trim($reason)),
+        );
     }
 
     /**
@@ -149,6 +179,14 @@ final class ClientFileService
 
         $file->close();
         $this->em->flush();
+
+        $this->activity->notify(
+            $file->getId()->toRfc4122(),
+            FileActivity::CLOSED,
+            $file->getAccountantId(),
+            UserRole::ACCOUNTANT,
+            sprintf('Dossier « %s » clôturé : il reste consultable en lecture seule.', $file->getStartupName()),
+        );
     }
 
     /**

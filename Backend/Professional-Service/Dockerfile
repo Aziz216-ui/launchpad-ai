@@ -1,7 +1,10 @@
-# Image UNIQUE des 4 microservices de l'espace comptable (Symfony 7.4, PHP 8.3).
+# Image UNIQUE des 4 microservices de l'espace comptable (Symfony 7.4, PHP 8.4).
 # Contexte de build : Backend/Professional-Service. Le service lancé est choisi à l'exécution
 # par la variable SERVICE (workspace-service, client-file-service, document-service, message-service).
-FROM php:8.3-cli
+# PHP 8.4 obligatoire (pas 8.3) : les composer.lock verrouillent des dépendances d'exécution
+# (doctrine/doctrine-bundle 3.x, doctrine-migrations-bundle 4.x, doctrine/collections 3.x) et de dev
+# (phpunit 13, sebastian/*) qui exigent toutes php>=8.4.
+FROM php:8.4-cli
 
 # Extensions PHP : pdo_mysql, intl, zip, sockets (RabbitMQ), opcache
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/download/2.7.20/install-php-extensions /usr/local/bin/

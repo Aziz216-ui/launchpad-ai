@@ -8,6 +8,7 @@ from django.db import transaction
 from keycloak.exceptions import KeycloakError
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
+from .events import publier_comptable_inscrit
 from .keycloak_client import KeycloakService
 from .serializers import (
     RegisterSerializer,
@@ -70,6 +71,9 @@ class RegisterView(APIView):
                     phone_number=data.get("phone_number", ""),
                     role=data.get("role", User.Role.ENTREPRENEUR),
                 )
+                # Comptable : workspace-service crée son espace (annuaire des entrepreneurs), voir events.py
+                if user.role == User.Role.ACCOUNTANT:
+                    transaction.on_commit(lambda: publier_comptable_inscrit(user))
 
             return Response(
                 {
