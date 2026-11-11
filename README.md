@@ -152,6 +152,7 @@ On peut aussi créer un compte depuis la page d'inscription (rôles ENTREPRENEUR
 | Étude de marché | http://localhost:8090/api/market/secteurs/docs/ · `/concurrents/docs/` · `/etudes/docs/` · `/swot/docs/` |
 | Co-Fondateur IA | http://localhost:8090/docs/ai/projet/docs/ · `/docs/ai/recommandation/docs/` · `/docs/ai/conversation/docs/` |
 | Juridique | http://localhost:8090/docs/legal |
+| Finance | http://localhost:8090/docs/finance/prevision/swagger-ui/index.html (idem `document`) |
 | Espace avocat | http://localhost:8090/docs/lawyer/client/swagger-ui/index.html (idem `message`, `docreview`) |
 | Espace comptable | `/api/comptable/docs` de chaque service (voir [son README](Backend/Professional-Service/README.md)) |
 
@@ -166,7 +167,9 @@ On peut aussi créer un compte depuis la page d'inscription (rôles ENTREPRENEUR
   rafraîchit le jeton expiré automatiquement.
 - **API Gateway** : vérifie la signature du JWT (clés publiques de Keycloak) sur toutes les routes
   métier ; routes publiques : `/api/auth/**`, health checks et documentations. Les `DELETE` sont
-  réservés au rôle **ADMIN**. Le jeton est transmis tel quel aux services.
+  réservés au rôle **ADMIN**, sauf sous `/api/finance/**` où le service vérifie lui-même que
+  l'utilisateur est propriétaire du projet ; `/api/finance/ia/**` (route interne) est refusé.
+  Le jeton est transmis tel quel aux services.
 - **Dans les services** : contrôles fins selon l'utilisateur du jeton — par exemple un entrepreneur
   ne voit que **ses** études de marché (`entrepreneur_id` = `sub` Keycloak), l'ADMIN les voit toutes ;
   la Finance revérifie le JWT et gère des rôles par projet.
@@ -285,6 +288,8 @@ Chaque module a son README (installation, endpoints, événements, tests) :
   [concurrent](Backend/Market/concurrent-service/README.md), [étude](Backend/Market/etude-service/README.md),
   [SWOT](Backend/Market/swot-service/README.md) ; diagrammes : [Documentation/Diagrams/Market-Service](Documentation/Diagrams/Market-Service/README.md)
 - Co-Fondateur IA : [Recommandation](Backend/AI-Service/Recommandation-Service/README.md) · [Conversation](Backend/AI-Service/Conversation-Service/README.md)
+- [Finance](Backend/Finance-Service/README.md) — prévisions, documents, rôles entrepreneur / financier ;
+  [contrat d'API](Backend/Finance-Service/CONTRAT-API.md) ; diagrammes : [Documentation/Diagrams/Finance](Documentation/Diagrams/Finance/README.md)
 - [Juridique](Backend/Legal-Service/README.md)
 - [Espace comptable](Backend/Professional-Service/README.md)
 - Front : [Frontend](Frontend/README.md) et un README par module dans `Frontend/src/app/features/`
