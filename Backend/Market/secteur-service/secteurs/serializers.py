@@ -24,7 +24,7 @@ class TendanceSerializer(serializers.ModelSerializer):
 # --- Sérialiseurs de documentation de l'analyse (Swagger uniquement) ----------
 
 NIVEAUX_CONCURRENCE = [
-    ("inconnu", "Inconnu (aucune étude)"),
+    ("inconnu", "Inconnu (aucun concurrent)"),
     ("faible", "Faible"),
     ("moyen", "Moyen"),
     ("eleve", "Élevé"),
@@ -47,7 +47,8 @@ class SecteurResumeSerializer(serializers.Serializer):
 class AnalyseSecteurSerializer(serializers.Serializer):
     secteur = SecteurResumeSerializer()
     nombre_concurrents = serializers.IntegerField()
-    prix_moyen = serializers.DecimalField(max_digits=12, decimal_places=2)
+    prix_moyen = serializers.DecimalField(max_digits=12, decimal_places=2, allow_null=True,
+                                          help_text="null si le secteur n'a aucun concurrent.")
     part_de_marche_totale = serializers.DecimalField(max_digits=7, decimal_places=2)
     top_concurrents = ConcurrentResumeSerializer(many=True)
     tendances_positives = serializers.IntegerField()

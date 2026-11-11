@@ -92,6 +92,10 @@ class LoginViewTests(APITestCase):
             "expires_in": 300,
             "refresh_expires_in": 1800,
         }
+        mock_keycloak_service.return_value.verify_token.return_value = {
+            "sub": "kc-uuid-2", "preferred_username": "alice", "email": "alice@example.com",
+            "realm_access": {"roles": ["ENTREPRENEUR"]},
+        }
 
         response = self.client.post(self.url, {"username": "alice", "password": "secret123"}, format="json")
 

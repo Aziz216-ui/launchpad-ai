@@ -1,9 +1,7 @@
 from rest_framework.authentication import BaseAuthentication
 from rest_framework import exceptions
-from django.contrib.auth import get_user_model
 from .keycloak_client import KeycloakService
-
-User = get_user_model()
+from .synchronisation import provisionner_profil
 
 class KeycloakAuthentication(BaseAuthentication):
     def __init__(self):
@@ -31,32 +29,10 @@ class KeycloakAuthentication(BaseAuthentication):
         except Exception as e:
             raise exceptions.AuthenticationFailed(f"Invalid token: {str(e)}")
 
-        keycloak_id = payload.get("sub")
-        username = payload.get("preferred_username") or payload.get("username")
-        email = payload.get("email", "")
-        roles = payload.get("realm_access", {}).get("roles", [])
+        if not payload.get("sub"):
+            raise exceptions.AuthenticationFailed("Invalid token: missing 'sub' claim")
 
-        # Map role
-        role = User.Role.ENTREPRENEUR
-        if "ADMIN" in roles:
-            role = User.Role.ADMIN
-        elif "LAWYER" in roles:
-            role = User.Role.LAWYER
-        elif "ACCOUNTANT" in roles:
-            role = User.Role.ACCOUNTANT
-        elif "FINANCIER" in roles:
-            role = User.Role.FINANCIER
-
-        # Get or create local user
-        user, created = User.objects.get_or_create(
-            keycloak_id=keycloak_id,
-            defaults={
-                "username": username or keycloak_id,
-                "email": email or f"{keycloak_id}@example.com",
-                "first_name": payload.get("given_name", ""),
-                "last_name": payload.get("family_name", ""),
-                "role": role,
-            }
-        )
-
+        # Profil local trouvé par keycloak_id, sinon relié par username (Keycloak réinitialisé),
+        # sinon créé ; rôle aligné sur le jeton (Keycloak est la source de vérité).
+        user = provisionner_profil(payload)
         return (user, token)

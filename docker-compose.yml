@@ -198,6 +198,18 @@ services:
     entrypoint: ["python", "setup_keycloak.py"]
     networks: [launchpad-net]
 
+  # Serveur mail de TEST : reçoit les e-mails du User-Service quand EMAIL_HOST n'est pas défini
+  # (aucun n'est réellement distribué). Boîte de réception : http://localhost:8025 ; SMTP mailpit:1025.
+  mailpit:
+    image: axllent/mailpit:v1.21.8
+    container_name: launchpad-mailpit
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+    environment:
+      MP_MAX_MESSAGES: 500
+    networks: [launchpad-net]
+
   # ===========================================================================
   #  API GATEWAY (point d'entrée unique) + FRONTEND
   # ===========================================================================
@@ -297,6 +309,14 @@ services:
       RABBITMQ_PORT: "5672"
       RABBITMQ_USER: ${RABBITMQ_USER:-guest}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      # E-mails (code « Mot de passe oublié ») : valeurs lues dans le .env racine (non suivi par Git),
+      # voir .env.example. EMAIL_HOST vide : Mailpit (mailpit:1025, http://localhost:8025).
+      EMAIL_HOST: ${EMAIL_HOST:-}
+      EMAIL_PORT: ${EMAIL_PORT:-}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-False}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
 
   # ===========================================================================
   #  ÉTUDE DE MARCHÉ (4 services Django + 4 bases + 3 consommateurs RabbitMQ)

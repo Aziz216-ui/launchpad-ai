@@ -22,11 +22,10 @@ export const environment = {
   userApiUrl: 'http://localhost:8090/api/auth',
 
   /**
-   * Utilisateur provisoire, en attendant le User-Service et son token JWT :
-   * affiché dans la barre latérale et utilisé à la création d'une étude de marché.
+   * Projet provisoire (Étude de marché et Co-Fondateur IA), tant que le sélecteur de projet
+   * n'est pas relié au Projet-Service. L'utilisateur, lui, vient du jeton de connexion.
    */
   utilisateur: {
-    entrepreneurId: 101,
     projetId: 1,
   },
 };

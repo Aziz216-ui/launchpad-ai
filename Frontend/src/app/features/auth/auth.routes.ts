@@ -17,4 +17,9 @@ export default [
     loadComponent: () => import('./register.component').then((m) => m.RegisterComponent),
     title: 'Créer un compte · LaunchPad AI',
   },
+  {
+    path: 'mot-de-passe-oublie',
+    loadComponent: () => import('./mot-de-passe-oublie.page').then((m) => m.MotDePasseOubliePage),
+    title: 'Mot de passe oublié · LaunchPad AI',
+  },
 ] satisfies Routes;

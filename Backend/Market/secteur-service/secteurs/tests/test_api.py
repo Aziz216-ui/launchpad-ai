@@ -151,7 +151,9 @@ class AnalyseSecteurTests(APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["nombre_concurrents"], 0)
-        self.assertEqual(response.json()["prix_moyen"], 0.0)
+        # Aucun concurrent : rien à évaluer -> "inconnu" (et non "faible"), prix moyen null (et non 0.0)
+        self.assertIsNone(response.json()["prix_moyen"])
+        self.assertEqual(response.json()["niveau_concurrence"], "inconnu")
         self.assertEqual(response.data["top_concurrents"], [])
 
     @mock.patch(DU_SECTEUR)
@@ -174,6 +176,7 @@ class NiveauConcurrenceTests(APITestCase):
         self.assertEqual(calculer_niveau_concurrence(1, Decimal("30")), "moyen")
         self.assertEqual(calculer_niveau_concurrence(6, Decimal("0")), "eleve")
         self.assertEqual(calculer_niveau_concurrence(2, Decimal("60")), "eleve")
+        self.assertEqual(calculer_niveau_concurrence(0, Decimal("0")), "inconnu")
 
 
 class DiversTests(APITestCase):

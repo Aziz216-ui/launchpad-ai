@@ -11,12 +11,50 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from clients import ConcurrentClient, SecteurClient, SwotClient
-from market_commun.validation import verifier_liste, verifier_reference
+from market_commun.validation import verifier_reference
 
 from . import services
 from .models import EtudeMarche, Persona
 
 SECTEUR_INTROUVABLE = "Secteur introuvable"
+CONCURRENTS_HORS_SECTEUR = "Concurrent(s) hors du secteur de l'étude"
+TENDANCES_HORS_SECTEUR = "Tendance(s) hors du secteur de l'étude"
+
+
+def verifier_liste_du_secteur(attrs, instance, champ, lister, secteur_id, secteur_change,
+                              introuvable, hors_secteur):
+    """
+    Liste d'ids (concurrent_ids, tendance_ids) cohérente avec le secteur de l'étude.
+
+    - doublons retirés ; ids NOUVEAUX : introuvables -> 400, d'un autre secteur -> 400 ;
+    - si le secteur change : les ids déjà associés qui ne sont pas du nouveau secteur (ou qui
+      n'existent plus) sont retirés automatiquement ; renvoie la liste des ids retirés.
+
+    Un seul appel lister(ids) par champ. Les ids déjà associés ne sont relus que si le
+    secteur change (une étude existante reste modifiable sans tout revérifier).
+    """
+    anciens = list(getattr(instance, champ, None) or [])
+    fournis = champ in attrs
+    ids = [*dict.fromkeys(attrs[champ])] if fournis else anciens  # ordre conservé, doublons retirés
+    nouveaux = set(ids).difference(anciens)
+    a_lire = set(ids) if secteur_change else nouveaux
+    objets = {objet["id"]: objet for objet in lister(a_lire)} if a_lire else {}
+
+    manquants = nouveaux - objets.keys()
+    if manquants:
+        raise serializers.ValidationError({champ: f"{introuvable} : " + ", ".join(map(str, sorted(manquants)))})
+    if secteur_id is not None:
+        hors = sorted(i for i in nouveaux if objets[i]["secteur_id"] != secteur_id)
+        if hors:
+            raise serializers.ValidationError({champ: f"{hors_secteur} : " + ", ".join(map(str, hors))})
+
+    retires = []
+    if secteur_change:
+        retires = [i for i in ids if i not in nouveaux
+                   and (i not in objets or objets[i]["secteur_id"] != secteur_id)]
+    if fournis or retires:
+        attrs[champ] = [i for i in ids if i not in retires]
+    return retires
 
 
 def _ids(help_text, source=None):
@@ -26,6 +64,14 @@ def _ids(help_text, source=None):
 
 class PersonaSerializer(serializers.ModelSerializer):
     etude_id = serializers.IntegerField(read_only=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Études visibles par l'utilisateur (voir views.etudes_visibles) : celle d'un autre
+        # entrepreneur est refusée comme si elle n'existait pas
+        visibles = self.context.get("etudes_visibles")
+        if visibles is not None and "etude" in self.fields:
+            self.fields["etude"].queryset = visibles
 
     class Meta:
         model = Persona
@@ -50,6 +96,11 @@ class EtudeMarcheSerializer(serializers.ModelSerializer):
 
     `concurrents` et `tendances` s'écrivent et se lisent sous forme de listes d'IDs.
     `statut` ne se modifie que par POST /etudes/<id>/finaliser/.
+
+    Cohérence avec le secteur : un concurrent ou une tendance ajouté doit être du secteur de
+    l'étude (sinon 400). Quand le secteur change, ceux qui n'en sont pas sont retirés et la
+    réponse les liste dans "concurrents_retires" et "tendances_retirees" (création et
+    modification uniquement).
     """
 
     secteur_id = serializers.IntegerField(min_value=1, required=False,
@@ -83,11 +134,26 @@ class EtudeMarcheSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         # Chaque référence n'est vérifiée que si elle est nouvelle ou modifiée
         verifier_reference(attrs, self.instance, "secteur_id", SecteurClient().exists, SECTEUR_INTROUVABLE)
-        verifier_liste(attrs, self.instance, "concurrent_ids",
-                       lambda ids: ConcurrentClient().list(ids=ids), "Concurrent(s) introuvable(s)")
-        verifier_liste(attrs, self.instance, "tendance_ids",
-                       lambda ids: SecteurClient().tendances(ids=ids), "Tendance(s) introuvable(s)")
+        secteur_id = attrs.get("secteur_id", getattr(self.instance, "secteur_id", None))
+        secteur_change = (self.instance is not None and "secteur_id" in attrs
+                          and attrs["secteur_id"] != self.instance.secteur_id)
+        self._retires = {
+            "concurrents_retires": verifier_liste_du_secteur(
+                attrs, self.instance, "concurrent_ids", lambda ids: ConcurrentClient().list(ids=ids),
+                secteur_id, secteur_change, "Concurrent(s) introuvable(s)", CONCURRENTS_HORS_SECTEUR),
+            "tendances_retirees": verifier_liste_du_secteur(
+                attrs, self.instance, "tendance_ids", lambda ids: SecteurClient().tendances(ids=ids),
+                secteur_id, secteur_change, "Tendance(s) introuvable(s)", TENDANCES_HORS_SECTEUR),
+        }
         return attrs
+
+    def to_representation(self, etude):
+        data = super().to_representation(etude)
+        # Après une création / modification : ids retirés automatiquement (changement de secteur)
+        retires = getattr(self, "_retires", None)
+        if retires is not None:
+            data.update(retires)
+        return data
 
 
 # --- Données des autres services (Swagger : forme documentée) ------------------
@@ -169,7 +235,7 @@ class EtudeMarcheDetailSerializer(EtudeMarcheSerializer):
 # Ils décrivent la forme des réponses calculées dans services/.
 
 NIVEAUX_CONCURRENCE = [
-    ("inconnu", "Inconnu (aucune étude)"),
+    ("inconnu", "Inconnu (aucune étude ou aucun concurrent)"),
     ("faible", "Faible"),
     ("moyen", "Moyen"),
     ("eleve", "Élevé"),
@@ -203,6 +269,19 @@ class EtudeResumeSerializer(serializers.Serializer):
     taux_croissance = serializers.DecimalField(max_digits=6, decimal_places=2)
     cible = serializers.CharField()
     zone_geographique = serializers.CharField()
+    # Même calcul que GET /etudes/<id>/comparaison-prix/ (sur les concurrents de l'étude)
+    prix_propose = serializers.DecimalField(max_digits=12, decimal_places=2, allow_null=True)
+    prix_moyen_concurrents = serializers.DecimalField(
+        max_digits=12, decimal_places=2, allow_null=True, help_text="null si l'étude n'a aucun concurrent.")
+    ecart_pourcentage = serializers.DecimalField(
+        max_digits=9, decimal_places=2, allow_null=True,
+        help_text="Écart en % entre le prix proposé et le prix moyen des concurrents.")
+    positionnement = serializers.ChoiceField(choices=[
+        ("inconnu", "Inconnu (pas de prix proposé ou aucun concurrent)"),
+        ("economique", "Économique (< moyenne - 10 %)"),
+        ("aligne", "Aligné (moyenne ± 10 %)"),
+        ("premium", "Premium (> moyenne + 10 %)"),
+    ])
 
 
 class SecteurProjetSerializer(serializers.Serializer):
@@ -211,8 +290,11 @@ class SecteurProjetSerializer(serializers.Serializer):
     nombre_concurrents = serializers.IntegerField()
     part_de_marche_cumulee = serializers.DecimalField(max_digits=7, decimal_places=2)
     niveau_concurrence = serializers.ChoiceField(choices=NIVEAUX_CONCURRENCE)
-    concurrents = ConcurrentResumeSerializer(many=True)
+    concurrents = ConcurrentResumeSerializer(many=True, help_text="Concurrents associés aux études du secteur.")
     tendances = TendanceResumeSerializer(many=True)
+    source_tendances = serializers.ChoiceField(
+        choices=[("etudes", "Tendances retenues dans les études"),
+                 ("secteur", "Aucune retenue : toutes les tendances du secteur")])
 
 
 class AnalyseProjetSerializer(serializers.Serializer):
@@ -224,7 +306,8 @@ class AnalyseProjetSerializer(serializers.Serializer):
     tendances = TendanceResumeSerializer(many=True)
     niveau_concurrence = serializers.ChoiceField(
         choices=NIVEAUX_CONCURRENCE,
-        help_text="'inconnu' si le projet n'a aucune étude de marché.",
+        help_text="Le plus élevé des secteurs ; 'inconnu' si le projet n'a aucune étude "
+                  "ou aucun concurrent associé à ses études.",
     )
 
 
@@ -269,7 +352,7 @@ class RapportInfoEtudeSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     titre = serializers.CharField()
     projet_id = serializers.IntegerField()
-    entrepreneur_id = serializers.IntegerField(allow_null=True)
+    entrepreneur_id = serializers.CharField(allow_null=True, help_text="Identifiant Keycloak du propriétaire.")
     statut = serializers.ChoiceField(choices=EtudeMarche.Statut.choices)
     date_creation = serializers.DateTimeField()
     date_mise_a_jour = serializers.DateTimeField()

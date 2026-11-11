@@ -36,7 +36,8 @@ ETUDES = [
 # Compléments des études "complètes", indexés par (projet_id, titre)
 ETUDES_COMPLETES = {
     (1, "Paiement mobile pour PME"): {
-        "entrepreneur_id": 101,
+        # Entrepreneurs fictifs (pas de compte Keycloak) : ces études ne sont visibles que par l'ADMIN
+        "entrepreneur_id": "101",
         "statut": EtudeMarche.Statut.FINALISEE,
         "hypotheses": (
             "Les commerçants acceptent une commission si l'encaissement est instantané.\n"
@@ -77,7 +78,7 @@ ETUDES_COMPLETES = {
         ],
     },
     (2, "Plateforme de soutien scolaire"): {
-        "entrepreneur_id": 102,
+        "entrepreneur_id": "102",
         "statut": EtudeMarche.Statut.BROUILLON,
         "hypotheses": "Les parents paient un abonnement mensuel pour un suivi régulier.",
         "description_offre": (

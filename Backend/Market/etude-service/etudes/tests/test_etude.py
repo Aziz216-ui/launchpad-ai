@@ -64,7 +64,8 @@ class EtudeCrudTests(EtudeBaseTestCase):
         self.assertEqual(response.data["secteur_nom"], "FinTech")
         etude = EtudeMarche.objects.get(id=response.data["id"])
         self.assertEqual(etude.tendance_ids, [self.positive])
-        self.assertEqual(etude.entrepreneur_id, 42)
+        # Sans jeton (appel interne) : la valeur envoyée est gardée, en chaîne (identifiant Keycloak)
+        self.assertEqual(etude.entrepreneur_id, "42")
 
     def test_creer_sans_nouveaux_champs(self):
         # Compatibilité : le format de création d'origine reste valide
@@ -223,6 +224,80 @@ class EtudeCrudTests(EtudeBaseTestCase):
     def test_finaliser_etude_inexistante(self):
         response = self.client.post(reverse("etude-finaliser", args=[9999]))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class CoherenceSecteurTests(EtudeBaseTestCase):
+    """Concurrents et tendances d'une étude : toujours du secteur de l'étude."""
+
+    def setUp(self):
+        super().setUp()
+        d = self.distant
+        self.edtech = d.secteur("EdTech")
+        self.concurrent_edtech = d.concurrent("Coursera", self.edtech, "50", "40")
+        self.tendance_edtech = d.tendance("Hybride", self.edtech, "positif")
+
+    def test_creation_concurrent_d_un_autre_secteur_400(self):
+        data = {"projet_id": 5, "secteur": self.secteur, "titre": "X",
+                "concurrent_ids": [self.concurrents[0], self.concurrent_edtech]}
+        response = self.client.post(reverse("etude-list"), data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json(), {"concurrent_ids": [
+            f"Concurrent(s) hors du secteur de l'étude : {self.concurrent_edtech}"]})
+        self.assertFalse(EtudeMarche.objects.filter(titre="X").exists())
+
+    def test_modification_ajout_d_un_concurrent_d_un_autre_secteur_400(self):
+        response = self.client.patch(self.url("detail"),
+                                     {"concurrent_ids": [*self.concurrents, self.concurrent_edtech]},
+                                     format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("hors du secteur", response.json()["concurrent_ids"][0])
+        self.etude.refresh_from_db()
+        self.assertEqual(self.etude.concurrent_ids, self.concurrents)
+
+    def test_tendance_d_un_autre_secteur_400(self):
+        response = self.client.patch(self.url("detail"), {"tendance_ids": [self.tendance_edtech]}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json(), {"tendance_ids": [
+            f"Tendance(s) hors du secteur de l'étude : {self.tendance_edtech}"]})
+
+    def test_changement_de_secteur_retire_concurrents_et_tendances(self):
+        response = self.client.patch(self.url("detail"), {"secteur": self.edtech}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        self.assertEqual(response.data["secteur_id"], self.edtech)
+        self.assertEqual(response.data["concurrent_ids"], [])
+        self.assertEqual(response.data["concurrents_retires"], self.concurrents)
+        self.assertEqual(response.data["tendances_retirees"], [self.positive, self.negative, self.neutre])
+        self.etude.refresh_from_db()
+        self.assertEqual((self.etude.concurrent_ids, self.etude.tendance_ids), ([], []))
+
+    def test_changement_de_secteur_avec_concurrents_du_nouveau_secteur(self):
+        # Ancien concurrent gardé dans la requête -> retiré ; nouveau du bon secteur -> accepté
+        response = self.client.patch(self.url("detail"), {
+            "secteur": self.edtech, "concurrent_ids": [self.concurrents[0], self.concurrent_edtech],
+        }, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        self.assertEqual(response.data["concurrent_ids"], [self.concurrent_edtech])
+        self.assertEqual(response.data["concurrents_retires"], [self.concurrents[0]])
+
+    def test_changement_de_secteur_niveau_recalcule(self):
+        self.client.patch(self.url("detail"), {"secteur": self.edtech}, format="json")
+        niveau = self.client.get(self.url("opportunites-menaces")).json()["niveau_concurrence"]
+        self.assertEqual(niveau, "inconnu")
+
+    def test_modification_sans_changement_de_secteur(self):
+        # Rien de retiré ; les ids déjà associés ne sont pas relus (aucun appel de validation)
+        self.mocks["concurrent_list"].reset_mock()
+        response = self.client.patch(self.url("detail"), {"cible": "PME"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.mocks["concurrent_list"].call_count, 0)
+        self.assertEqual(response.data["concurrents_retires"], [])
+        self.assertEqual(response.data["tendances_retirees"], [])
+        self.assertEqual(response.data["concurrent_ids"], self.concurrents)
+
+    def test_lecture_sans_champs_de_retrait(self):
+        # Les champs *_retires n'apparaissent qu'en réponse à une écriture
+        self.assertNotIn("concurrents_retires", self.client.get(self.url("detail")).json())
+        self.assertNotIn("concurrents_retires", self.client.get(reverse("etude-list")).json()[0])
 
 
 class PersonaCrudTests(EtudeBaseTestCase):

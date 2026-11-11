@@ -136,6 +136,8 @@ $r = Invoke-Api POST "/api/market/etudes/" @{
     concurrent_ids = @($concurrentId); tendance_ids = @($tendanceId)
 }
 Test-Etape "POST étude liée -> 201 (secteur, concurrents, tendances vérifiés)" ($r.Status -eq 201) "(HTTP $($r.Status) $(ConvertTo-Json $r.Json -Compress))"
+# entrepreneur_id = 501 envoyé ci-dessus est ignoré : le propriétaire est l'utilisateur du jeton (sub Keycloak)
+Test-Etape "étude rattachée à l'utilisateur du jeton (entrepreneur_id envoyé ignoré)" ($r.Json.entrepreneur_id -and $r.Json.entrepreneur_id -ne "501") "(entrepreneur_id=$($r.Json.entrepreneur_id))"
 $etudeId = $r.Json.id
 
 $r = Invoke-Api POST "/api/market/etudes/" @{ projet_id = 9001; secteur_id = $secteurId; titre = "X"; concurrent_ids = @(999999) }

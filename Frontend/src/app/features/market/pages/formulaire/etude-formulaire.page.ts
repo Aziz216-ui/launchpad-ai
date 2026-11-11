@@ -297,8 +297,8 @@ export class EtudeFormulairePage implements OnInit {
       id === null
         ? this.api.creerEtude({
             ...this.saisie(),
+            // Projet provisoire (voir README) ; le propriétaire est déduit du jeton par le backend
             projet_id: environment.utilisateur.projetId,
-            entrepreneur_id: environment.utilisateur.entrepreneurId,
           })
         : this.api.modifierEtude(id, this.saisie());
 

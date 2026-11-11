@@ -1,14 +1,15 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { routeParDefaut } from '../../core/auth/role-routes';
+import { ChampMotDePasseComponent } from './champ-mot-de-passe.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, ChampMotDePasseComponent],
   template: `
     <div class="auth-page">
       <div class="auth-card">
@@ -27,38 +28,41 @@ import { routeParDefaut } from '../../core/auth/role-routes';
           <p>Accédez à votre espace LaunchPad AI.</p>
         </div>
 
+        <div class="alert success" role="status" *ngIf="successMessage && !errorMessage">
+          {{ successMessage }}
+        </div>
         <div class="alert error" *ngIf="errorMessage">
           {{ errorMessage }}
         </div>
 
         <form (ngSubmit)="onSubmit()" class="auth-form">
           <div class="form-group">
-            <label>Nom d'utilisateur</label>
+            <label for="login-username">Nom d'utilisateur</label>
             <div class="input-wrapper">
-              <input 
-                type="text" 
-                [(ngModel)]="username" 
-                name="username" 
-                placeholder="Ex: amira ou maitre_karoui" 
-                required 
+              <input
+                id="login-username"
+                type="text"
+                [(ngModel)]="username"
+                name="username"
+                placeholder="Ex: amira ou maitre_karoui"
+                autocomplete="username"
+                required
               />
             </div>
           </div>
 
           <div class="form-group">
             <div class="label-row">
-              <label>Mot de passe</label>
-              <a href="#" class="forgot-link">Mot de passe oublié ?</a>
+              <label for="login-password">Mot de passe</label>
+              <a routerLink="/connexion/mot-de-passe-oublie" class="forgot-link">Mot de passe oublié ?</a>
             </div>
-            <div class="input-wrapper">
-              <input 
-                type="password" 
-                [(ngModel)]="password" 
-                name="password" 
-                placeholder="••••••••" 
-                required 
-              />
-            </div>
+            <app-champ-mot-de-passe
+              inputId="login-password"
+              name="password"
+              [(ngModel)]="password"
+              autocomplete="current-password"
+              [required]="true"
+            />
           </div>
 
           <button type="submit" class="btn-submit" [disabled]="loading">
@@ -152,6 +156,10 @@ import { routeParDefaut } from '../../core/auth/role-routes';
       &.error {
         background: $rouge-clair;
         color: $rouge-fonce;
+      }
+      &.success {
+        background: $vert-clair;
+        color: $vert-fonce;
       }
     }
 
@@ -257,8 +265,14 @@ export class LoginComponent {
   password = '';
   loading = false;
   errorMessage = '';
+  successMessage = '';
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private authService: AuthService, private router: Router, route: ActivatedRoute) {
+    // Retour de « Mot de passe oublié » après un changement réussi
+    if (route.snapshot.queryParamMap.has('motDePasseModifie')) {
+      this.successMessage = 'Votre mot de passe a été modifié. Connectez-vous avec le nouveau mot de passe.';
+    }
+  }
 
   onSubmit(): void {
     if (!this.username || !this.password) {

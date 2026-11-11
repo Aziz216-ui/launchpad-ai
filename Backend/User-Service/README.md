@@ -79,6 +79,36 @@ Default host ports (override via `.env`, see `.env.example`):
 
 `keycloak_db` is not exposed to the host; only the Keycloak container talks to it.
 
+## Synchronisation Keycloak <-> base
+
+Keycloak est la source de vérité pour l'authentification (comptes, mots de passe, rôles du realm) ;
+la table `users` garde le profil, relié au compte par `keycloak_id`. Un compte est retrouvé par
+`keycloak_id`, sinon par `username` : après une réinitialisation de Keycloak, le profil existant est
+relié au nouveau compte, jamais dupliqué. Code : [`authentication/synchronisation.py`](./authentication/synchronisation.py).
+
+| Quand | Ce qui est fait |
+|---|---|
+| Connexion (`/api/auth/login/`) et chaque requête authentifiée | Profil absent : créé à partir du jeton (`sub`, `preferred_username`, `email`, rôle du realm). Profil d'un ancien compte : `keycloak_id` mis à jour. Rôle aligné sur le jeton. |
+| Démarrage du conteneur (`SEED_DEMO_USERS=true`) | `seed_demo_users --attendre 120` : comptes de démo créés ou réparés des deux côtés (absent de Keycloak : recréé avec son mot de passe de démo ; absent de la base : profil créé ; rôle corrigé). |
+| À la demande | `python manage.py sync_keycloak [--dry-run]` : rapport des écarts et corrections. |
+
+`sync_keycloak` :
+- profil sans compte Keycloak : compte recréé avec un **mot de passe temporaire** (affiché une seule
+  fois dans le rapport) et l'action requise `UPDATE_PASSWORD` ; comptes de démo : mot de passe de démo ;
+- compte Keycloak sans profil : profil créé ;
+- `keycloak_id` différent : corrigé ; rôles différents : Keycloak fait foi (sauf compte sans rôle
+  applicatif dans Keycloak, qui reçoit celui de la base, et comptes de démo, dont le rôle est imposé).
+
+Un compte recréé avec `UPDATE_PASSWORD` ne peut pas se connecter par `/api/auth/login/` (grant
+« password ») tant que le mot de passe n'a pas été changé, par exemple dans la console compte de
+Keycloak : http://localhost:8180/realms/launchpad/account
+
+```bash
+docker exec user-service python manage.py sync_keycloak --dry-run   # voir les écarts
+docker exec user-service python manage.py sync_keycloak             # les corriger
+docker exec user-service python manage.py seed_demo_users           # réparer les comptes de démo
+```
+
 ## Running the tests
 
 ```bash
