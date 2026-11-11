@@ -1,0 +1,40 @@
+# =============================================================================
+# Config Server LaunchPad AI (Spring Cloud Config) : configuration centralisée.
+#
+# Profil "native" : les fichiers sont lus dans un dossier (pas de dépôt Git distant),
+# par défaut config-repo/ du module (copié dans l'image Docker, et monté en lecture
+# seule par docker-compose : une modification est prise en compte au prochain
+# démarrage du client, sans reconstruire le Config Server).
+#
+# Ne JAMAIS mettre de secret dans config-repo/ : il est versionné dans Git.
+# =============================================================================
+
+server:
+  port: ${SERVER_PORT:8888}
+
+spring:
+  application:
+    name: CONFIG-SERVER
+  profiles:
+    active: native
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: ${CONFIG_REPO_LOCATION:file:./config-repo/}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+  instance:
+    # Nom DNS du conteneur (réseau Docker), sinon le nom de la machine
+    hostname: ${EUREKA_INSTANCE_HOST:localhost}
+    instance-id: ${eureka.instance.hostname}:${spring.application.name}:${server.port}
+    prefer-ip-address: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

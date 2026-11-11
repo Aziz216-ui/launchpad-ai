@@ -1,0 +1,28 @@
+# =============================================================================
+# Configuration COMMUNE à tous les clients du Config Server (tous profils).
+# Servie par CONFIG-SERVER (GET /{application}/{profil}) ; les clients l'importent
+# au démarrage (spring.config.import=optional:configserver:...).
+#
+# Priorité : variables d'environnement > Config Server > application.yml du client.
+# Aucun secret ici : ce dossier est versionné dans Git.
+# =============================================================================
+
+launchpad:
+  configuration:
+    # Visible dans /actuator/env d'un client : preuve que la config vient du serveur
+    source: config-server
+
+eureka:
+  client:
+    # Registre relu toutes les 5 s : un service qui démarre est routé rapidement
+    registry-fetch-interval-seconds: 5
+  instance:
+    # Instance arrêtée retirée du registre en 30 s au lieu de 90 s
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+spring:
+  cloud:
+    loadbalancer:
+      cache:
+        ttl: 5s   # 35 s par défaut : liste des instances rafraîchie plus vite

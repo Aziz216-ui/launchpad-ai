@@ -19,6 +19,12 @@ spring:
   profiles:
     default: eureka
 
+  # Configuration centralisée (Backend/Config-Server, fichiers config-repo/application.yml
+  # et config-repo/API-GATEWAY.yml). "optional" : si le Config Server est arrêté, la gateway
+  # démarre quand même avec les valeurs de ce fichier.
+  config:
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
+
   cloud:
     gateway:
       server:

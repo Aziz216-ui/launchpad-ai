@@ -140,6 +140,31 @@ services:
       retries: 12
       start_period: 20s
 
+  # Configuration centralisée (Spring Cloud Config, profil native) : sert les fichiers de
+  # Backend/Config-Server/config-repo/ (monté en lecture seule). Consulter :
+  # http://localhost:8888/API-GATEWAY/default
+  config-server:
+    <<: *java-commun
+    build: ./Backend/Config-Server
+    container_name: launchpad-config-server
+    environment:
+      <<: *java-env
+      EUREKA_SERVER_URL: http://eureka:8761/eureka/
+      EUREKA_INSTANCE_HOST: config-server
+    volumes:
+      - ./Backend/Config-Server/config-repo:/config-repo:ro
+    ports:
+      - "127.0.0.1:8888:8888"
+    depends_on:
+      eureka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8888'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
   keycloak-db:
     <<: *db
     container_name: keycloak-db
@@ -231,10 +256,14 @@ services:
       # Un service qui vient de démarrer apparaît dans la gateway après quelques secondes.
       EUREKA_CLIENT_REGISTRYFETCHINTERVALSECONDS: "5"
       SPRING_CLOUD_LOADBALANCER_CACHE_TTL: 5s
+      # Configuration centralisée lue au démarrage (Backend/Config-Server)
+      CONFIG_SERVER_URL: http://config-server:8888
     ports:
       - "8090:8090"
     depends_on:
       eureka:
+        condition: service_healthy
+      config-server:
         condition: service_healthy
       keycloak-init:
         condition: service_completed_successfully

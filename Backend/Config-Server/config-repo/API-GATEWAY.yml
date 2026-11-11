@@ -1,0 +1,13 @@
+# =============================================================================
+# Configuration propre à l'API Gateway (spring.application.name = API-GATEWAY).
+# S'ajoute à application.yml (commun) ; servie par GET /API-GATEWAY/default.
+# =============================================================================
+
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 3000   # ms : service éteint -> 503 rapide
+            response-timeout: 30s   # génération de PDF, appels LLM
