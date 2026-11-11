@@ -8,6 +8,7 @@ import com.launchpad.document.domain.FormatExport;
 import com.launchpad.document.domain.SectionDocument;
 import com.launchpad.document.domain.TypeDocument;
 import com.launchpad.document.domain.DroitsProjet;
+import com.launchpad.document.domain.EtatPrevision;
 import com.launchpad.document.exception.AccesRefuse;
 import com.launchpad.document.exception.DocumentIntrouvable;
 import com.launchpad.document.exception.DonneesInvalides;
@@ -61,7 +62,7 @@ class GestionDocumentsTest {
     private GestionDocuments gestion;
 
     private final DocumentFinancier document = DocumentFinancier.creer(PROJET_ID, TypeDocument.PLAN_TRESORERIE,
-            new ContenuDocument("Plan de trésorerie - période 2026", List.of()), UUID.randomUUID());
+            new ContenuDocument("Plan de trésorerie - période 2026", List.of()), UUID.randomUUID(), "empreinte-1");
 
     /** Stratégie d'export factice : renvoie le nom du format en octets. */
     private static StrategieExport strategieFactice(FormatExport format) {
@@ -106,7 +107,7 @@ class GestionDocumentsTest {
     @Test
     void le_financier_certifie_un_document_une_seule_fois() {
         when(documents.findById(document.id())).thenReturn(Optional.of(document));
-        when(previsions.statutValidation(document.previsionId())).thenReturn("VALIDEE");
+        when(previsions.etat(document.previsionId())).thenReturn(new EtatPrevision("VALIDEE", "empreinte-1"));
 
         DocumentFinancier certifie = avecDroits(true, false, true).certifierDocument(document.id(), "Conforme");
 
@@ -122,11 +123,23 @@ class GestionDocumentsTest {
     @Test
     void un_document_tire_d_une_prevision_non_validee_ne_se_certifie_pas() {
         when(documents.findById(document.id())).thenReturn(Optional.of(document));
-        when(previsions.statutValidation(document.previsionId())).thenReturn("EN_ATTENTE");
+        when(previsions.etat(document.previsionId())).thenReturn(new EtatPrevision("EN_ATTENTE", "empreinte-1"));
 
         assertThatThrownBy(() -> avecDroits(true, false, true).certifierDocument(document.id(), null))
                 .isInstanceOf(DonneesInvalides.class)
                 .hasMessageContaining("validée");
+        verify(documents, never()).updateCertification(any(), any());
+    }
+
+    @Test
+    void un_document_dont_les_chiffres_ont_change_depuis_sa_generation_ne_se_certifie_pas() {
+        // Scénario : document généré, puis nouvelles projections, puis validation de la NOUVELLE version.
+        when(documents.findById(document.id())).thenReturn(Optional.of(document));
+        when(previsions.etat(document.previsionId())).thenReturn(new EtatPrevision("VALIDEE", "empreinte-2"));
+
+        assertThatThrownBy(() -> avecDroits(true, false, true).certifierDocument(document.id(), null))
+                .isInstanceOf(DonneesInvalides.class)
+                .hasMessageContaining("a été modifiée");
         verify(documents, never()).updateCertification(any(), any());
     }
 
@@ -154,6 +167,7 @@ class GestionDocumentsTest {
         DocumentFinancier genere = gestion.genererDocument(PROJET_ID, TypeDocument.BUSINESS_PLAN, null, false);
 
         assertThat(genere.previsionId()).isEqualTo(source);
+        assertThat(genere.empreintePrevision()).isEqualTo(s.empreinte()).hasSize(64);
     }
 
     @Test

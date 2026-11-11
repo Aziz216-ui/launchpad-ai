@@ -1,5 +1,7 @@
 package com.launchpad.document.client;
 
+import com.launchpad.document.domain.EmpreintePrevision;
+import com.launchpad.document.domain.EtatPrevision;
 import com.launchpad.document.domain.ProjectionSynthese;
 import com.launchpad.document.domain.SynthesePrevision;
 import com.launchpad.document.exception.PrevisionIntrouvable;
@@ -51,13 +53,14 @@ public class PrevisionDistanteFeign implements PrevisionDistante {
     }
 
     @Override
-    public String statutValidation(UUID previsionId) {
+    public EtatPrevision etat(UUID previsionId) {
         try {
             SyntheseJson.PrevisionJson json = previsions.prevision(previsionId);
             if (json == null || json.validation() == null || json.validation().statut() == null) {
                 throw new ServiceIndisponible("Réponse inattendue du Prevision-Service");
             }
-            return json.validation().statut();
+            return new EtatPrevision(json.validation().statut(), EmpreintePrevision.de(json.periode(),
+                    json.chiffreAffaires(), json.coutsDirects(), json.depenses(), json.projectionsDomaine()));
         } catch (FeignException e) {
             if (e.status() == 404) {
                 throw new PrevisionIntrouvable(previsionId);
@@ -76,6 +79,12 @@ public class PrevisionDistanteFeign implements PrevisionDistante {
         public record PrevisionJson(UUID previsionId, String periode, BigDecimal chiffreAffaires,
                                     BigDecimal coutsDirects, BigDecimal depenses, BigDecimal resultat,
                                     List<ProjectionJson> projections, ValidationJson validation) {
+
+            List<ProjectionSynthese> projectionsDomaine() {
+                return projections == null ? List.of() : projections.stream()
+                        .map(p -> new ProjectionSynthese(p.annee(), p.chiffreAffaires(), p.depenses(), p.marge()))
+                        .toList();
+            }
         }
 
         public record ValidationJson(String statut) {
@@ -92,10 +101,7 @@ public class PrevisionDistanteFeign implements PrevisionDistante {
         }
 
         SynthesePrevision versDomaine() {
-            List<ProjectionSynthese> projections = prevision.projections() == null ? List.of()
-                    : prevision.projections().stream()
-                            .map(p -> new ProjectionSynthese(p.annee(), p.chiffreAffaires(), p.depenses(), p.marge()))
-                            .toList();
+            List<ProjectionSynthese> projections = prevision.projectionsDomaine();
             return new SynthesePrevision(prevision.periode(), prevision.chiffreAffaires(), prevision.coutsDirects(),
                     prevision.depenses(), prevision.resultat(), marges.margeBrute(), marges.margeNette(),
                     marges.tauxMargeBrute(), marges.tauxMargeNette(), ecart.montant(), ecart.pourcentage(),

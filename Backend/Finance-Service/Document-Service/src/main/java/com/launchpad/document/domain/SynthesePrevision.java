@@ -29,6 +29,11 @@ public record SynthesePrevision(
         projections = projections == null ? List.of() : List.copyOf(projections);
     }
 
+    /** Empreinte des chiffres utilisés pour générer un document (voir EmpreintePrevision). */
+    public String empreinte() {
+        return EmpreintePrevision.de(periode, chiffreAffaires, coutsDirects, depenses, projections);
+    }
+
     /** Synthèse sans identifiant de prévision connu. */
     public SynthesePrevision(String periode, BigDecimal chiffreAffaires, BigDecimal coutsDirects, BigDecimal depenses,
                              BigDecimal resultat, BigDecimal margeBrute, BigDecimal margeNette,

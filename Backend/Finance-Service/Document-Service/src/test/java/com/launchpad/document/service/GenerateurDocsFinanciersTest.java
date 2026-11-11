@@ -77,7 +77,7 @@ class GenerateurDocsFinanciersTest {
                 "Prévision 2026", "Marges", "Écart revenus - dépenses", "Projections pluriannuelles");
         assertThat(valeurs(section(contenu, "Marges"), "Marge brute")).containsExactly(montant("60000.00"), montant("60.00"));
         assertThat(valeurs(section(contenu, "Marges"), "Marge nette")).containsExactly(montant("30000.00"), montant("30.00"));
-        assertThat(section(contenu, "Écart revenus - dépenses").notes()).containsExactly("Statut : EXCEDENT");
+        assertThat(section(contenu, "Écart revenus - dépenses").notes()).containsExactly("Statut : Excédent");
         assertThat(valeurs(section(contenu, "Projections pluriannuelles"), "Année 2"))
                 .containsExactly(montant("121000.00"), montant("77175.00"), montant("43825.00"));
     }
@@ -141,7 +141,7 @@ class GenerateurDocsFinanciersTest {
 
         SectionDocument indicateurs = section(contenu, "Indicateurs clés");
         assertThat(valeurs(indicateurs, "Taux de marge nette (%)")).containsExactly(montant("30.00"));
-        assertThat(indicateurs.notes()).containsExactly("Statut de l'écart : EXCEDENT");
+        assertThat(indicateurs.notes()).containsExactly("Statut de l'écart : Excédent");
         SectionDocument synthese = section(contenu, "Synthèse pluriannuelle");
         assertThat(valeurs(synthese, "Croissance cumulée du CA (%)")).containsExactly(montant("21.00"));
         assertThat(valeurs(synthese, "Résultat cumulé sur 2 an(s)")).containsExactly(montant("80325.00"));

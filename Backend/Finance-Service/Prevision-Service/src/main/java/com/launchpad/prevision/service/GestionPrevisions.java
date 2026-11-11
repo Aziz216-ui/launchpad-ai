@@ -97,7 +97,8 @@ public class GestionPrevisions {
 
     /**
      * Scénario 2 : les nouvelles projections remplacent les anciennes dans la même transaction.
-     * Les chiffres changent : un avis déjà donné ne vaut plus, la prévision repasse EN_ATTENTE.
+     * Si les chiffres changent, un avis déjà donné ne vaut plus : la prévision repasse EN_ATTENTE.
+     * Si les projections obtenues sont identiques aux actuelles, rien n'est modifié et l'avis est conservé.
      */
     @Transactional
     public List<ProjectionFinanciere> genererProjections(UUID previsionId, BigDecimal tauxCa, BigDecimal tauxDepenses,
@@ -106,10 +107,14 @@ public class GestionPrevisions {
         controle.exigerEcriture(prevision.projetId());
         HypothesesPrevisionnelles hypotheses = HypothesesPrevisionnelles.depuis(prevision, tauxCa, tauxDepenses);
         List<ProjectionFinanciere> projections = modelePrevisionnel.genererProjections(hypotheses, horizon);
+        if (memesChiffres(prevision.projections(), projections)) {
+            // Rien ne change : l'avis du financier reste valable (sinon un rejet s'effacerait sans correction).
+            return prevision.projections();
+        }
         previsions.replaceProjections(previsionId, projections);
         if (prevision.validation().statut() != StatutValidation.EN_ATTENTE) {
             previsions.updateValidation(previsionId, ValidationPrevision.EN_ATTENTE);
-            evenements.publishEvent(PrevisionAValider.de(prevision));
+            evenements.publishEvent(PrevisionAValider.apresModification(prevision));
         }
         return projections;
     }
@@ -128,6 +133,18 @@ public class GestionPrevisions {
         previsions.updateValidation(previsionId, avis);
         evenements.publishEvent(AvisPrevision.de(prevision, avis));
         return prevision.avecValidation(avis);
+    }
+
+    private static boolean memesChiffres(List<ProjectionFinanciere> actuelles, List<ProjectionFinanciere> nouvelles) {
+        if (actuelles.size() != nouvelles.size()) {
+            return false;
+        }
+        for (int i = 0; i < actuelles.size(); i++) {
+            if (!actuelles.get(i).memesChiffresQue(nouvelles.get(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private PrevisionFinanciere charger(UUID previsionId) {

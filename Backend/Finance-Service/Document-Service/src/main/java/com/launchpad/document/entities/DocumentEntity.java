@@ -32,6 +32,9 @@ public class DocumentEntity extends AuditedEntity {
     @Column(name = "prevision_id", updatable = false)
     private UUID previsionId;
 
+    @Column(name = "empreinte_prevision", updatable = false, length = 64)
+    private String empreintePrevision;
+
     @Column(name = "certifie_par", length = 320)
     private String certifiePar;
 
@@ -45,12 +48,17 @@ public class DocumentEntity extends AuditedEntity {
     }
 
     public DocumentEntity(UUID id, Long projetId, TypeDocument type, ContenuDocument contenu, Instant createdAt,
-                          UUID previsionId) {
+                          UUID previsionId, String empreintePrevision) {
         super(id, createdAt);
         this.projetId = projetId;
         this.type = type;
         this.contenu = contenu;
         this.previsionId = previsionId;
+        this.empreintePrevision = empreintePrevision;
+    }
+
+    public String getEmpreintePrevision() {
+        return empreintePrevision;
     }
 
     public UUID getPrevisionId() {

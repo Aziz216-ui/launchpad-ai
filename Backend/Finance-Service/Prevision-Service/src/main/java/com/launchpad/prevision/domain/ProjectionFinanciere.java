@@ -18,6 +18,14 @@ public record ProjectionFinanciere(int annee, BigDecimal chiffreAffaires, BigDec
         marge = Montants.exiger(marge, "Marge projetée (année " + annee + ")");
     }
 
+    /** Mêmes chiffres, quelle que soit l'échelle des montants (110000 = 110000.00). */
+    public boolean memesChiffresQue(ProjectionFinanciere autre) {
+        return autre != null && annee == autre.annee
+                && chiffreAffaires.compareTo(autre.chiffreAffaires) == 0
+                && depenses.compareTo(autre.depenses) == 0
+                && marge.compareTo(autre.marge) == 0;
+    }
+
     /** Construit la projection en calculant marge = CA − dépenses. */
     public static ProjectionFinanciere de(int annee, BigDecimal chiffreAffaires, BigDecimal depenses) {
         return new ProjectionFinanciere(annee, chiffreAffaires, depenses, chiffreAffaires.subtract(depenses));

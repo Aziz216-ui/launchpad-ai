@@ -30,6 +30,7 @@ public class RabbitMQConfig {
     public static final String EXCHANGE = "finance.events";
 
     public static final String CLE_DOCUMENT_GENERE = "finance.document.genere";
+    public static final String CLE_DOCUMENT_CERTIFIE = "finance.document.certifie";
     /** Publiées par le Prevision-Service. */
     public static final String CLE_PREVISION_A_VALIDER = "finance.prevision.a-valider";
     public static final String CLE_PREVISION_AVIS = "finance.prevision.avis";
@@ -38,6 +39,7 @@ public class RabbitMQConfig {
     public static final String DOCUMENT_GENERE_QUEUE = "finance.document.genere";
     public static final String PREVISION_A_VALIDER_QUEUE = "finance.notifications.prevision-a-valider";
     public static final String PREVISION_AVIS_QUEUE = "finance.notifications.prevision-avis";
+    public static final String DOCUMENT_CERTIFIE_QUEUE = "finance.notifications.document-certifie";
 
     /** Durable, non supprimé automatiquement : mêmes paramètres que les autres services qui le déclarent. */
     @Bean
@@ -62,12 +64,18 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    Queue documentCertifieQueue() {
+        return new Queue(DOCUMENT_CERTIFIE_QUEUE, true);
+    }
+
+    @Bean
     Declarables liaisons(TopicExchange financeEvents, Queue documentGenereQueue, Queue previsionAValiderQueue,
-                         Queue previsionAvisQueue) {
+                         Queue previsionAvisQueue, Queue documentCertifieQueue) {
         return new Declarables(
                 BindingBuilder.bind(documentGenereQueue).to(financeEvents).with(CLE_DOCUMENT_GENERE),
                 BindingBuilder.bind(previsionAValiderQueue).to(financeEvents).with(CLE_PREVISION_A_VALIDER),
-                BindingBuilder.bind(previsionAvisQueue).to(financeEvents).with(CLE_PREVISION_AVIS));
+                BindingBuilder.bind(previsionAvisQueue).to(financeEvents).with(CLE_PREVISION_AVIS),
+                BindingBuilder.bind(documentCertifieQueue).to(financeEvents).with(CLE_DOCUMENT_CERTIFIE));
     }
 
     @Bean

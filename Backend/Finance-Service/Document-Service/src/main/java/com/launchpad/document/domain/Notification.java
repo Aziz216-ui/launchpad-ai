@@ -16,6 +16,7 @@ public record Notification(UUID cle, Long projetId, TypeNotification type, Desti
 
     public enum TypeNotification {
         DOCUMENT_GENERE,
+        DOCUMENT_CERTIFIE,
         PREVISION_A_VALIDER,
         PREVISION_VALIDEE,
         PREVISION_REJETEE

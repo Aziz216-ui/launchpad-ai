@@ -1,6 +1,7 @@
 package com.launchpad.document.service.evenement;
 
 import com.launchpad.document.domain.AvisPrevision;
+import com.launchpad.document.domain.DocumentCertifie;
 import com.launchpad.document.domain.DocumentGenere;
 import com.launchpad.document.domain.Notification;
 import com.launchpad.document.domain.Notification.Destinataire;
@@ -10,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,9 +45,30 @@ public class JournalNotifications {
                 "Le document « " + e.titre() + " » est disponible.", Instant.now(), e.documentId(), null));
     }
 
+    /**
+     * Document certifié : le propriétaire peut l'envoyer à un investisseur. La clé dérive du document mais diffère de
+     * celle de « document généré » (sinon la certification serait prise pour un doublon) ; elle reste stable pour
+     * dédoublonner une même certification livrée deux fois.
+     */
+    public void enregistrer(DocumentCertifie e) {
+        UUID cle = UUID.nameUUIDFromBytes(("certifie:" + e.documentId()).getBytes(StandardCharsets.UTF_8));
+        ajouter(new Notification(cle, e.projetId(), TypeNotification.DOCUMENT_CERTIFIE, Destinataire.PROPRIETAIRE,
+                "Le document « " + e.titre() + " » a été certifié par " + e.auteur()
+                        + (e.commentaire() == null ? "" : " : « " + e.commentaire() + " »")
+                        + ". Il peut être envoyé à un investisseur.",
+                Instant.now(), e.documentId(), null));
+    }
+
+    /**
+     * Nouvelle prévision : seul le financier est concerné. Chiffres modifiés après un avis : tout le projet l'est,
+     * pour que le propriétaire voie aussi que l'avis précédent ne vaut plus.
+     */
     public void enregistrer(PrevisionAValider e) {
+        String message = e.chiffresModifies()
+                ? "La prévision " + e.periode() + " a changé (nouvelles projections) : elle attend un nouvel avis."
+                : "La prévision " + e.periode() + " attend votre avis.";
         ajouter(new Notification(e.evenementId(), e.projetId(), TypeNotification.PREVISION_A_VALIDER,
-                Destinataire.FINANCIER, "La prévision " + e.periode() + " attend votre avis.", Instant.now(), null,
+                e.chiffresModifies() ? Destinataire.TOUS : Destinataire.FINANCIER, message, Instant.now(), null,
                 e.previsionId()));
     }
 

@@ -3,7 +3,9 @@ package com.launchpad.document.service;
 import com.launchpad.document.domain.Certification;
 import com.launchpad.document.domain.ContenuDocument;
 import com.launchpad.document.domain.DocumentFinancier;
+import com.launchpad.document.domain.DocumentCertifie;
 import com.launchpad.document.domain.DocumentGenere;
+import com.launchpad.document.domain.EtatPrevision;
 import com.launchpad.document.domain.FichierExporte;
 import com.launchpad.document.domain.FormatExport;
 import com.launchpad.document.domain.TypeDocument;
@@ -72,7 +74,7 @@ public class GestionDocuments {
             contenu = contenu.avecAnalyse(analyse.analyser(contenu));
         }
         DocumentFinancier genere = documents.save(DocumentFinancier.creer(projetId, type, contenu,
-                calcule.previsionId()));
+                calcule.previsionId(), calcule.empreintePrevision()));
         evenements.publishEvent(DocumentGenere.de(genere));
         return genere;
     }
@@ -111,17 +113,17 @@ public class GestionDocuments {
 
     /**
      * Le financier invité certifie le document avant son envoi à un investisseur (une seule fois), à condition que
-     * la prévision dont il est tiré ait été validée.
+     * la prévision dont il est tiré ait été validée ET que ses chiffres n'aient pas changé depuis la génération.
      */
     @Transactional
     public DocumentFinancier certifierDocument(UUID documentId, String commentaire) {
         DocumentFinancier document = charger(documentId);
         String auteur = controle.exigerValidation(document.projetId());
-        String statutPrevision = document.previsionId() == null ? null
-                : previsions.statutValidation(document.previsionId());
+        EtatPrevision prevision = document.previsionId() == null ? null : previsions.etat(document.previsionId());
         DocumentFinancier certifie = document.certifier(new Certification(auteur, commentaire,
-                Instant.now().truncatedTo(ChronoUnit.MICROS)), statutPrevision);
+                Instant.now().truncatedTo(ChronoUnit.MICROS)), prevision);
         documents.updateCertification(documentId, certifie.certification());
+        evenements.publishEvent(DocumentCertifie.de(certifie));
         return certifie;
     }
 

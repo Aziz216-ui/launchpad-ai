@@ -50,7 +50,7 @@ class DocumentControllerTest {
         return DocumentFinancier.creer(PROJET_ID, TypeDocument.BUSINESS_PLAN, new ContenuDocument(
                 "Business plan - période 2026", List.of(new SectionDocument("Marges", List.of("Montant", "Taux (%)"),
                 List.of(LigneDocument.de("Marge brute", montant("60000.00"), montant("60.00"))), List.of()))),
-                UUID.randomUUID());
+                UUID.randomUUID(), "empreinte");
     }
 
     @Test
@@ -206,7 +206,7 @@ class DocumentControllerTest {
     @Test
     void post_certification_renvoie_le_document_certifie() throws Exception {
         DocumentFinancier certifie = document().certifier(new com.launchpad.document.domain.Certification(
-                "conseil@launchpad.tn", "Conforme", java.time.Instant.parse("2026-11-10T10:00:00Z")), "VALIDEE");
+                "conseil@launchpad.tn", "Conforme", java.time.Instant.parse("2026-11-10T10:00:00Z")), new com.launchpad.document.domain.EtatPrevision("VALIDEE", "empreinte"));
         when(gestionDocuments.certifierDocument(certifie.id(), "Conforme")).thenReturn(certifie);
 
         mockMvc.perform(post("/api/finance/documents/{id}/certification", certifie.id())
@@ -219,7 +219,7 @@ class DocumentControllerTest {
     @Test
     void post_certification_sans_corps_est_accepte() throws Exception {
         DocumentFinancier certifie = document().certifier(new com.launchpad.document.domain.Certification(
-                "conseil@launchpad.tn", null, java.time.Instant.parse("2026-11-10T10:00:00Z")), "VALIDEE");
+                "conseil@launchpad.tn", null, java.time.Instant.parse("2026-11-10T10:00:00Z")), new com.launchpad.document.domain.EtatPrevision("VALIDEE", "empreinte"));
         when(gestionDocuments.certifierDocument(certifie.id(), null)).thenReturn(certifie);
 
         mockMvc.perform(post("/api/finance/documents/{id}/certification", certifie.id()))

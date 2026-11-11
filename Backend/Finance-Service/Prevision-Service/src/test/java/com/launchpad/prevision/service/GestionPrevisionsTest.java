@@ -87,7 +87,8 @@ class GestionPrevisionsTest {
         assertThat(creee.calculerResultat()).isEqualTo(montant("30000.00"));
         verify(previsions).save(creee);
         verify(evenements).publishEvent(org.mockito.ArgumentMatchers.<Object>argThat(e -> e instanceof com.launchpad.prevision.domain.PrevisionAValider a
-                && a.previsionId().equals(creee.id()) && a.projetId().equals(PROJET_ID)));
+                && a.previsionId().equals(creee.id()) && a.projetId().equals(PROJET_ID)
+                && com.launchpad.prevision.domain.PrevisionAValider.CREATION.equals(a.motif())));
     }
 
     @Test
@@ -139,7 +140,26 @@ class GestionPrevisionsTest {
 
         verify(previsions).updateValidation(validee.id(), ValidationPrevision.EN_ATTENTE);
         verify(evenements).publishEvent(org.mockito.ArgumentMatchers.<Object>argThat(
-                e -> e instanceof com.launchpad.prevision.domain.PrevisionAValider));
+                e -> e instanceof com.launchpad.prevision.domain.PrevisionAValider a
+                        && com.launchpad.prevision.domain.PrevisionAValider.CHIFFRES_MODIFIES.equals(a.motif())));
+    }
+
+    @Test
+    void regenerer_les_memes_projections_ne_supprime_pas_le_rejet() {
+        // Projections déjà en place pour CA +10 %, dépenses +5 %, 2 ans (100 000 / 70 000 au départ).
+        PrevisionFinanciere rejetee = prevision()
+                .avecProjections(List.of(ProjectionFinanciere.de(1, montant("110000"), montant("73500")),
+                        ProjectionFinanciere.de(2, montant("121000"), montant("77175"))))
+                .avecValidation(ValidationPrevision.avis(StatutValidation.REJETEE, "Trop optimiste",
+                        "conseil@launchpad.tn", Instant.now()));
+        when(previsions.findById(rejetee.id())).thenReturn(Optional.of(rejetee));
+
+        List<ProjectionFinanciere> resultat = gestion.genererProjections(rejetee.id(), montant("10"), montant("5"), 2);
+
+        assertThat(resultat).isEqualTo(rejetee.projections());
+        verify(previsions, never()).replaceProjections(any(), anyList());
+        verify(previsions, never()).updateValidation(any(), any());
+        verify(evenements, never()).publishEvent(any());
     }
 
     @Test

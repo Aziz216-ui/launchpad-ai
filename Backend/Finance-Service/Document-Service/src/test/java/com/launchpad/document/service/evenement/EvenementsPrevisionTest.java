@@ -32,7 +32,7 @@ class EvenementsPrevisionTest {
     @Test
     void une_prevision_a_valider_notifie_le_financier() {
         PrevisionAValider evenement = new PrevisionAValider(UUID.randomUUID(), UUID.randomUUID(), PROJET_ID, "2026",
-                Instant.now());
+                Instant.now(), "CREATION");
 
         consommateur.recevoir(evenement);
 
@@ -41,6 +41,25 @@ class EvenementsPrevisionTest {
         assertThat(n.pour()).isEqualTo(Destinataire.FINANCIER);
         assertThat(n.previsionId()).isEqualTo(evenement.previsionId());
         assertThat(n.message()).contains("2026").contains("attend votre avis");
+    }
+
+    @Test
+    void des_chiffres_modifies_apres_un_avis_notifient_tout_le_projet() {
+        consommateur.recevoir(new PrevisionAValider(UUID.randomUUID(), UUID.randomUUID(), PROJET_ID, "2026",
+                Instant.now(), PrevisionAValider.CHIFFRES_MODIFIES));
+
+        Notification n = journal.notificationsDuProjet(PROJET_ID).get(0);
+        assertThat(n.pour()).isEqualTo(Destinataire.TOUS);
+        assertThat(n.message()).contains("a changé").contains("nouvel avis");
+        assertThat(n.visiblePar(new DroitsProjet(PROJET_ID, true, true, false))).isTrue();
+    }
+
+    @Test
+    void un_ancien_message_sans_motif_est_traite_comme_une_creation() {
+        consommateur.recevoir(new PrevisionAValider(UUID.randomUUID(), UUID.randomUUID(), PROJET_ID, "2026",
+                Instant.now(), null));
+
+        assertThat(journal.notificationsDuProjet(PROJET_ID).get(0).pour()).isEqualTo(Destinataire.FINANCIER);
     }
 
     @Test

@@ -75,8 +75,10 @@ Prevision-Service.
 - Une prévision porte `validation: { statut, commentaire, auteur, le }`, avec `statut` = `EN_ATTENTE` (défaut),
   `VALIDEE` ou `REJETEE`. Un rejet exige un commentaire. **Regénérer les projections remet la prévision `EN_ATTENTE`.**
 - Un document porte `previsionId` (la prévision dont il est tiré) et `certification: { auteur, commentaire, le }`
-  (ou `null`). Un document se certifie **une seule fois**, et **seulement si sa prévision source est `VALIDEE`**
-  (sinon `400`). Un document généré avant cette règle (`previsionId: null`) doit être regénéré.
+  (ou `null`). Un document se certifie **une seule fois**, et **seulement si sa prévision source est `VALIDEE`
+  et que ses chiffres n'ont pas changé depuis la génération du document** (sinon `400`) : le document retient une
+  empreinte des chiffres utilisés (période, montants, projections), comparée à la prévision validée. Après de
+  nouvelles projections, il faut donc regénérer le document. Un document généré avant cette règle doit être regénéré.
 - Le financier est reconnu par le claim `email` de son jeton : il doit se connecter avec l'e-mail invité.
 
 ### Créer une prévision
@@ -211,13 +213,15 @@ tous les messages (aucun partage de queue entre services).
 | `finance.document.genere` | Document-Service | un document est enregistré | `documentId` |
 | `finance.prevision.a-valider` | Prevision-Service | une prévision est créée, ou repasse en attente (nouvelles projections) | `evenementId` |
 | `finance.prevision.avis` | Prevision-Service | un financier valide ou rejette une prévision | `evenementId` |
+| `finance.document.certifie` | Document-Service | un financier certifie un document | `documentId` |
 
 Le Projet-Service IA lie `ai.finance-events` à `finance.#` et ne traite que `finance.document.genere`.
 
-`finance.prevision.a-valider` :
+`finance.prevision.a-valider` (`motif` = `CREATION` pour une nouvelle prévision, `CHIFFRES_MODIFIES` quand de
+nouvelles projections annulent l'avis précédent) :
 ```json
 { "evenementId": "…", "previsionId": "0d1b4c32-…", "projetId": 42, "periode": "2026",
-  "le": "2026-11-10T10:00:00Z" }
+  "le": "2026-11-10T10:00:00Z", "motif": "CHIFFRES_MODIFIES" }
 ```
 `finance.prevision.avis` (`statut` = `VALIDEE` ou `REJETEE`, `commentaire` peut être `null` pour une validation) :
 ```json
@@ -263,7 +267,9 @@ Le Document-Service transforme ces événements en notifications, **filtrées se
 | `type` | `pour` | Vu par |
 |---|---|---|
 | `DOCUMENT_GENERE` | `TOUS` | propriétaire et financiers |
-| `PREVISION_A_VALIDER` | `FINANCIER` | financiers invités |
+| `DOCUMENT_CERTIFIE` | `PROPRIETAIRE` | propriétaire (le document peut partir chez l'investisseur) |
+| `PREVISION_A_VALIDER` (création) | `FINANCIER` | financiers invités |
+| `PREVISION_A_VALIDER` (chiffres modifiés) | `TOUS` | propriétaire et financiers : l'avis précédent ne vaut plus |
 | `PREVISION_VALIDEE` / `PREVISION_REJETEE` | `PROPRIETAIRE` | propriétaire |
 
 Réponse : `[{ "type", "pour", "projetId", "message", "recueLe", "documentId", "previsionId" }]`, de la plus récente à la

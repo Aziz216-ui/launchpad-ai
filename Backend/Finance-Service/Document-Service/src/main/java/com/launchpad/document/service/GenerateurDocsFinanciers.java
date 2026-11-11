@@ -40,8 +40,11 @@ public class GenerateurDocsFinanciers {
         return calculer(type, projetId, tresorerieInitiale).contenu();
     }
 
-    /** Contenu du document et identifiant de la prévision dont il est tiré (pour exiger sa validation plus tard). */
-    public record DocumentCalcule(ContenuDocument contenu, UUID previsionId) {
+    /**
+     * Contenu du document, identifiant de la prévision dont il est tiré et empreinte de ses chiffres (pour exiger,
+     * à la certification, que la prévision validée soit bien celle du document).
+     */
+    public record DocumentCalcule(ContenuDocument contenu, UUID previsionId, String empreintePrevision) {
     }
 
     public DocumentCalcule calculer(TypeDocument type, Long projetId, BigDecimal tresorerieInitiale) {
@@ -56,7 +59,7 @@ public class GenerateurDocsFinanciers {
             case PLAN_TRESORERIE -> planTresorerie(p, tresorerieInitiale);
             case RAPPORT_INVESTISSEUR -> rapportInvestisseur(p);
         };
-        return new DocumentCalcule(contenu, p.previsionId());
+        return new DocumentCalcule(contenu, p.previsionId(), p.empreinte());
     }
 
     public ContenuDocument genererBusinessPlan(Long projetId) {
@@ -151,7 +154,7 @@ public class GenerateurDocsFinanciers {
                 LigneDocument.de("Taux de marge brute (%)", p.tauxMargeBrute()),
                 LigneDocument.de("Taux de marge nette (%)", p.tauxMargeNette()),
                 LigneDocument.de("Écart revenus - dépenses (% du CA)", p.ecartPourcentage())),
-                List.of("Statut de l'écart : " + p.ecartStatut())));
+                List.of("Statut de l'écart : " + libelleStatut(p.ecartStatut()))));
         sections.add(sectionProjections(p));
         if (!p.projections().isEmpty()) {
             ProjectionSynthese derniere = p.projections().get(p.projections().size() - 1);
@@ -165,6 +168,19 @@ public class GenerateurDocsFinanciers {
                             Montants.exiger(resultatCumule, "Résultat cumulé"))), List.of()));
         }
         return new ContenuDocument(titre(TypeDocument.RAPPORT_INVESTISSEUR, p), sections);
+    }
+
+    /** Libellé lisible du statut de l'écart (le Prevision-Service renvoie un code : EXCEDENT, EQUILIBRE, DEFICIT). */
+    static String libelleStatut(String statut) {
+        if (statut == null) {
+            return "inconnu";
+        }
+        return switch (statut) {
+            case "EXCEDENT" -> "Excédent";
+            case "EQUILIBRE" -> "Équilibre";
+            case "DEFICIT" -> "Déficit";
+            default -> statut;
+        };
     }
 
     private SynthesePrevision prevision(Long projetId) {
@@ -206,7 +222,7 @@ public class GenerateurDocsFinanciers {
     private static SectionDocument sectionEcart(SynthesePrevision p) {
         return new SectionDocument("Écart revenus - dépenses", List.of("Montant", "% du CA"),
                 List.of(LigneDocument.de("Écart", p.ecartMontant(), p.ecartPourcentage())),
-                List.of("Statut : " + p.ecartStatut()));
+                List.of("Statut : " + libelleStatut(p.ecartStatut())));
     }
 
     private static SectionDocument sectionProjections(SynthesePrevision p) {

@@ -28,7 +28,7 @@ public class DocumentRepositoryJpa implements DocumentRepository {
     @Transactional
     public DocumentFinancier save(DocumentFinancier document) {
         documents.save(new DocumentEntity(document.id(), document.projetId(), document.type(), document.contenu(),
-                document.creeLe(), document.previsionId()));
+                document.creeLe(), document.previsionId(), document.empreintePrevision()));
         return document;
     }
 
@@ -61,6 +61,6 @@ public class DocumentRepositoryJpa implements DocumentRepository {
         Certification certification = e.getCertifiePar() == null ? null
                 : new Certification(e.getCertifiePar(), e.getCommentaireCertification(), e.getCertifieLe());
         return new DocumentFinancier(e.getId(), e.getProjetId(), e.getType(), e.getContenu(), e.getCreatedAt(),
-                e.getPrevisionId(), certification);
+                e.getPrevisionId(), e.getEmpreintePrevision(), certification);
     }
 }

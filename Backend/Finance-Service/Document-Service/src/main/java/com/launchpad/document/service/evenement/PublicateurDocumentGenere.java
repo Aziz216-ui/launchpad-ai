@@ -1,6 +1,7 @@
 package com.launchpad.document.service.evenement;
 
 import com.launchpad.document.config.RabbitMQConfig;
+import com.launchpad.document.domain.DocumentCertifie;
 import com.launchpad.document.domain.DocumentGenere;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,18 @@ public class PublicateurDocumentGenere {
                     evenement.documentId());
         } catch (AmqpException e) {
             LOG.error("Publication de DocumentGenere impossible (document {} enregistré, événement perdu)",
+                    evenement.documentId(), e);
+        }
+    }
+
+    /** Même principe : publié après le commit de la certification, sans remettre en cause celle-ci si le broker est éteint. */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void publier(DocumentCertifie evenement) {
+        try {
+            rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.CLE_DOCUMENT_CERTIFIE, evenement);
+            LOG.info("Événement DocumentCertifie publié : document {}", evenement.documentId());
+        } catch (AmqpException e) {
+            LOG.error("Publication de DocumentCertifie impossible (document {} certifié, événement perdu)",
                     evenement.documentId(), e);
         }
     }
