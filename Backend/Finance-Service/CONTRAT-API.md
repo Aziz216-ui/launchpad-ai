@@ -21,7 +21,7 @@ Un service Spring peut aussi appeler directement `lb://PREVISION-SERVICE` ou `lb
 ## 2. Conventions
 
 - **JSON** en entrée et en sortie (`Content-Type: application/json`), sauf l'export (fichier).
-- **Identifiants** : UUID (`projetId`, `previsionId`, `documentId`). Le projet n'est référencé que par
+- **Identifiants** : `projetId` est un **entier** (Long, comme dans Market, AI et User) ; `previsionId` et `documentId` sont des UUID. Le projet n'est référencé que par
   son identifiant : Finance ne vérifie pas son existence auprès d'un autre service.
 - **Montants** : nombres décimaux à 2 décimales (`100000.00`), sans devise. Taux en % (`60.00` = 60 %).
 - **Dates** : texte ISO-8601 en UTC (`"2026-11-05T13:00:36.010103Z"`).
@@ -47,8 +47,39 @@ Un service Spring peut aussi appeler directement `lb://PREVISION-SERVICE` ou `lb
 | GET | `/api/finance/documents/{documentId}/export?format=pdf\|xlsx` | Document | Télécharger le fichier | 200 |
 | DELETE | `/api/finance/documents/{documentId}` | Document | Supprimer le document et ses fichiers | 204 |
 | GET | `/api/finance/projets/{projetId}/notifications` | Document | Notifications reçues via RabbitMQ | 200 |
+| POST | `/api/finance/previsions/{previsionId}/avis` | Prévision | Avis du financier : valider / rejeter | 200 |
+| POST | `/api/finance/documents/{documentId}/certification` | Document | Certification par le financier | 200 |
+| GET | `/api/finance/projets/{projetId}/acces` | Prévision | Droits de l'utilisateur connecté sur le projet | 200 |
+| GET | `/api/finance/mes-projets` | Prévision | Projets possédés ou suivis par l'utilisateur connecté | 200 |
+| GET | `/api/finance/projets/{projetId}/financiers` | Prévision | Financiers invités sur le projet | 200 |
+| POST | `/api/finance/projets/{projetId}/financiers` | Prévision | Inviter un financier (`{ "email" }`) | 201 |
+| DELETE | `/api/finance/projets/{projetId}/financiers/{email}` | Prévision | Retirer un financier | 204 |
 
-`POST /api/finance/ia/analyse` (Prévision) est **interne** : il sert au Document-Service. Ne l'appelez pas.
+`POST /api/finance/ia/analyse` (Prévision) est **interne** : il sert au Document-Service. L'API Gateway refuse
+`/api/finance/ia/**` (`403`, même avec un jeton ADMIN) ; seul un appel direct sur le réseau interne aboutit.
+
+### Rôles sur un projet
+
+Le rôle Keycloak (ENTREPRENEUR, FINANCIER…) ne suffit pas : chaque projet a ses propres membres, tenus par le
+Prevision-Service.
+
+| Rôle sur le projet | Qui | Peut |
+|---|---|---|
+| `PROPRIETAIRE` | L'ENTREPRENEUR qui a créé la première prévision (ou invité le premier financier) d'un projet sans propriétaire | Saisir des prévisions, générer projections et documents, supprimer, inviter / retirer des financiers, assistant IA |
+| `FINANCIER` | Un compte FINANCIER dont l'e-mail a été invité par le propriétaire | Tout consulter et exporter, commentaire IA de l'écart, **valider / rejeter** une prévision, **certifier** un document. Ne modifie rien. |
+| `ADMIN` | Rôle Keycloak ADMIN | Tout |
+| `AUCUN` | Les autres | Rien (403) |
+
+- `GET /projets/{id}/acces` → `{ "projetId", "role", "lecture", "ecriture", "validation" }`. Un projet sans propriétaire
+  renvoie `role: AUCUN` mais `ecriture: true` pour un ENTREPRENEUR : il peut le démarrer.
+- Une prévision porte `validation: { statut, commentaire, auteur, le }`, avec `statut` = `EN_ATTENTE` (défaut),
+  `VALIDEE` ou `REJETEE`. Un rejet exige un commentaire. **Regénérer les projections remet la prévision `EN_ATTENTE`.**
+- Un document porte `previsionId` (la prévision dont il est tiré) et `certification: { auteur, commentaire, le }`
+  (ou `null`). Un document se certifie **une seule fois**, et **seulement si sa prévision source est `VALIDEE`
+  et que ses chiffres n'ont pas changé depuis la génération du document** (sinon `400`) : le document retient une
+  empreinte des chiffres utilisés (période, montants, projections), comparée à la prévision validée. Après de
+  nouvelles projections, il faut donc regénérer le document. Un document généré avant cette règle doit être regénéré.
+- Le financier est reconnu par le claim `email` de son jeton : il doit se connecter avec l'e-mail invité.
 
 ### Créer une prévision
 
@@ -56,7 +87,7 @@ Un service Spring peut aussi appeler directement `lb://PREVISION-SERVICE` ou `lb
 POST /api/finance/previsions
 ```
 ```json
-{ "projetId": "f3645458-1181-46e2-aac3-b012fdbde0f6", "periode": "2026",
+{ "projetId": 42, "periode": "2026",
   "chiffreAffaires": 100000, "coutsDirects": 40000, "depenses": 70000 }
 ```
 Règles : `periode` obligatoire (50 caractères max) ; montants ≥ 0, 13 chiffres et 2 décimales max ;
@@ -64,7 +95,7 @@ Règles : `periode` obligatoire (50 caractères max) ; montants ≥ 0, 13 chiffr
 
 Réponse `201` (en-tête `Location` vers la prévision créée) :
 ```json
-{ "previsionId": "0d1b4c32-b9e5-4223-9ad5-efc92ef32af7", "projetId": "f3645458-1181-46e2-aac3-b012fdbde0f6",
+{ "previsionId": "0d1b4c32-b9e5-4223-9ad5-efc92ef32af7", "projetId": 42,
   "periode": "2026", "chiffreAffaires": 100000.00, "coutsDirects": 40000.00, "depenses": 70000.00,
   "resultat": 30000.00, "creeLe": "2026-11-05T13:00:36.010103Z", "projections": [] }
 ```
@@ -107,7 +138,7 @@ Taux annuels en % (strictement supérieurs à -100) ; `horizon` de 1 à 10 ans. 
 POST /api/finance/documents
 ```
 ```json
-{ "projetId": "f3645458-1181-46e2-aac3-b012fdbde0f6", "type": "COMPTE_RESULTAT",
+{ "projetId": 42, "type": "COMPTE_RESULTAT",
   "tresorerieInitiale": 5000, "avecAnalyse": false }
 ```
 - `type` : `BUSINESS_PLAN`, `BILAN_OUVERTURE`, `COMPTE_RESULTAT`, `PLAN_TRESORERIE`, `RAPPORT_INVESTISSEUR`.
@@ -129,6 +160,8 @@ Export : `GET /api/finance/documents/{documentId}/export?format=pdf` (ou `xlsx`)
 |---|---|
 | 200 / 201 / 204 | Succès |
 | 400 | Champ invalide, règle métier non respectée, format d'export inconnu, JSON illisible |
+| 401 | Sécurité active (`JWT_ENABLED=true`) et jeton absent ou invalide |
+| 403 | Authentifié, mais sans le droit demandé sur ce projet (titre « Accès refusé ») |
 | 404 | Prévision, document ou projet sans prévision introuvable |
 | 503 | IA non configurée ou indisponible ; l'autre service Finance est injoignable |
 | 500 | Erreur inattendue (le détail est seulement dans les journaux du service) |
@@ -162,22 +195,48 @@ IA indisponible (`503`) :
   "detail": "Le service d'IA n'est pas configuré", "instance": "/api/finance/previsions/…/commentaire" }
 ```
 
-## 6. Événement RabbitMQ : `DocumentGenere`
+## 6. Événements RabbitMQ (exchange `finance.events`)
 
-Publié par le Document-Service **après l'enregistrement** d'un document (jamais pour une génération en échec).
+Tous les événements Finance sont publiés **après commit** sur l'exchange **topic durable `finance.events`**.
+Chaque service consommateur déclare **sa propre queue** et la lie aux clés qui l'intéressent : chacun reçoit alors
+tous les messages (aucun partage de queue entre services).
 
 | | |
 |---|---|
 | Broker | RabbitMQ, `localhost:5672` en local |
-| Exchange | exchange par défaut (`""`) |
-| Queue / clé de routage | `finance.document.genere` (durable) |
-| Message | persistant, `content_type: application/json`, UTF-8 |
+| Exchange | `finance.events` (topic, durable) |
+| Message | persistant, `content_type: application/json`, UTF-8, dates ISO-8601 UTC |
 | Livraison | au moins une fois : un même événement peut arriver deux fois |
+
+| Clé de routage | Publié par | Quand | Clé de dédoublonnage |
+|---|---|---|---|
+| `finance.document.genere` | Document-Service | un document est enregistré | `documentId` |
+| `finance.prevision.a-valider` | Prevision-Service | une prévision est créée, ou repasse en attente (nouvelles projections) | `evenementId` |
+| `finance.prevision.avis` | Prevision-Service | un financier valide ou rejette une prévision | `evenementId` |
+| `finance.document.certifie` | Document-Service | un financier certifie un document | `documentId` |
+
+Le Projet-Service IA lie `ai.finance-events` à `finance.#` et ne traite que `finance.document.genere`.
+
+`finance.prevision.a-valider` (`motif` = `CREATION` pour une nouvelle prévision, `CHIFFRES_MODIFIES` quand de
+nouvelles projections annulent l'avis précédent) :
+```json
+{ "evenementId": "…", "previsionId": "0d1b4c32-…", "projetId": 42, "periode": "2026",
+  "le": "2026-11-10T10:00:00Z", "motif": "CHIFFRES_MODIFIES" }
+```
+`finance.prevision.avis` (`statut` = `VALIDEE` ou `REJETEE`, `commentaire` peut être `null` pour une validation) :
+```json
+{ "evenementId": "…", "previsionId": "0d1b4c32-…", "projetId": 42, "periode": "2026", "statut": "REJETEE",
+  "commentaire": "Croissance de 40 % irréaliste", "auteur": "conseil@exemple.tn", "le": "2026-11-10T10:00:00Z" }
+```
+
+### `finance.document.genere`
+
+Publié par le Document-Service **après l'enregistrement** d'un document (jamais pour une génération en échec).
 
 Corps du message :
 ```json
 { "documentId": "3b262c72-2222-4f01-9de3-6fb7669e7ce6",
-  "projetId": "f3645458-1181-46e2-aac3-b012fdbde0f6",
+  "projetId": 42,
   "type": "COMPTE_RESULTAT",
   "titre": "Compte de résultat prévisionnel - période 2026",
   "creeLe": "2026-11-05T13:00:36.525402Z" }
@@ -186,7 +245,7 @@ Corps du message :
 | Champ | Type | Description |
 |---|---|---|
 | `documentId` | UUID (texte) | Identifiant du document ; clé de dédoublonnage |
-| `projetId` | UUID (texte) | Projet concerné |
+| `projetId` | entier | Projet concerné |
 | `type` | texte | Un des 5 types de document (section 3) |
 | `titre` | texte | Titre lisible du document |
 | `creeLe` | date ISO-8601 UTC | Date de génération |
@@ -194,21 +253,41 @@ Corps du message :
 Le message ne contient jamais le contenu du document : pour l'obtenir, appelez
 `GET /api/finance/documents/{documentId}`.
 
-**Pour consommer cet événement depuis un autre service :**
+**Pour consommer ces événements depuis un autre service :**
+- Déclarez votre propre queue durable et liez-la à `finance.events` avec les clés voulues (pas la queue d'un autre
+  service : vous vous partageriez les messages).
 - Ignorez l'en-tête `__TypeId__` (nom de classe Java, utile seulement à Spring).
-- Traitez le message de façon idempotente (par `documentId`).
-- Ignorez les champs que vous ne connaissez pas : de nouveaux champs pourront être ajoutés.
-- **Aujourd'hui, la queue a un seul consommateur** (les notifications du Document-Service). Avec l'exchange par
-  défaut, deux services qui lisent la même queue se **partageraient** les messages au lieu de les recevoir tous
-  les deux. Si votre service a besoin de cet événement, prévenez l'équipe Finance : l'événement sera publié sur un
-  exchange de type `topic` (par exemple `finance.evenements`), et chaque service déclarera sa propre queue.
+- Traitez le message de façon idempotente (clé de dédoublonnage ci-dessus).
+- Ignorez les champs et les clés de routage que vous ne connaissez pas : d'autres pourront être ajoutés.
+
+### Notifications (`GET /api/finance/projets/{projetId}/notifications`)
+
+Le Document-Service transforme ces événements en notifications, **filtrées selon le rôle sur le projet** :
+
+| `type` | `pour` | Vu par |
+|---|---|---|
+| `DOCUMENT_GENERE` | `TOUS` | propriétaire et financiers |
+| `DOCUMENT_CERTIFIE` | `PROPRIETAIRE` | propriétaire (le document peut partir chez l'investisseur) |
+| `PREVISION_A_VALIDER` (création) | `FINANCIER` | financiers invités |
+| `PREVISION_A_VALIDER` (chiffres modifiés) | `TOUS` | propriétaire et financiers : l'avis précédent ne vaut plus |
+| `PREVISION_VALIDEE` / `PREVISION_REJETEE` | `PROPRIETAIRE` | propriétaire |
+
+Réponse : `[{ "type", "pour", "projetId", "message", "recueLe", "documentId", "previsionId" }]`, de la plus récente à la
+plus ancienne (`documentId` ou `previsionId` selon le type).
 
 ## 7. Limites actuelles
 
-- **Pas d'authentification** côté Finance pour l'instant (la passerelle tourne avec `JWT_ENABLED=false`) et pas
-  de contrôle du propriétaire du projet : à faire avec le User-Service.
-- **`projetId` est un UUID.** Les services qui utilisent un entier ou une autre forme d'identifiant de projet
-  devront se mettre d'accord avec Finance sur un identifiant commun.
+- **Sécurité** : avec `JWT_ENABLED=true` (docker-compose), les deux services vérifient le jeton Keycloak
+  (`KEYCLOAK_JWK_SET_URI`) et les rôles par projet ci-dessus. Avec `JWT_ENABLED=false` (défaut en local), tout est
+  ouvert et aucun contrôle de rôle n'est fait.
+- **Appels entre services** : le jeton de l'utilisateur est relayé (Feign). Sans jeton, seuls
+  `GET /projets/{id}/synthese` et `POST /ia/analyse` répondent (appels internes, ex. Projet-Service IA) ; la passerelle,
+  elle, exige toujours un jeton.
+- **Propriété d'un projet** : le Projet-Service (`entrepreneur_id`) n'est pas encore relié à l'identifiant Keycloak ;
+  Finance tient donc ses propres propriétaires. Les données créées avant cette version n'ont pas de propriétaire : le
+  premier entrepreneur qui y écrit en devient propriétaire.
+- **`projetId` est un entier (BIGINT).** Il correspond à l'identifiant du projet dans le Projet-Service (AI) et dans Market.
+  Les anciennes données Finance (projetId UUID) sont supprimées par la migration V3.
 - **IA** (commentaire, analyse, assistant) : `503` tant que le Prevision-Service n'a pas de clé xAI.
 - **Notifications** : gardées en mémoire (50 dernières), perdues au redémarrage du Document-Service.
 - **En-tête `Location` via la passerelle** : il contient pour l'instant l'adresse interne du service

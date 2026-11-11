@@ -1,6 +1,7 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { Routes } from '@angular/router';
 
+import { roleGuard } from '../../core/auth/role.guard';
 import { MarketComponent } from './market.component';
 import { MarketApiService } from './services/market-api.service';
 import { marketInterceptor } from './services/market-http';
@@ -15,6 +16,8 @@ export default [
   {
     path: '',
     component: MarketComponent,
+    // Réservé à l'entrepreneur (et à l'ADMIN) : un autre rôle est renvoyé vers sa page d'accueil
+    canActivate: [roleGuard('ENTREPRENEUR', 'ADMIN')],
     providers: [provideHttpClient(withInterceptors([marketInterceptor])), MarketApiService],
     children: [
       {

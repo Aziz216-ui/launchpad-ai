@@ -38,11 +38,9 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
   instance:
-    prefer-ip-address: true
-    instance-id: ${spring.application.name}:${server.port}:${random.value}
-
-client-service:
-  url: ${CLIENT_SERVICE_URL:http://localhost:8082}
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    prefer-ip-address: ${EUREKA_PREFER_IP:false}
+    instance-id: ${spring.application.name}:${server.port}
 
 springdoc:
   api-docs:
@@ -56,5 +54,5 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
 

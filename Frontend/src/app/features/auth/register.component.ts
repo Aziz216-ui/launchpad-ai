@@ -2,12 +2,21 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { AuthService, RegisterPayload } from '../../core/services/auth.service';
+import { AuthService, RegisterPayload, Role } from '../../core/services/auth.service';
+import { ChampMotDePasseComponent } from './champ-mot-de-passe.component';
+
+const LABEL_ROLE: Record<Role, string> = {
+  ENTREPRENEUR: 'Fondateur de Startup',
+  LAWYER: 'Avocat / Expert Juridique',
+  ACCOUNTANT: 'Comptable',
+  FINANCIER: 'Financier',
+  ADMIN: 'Administrateur',
+};
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, ChampMotDePasseComponent],
   template: `
     <div class="auth-page">
       <div class="auth-card">
@@ -38,19 +47,33 @@ import { AuthService, RegisterPayload } from '../../core/services/auth.service';
           <div class="role-selector-group">
             <label class="group-label">Je m'inscris en tant que :</label>
             <div class="role-pills">
-              <button 
-                type="button" 
-                class="role-pill" 
-                [class.selected]="formData.role === 'user'" 
-                (click)="formData.role = 'user'">
+              <button
+                type="button"
+                class="role-pill"
+                [class.selected]="formData.role === 'ENTREPRENEUR'"
+                (click)="formData.role = 'ENTREPRENEUR'">
                 🚀 Fondateur de Startup
               </button>
-              <button 
-                type="button" 
-                class="role-pill" 
-                [class.selected]="formData.role === 'lawyer'" 
-                (click)="formData.role = 'lawyer'">
+              <button
+                type="button"
+                class="role-pill"
+                [class.selected]="formData.role === 'LAWYER'"
+                (click)="formData.role = 'LAWYER'">
                 ⚖️ Avocat / Expert Juridique
+              </button>
+              <button
+                type="button"
+                class="role-pill"
+                [class.selected]="formData.role === 'ACCOUNTANT'"
+                (click)="formData.role = 'ACCOUNTANT'">
+                📊 Comptable
+              </button>
+              <button
+                type="button"
+                class="role-pill"
+                [class.selected]="formData.role === 'FINANCIER'"
+                (click)="formData.role = 'FINANCIER'">
+                💰 Financier
               </button>
             </div>
           </div>
@@ -82,38 +105,47 @@ import { AuthService, RegisterPayload } from '../../core/services/auth.service';
           </div>
 
           <div class="form-group">
-            <label>Mot de passe</label>
-            <input type="password" [(ngModel)]="formData.password" name="password" placeholder="Min. 8 caractères" required />
+            <label for="register-password">Mot de passe</label>
+            <app-champ-mot-de-passe
+              inputId="register-password"
+              name="password"
+              [(ngModel)]="formData.password"
+              placeholder="Min. 8 caractères"
+              autocomplete="new-password"
+              [required]="true"
+              [compact]="true"
+            />
           </div>
 
           <button type="submit" class="btn-submit" [disabled]="loading">
-            <span *ngIf="!loading">Créer mon compte ({{ formData.role === 'user' ? 'Fondateur' : 'Avocat' }})</span>
+            <span *ngIf="!loading">Créer mon compte ({{ libelleRole(formData.role) }})</span>
             <span *ngIf="loading">Création du compte en cours...</span>
           </button>
         </form>
 
         <div class="auth-footer">
-          Vous avez déjà un compte ? 
-          <a routerLink="/login" class="link-bold">Se connecter</a>
+          Vous avez déjà un compte ?
+          <a routerLink="/connexion/login" class="link-bold">Se connecter</a>
         </div>
       </div>
     </div>
   `,
   styles: [`
+    @use 'variables' as *;
+
     .auth-page {
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #f0fdfa 0%, #f4f7f6 100%);
+      background: $fond;
       padding: 32px 20px;
     }
 
     .auth-card {
-      background: #ffffff;
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-lg);
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+      background: $fond-carte;
+      border: 1px solid $bordure;
+      border-radius: $rayon-carte;
       width: 100%;
       max-width: 500px;
       padding: 36px 32px;
@@ -133,47 +165,46 @@ import { AuthService, RegisterPayload } from '../../core/services/auth.service';
       width: 36px;
       height: 36px;
       border-radius: 10px;
-      background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%);
-      color: white;
+      background: $primaire;
+      color: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .brand-name {
-      font-size: 19px;
-      font-weight: 800;
-      color: var(--text-main);
-      .teal { color: var(--primary-teal); }
+      font-size: 17px;
+      font-weight: 600;
+      color: $texte;
+      .teal { color: $primaire; }
     }
 
     .auth-header {
       text-align: center;
       h2 {
+        margin: 0;
         font-size: 22px;
-        font-weight: 700;
-        color: var(--text-main);
+        font-weight: 600;
+        color: $texte;
       }
       p {
+        margin: 4px 0 0;
         font-size: 12.5px;
-        color: var(--text-muted);
-        margin-top: 4px;
+        color: $gris;
       }
     }
 
     .alert {
       padding: 10px 14px;
-      border-radius: var(--radius-sm);
+      border-radius: $rayon-champ;
       font-size: 12.5px;
       &.error {
-        background: #fef2f2;
-        color: #dc2626;
-        border: 1px solid #fee2e2;
+        background: $rouge-clair;
+        color: $rouge-fonce;
       }
       &.success {
-        background: #ecfdf5;
-        color: #059669;
-        border: 1px solid #d1fae5;
+        background: $vert-clair;
+        color: $vert-fonce;
       }
     }
 
@@ -191,8 +222,8 @@ import { AuthService, RegisterPayload } from '../../core/services/auth.service';
 
     .group-label {
       font-size: 12px;
-      font-weight: 700;
-      color: var(--text-main);
+      font-weight: 600;
+      color: $texte;
     }
 
     .role-pills {
@@ -203,25 +234,25 @@ import { AuthService, RegisterPayload } from '../../core/services/auth.service';
 
     .role-pill {
       padding: 10px 12px;
-      border-radius: var(--radius-sm);
-      border: 1.5px solid var(--border-color);
-      background: #f8fafc;
+      border-radius: $rayon-champ;
+      border: 1.5px solid $bordure-champ;
+      background: $fond-doux;
       font-size: 12.5px;
       font-weight: 600;
-      color: var(--text-muted);
+      color: $gris;
       cursor: pointer;
       text-align: center;
       transition: all 0.15s ease;
 
       &:hover {
-        border-color: #cbd5e1;
-        color: var(--text-main);
+        border-color: $gris;
+        color: $texte;
       }
 
       &.selected {
-        border-color: var(--primary-teal);
-        background: var(--primary-teal-light);
-        color: var(--primary-teal-dark);
+        border-color: $primaire;
+        background: $primaire-clair;
+        color: $primaire-fonce;
         font-weight: 700;
       }
     }
@@ -240,41 +271,43 @@ import { AuthService, RegisterPayload } from '../../core/services/auth.service';
       label {
         font-size: 12px;
         font-weight: 600;
-        color: var(--text-main);
+        color: $texte;
       }
 
       input {
         width: 100%;
-        padding: 9px 12px;
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-sm);
+        min-height: 40px;
+        padding: 0 12px;
+        border: 1px solid $bordure-champ;
+        border-radius: $rayon-champ;
         font-size: 13px;
+        color: $texte;
         outline: none;
-        transition: all 0.15s ease;
+        transition: border-color 0.15s ease;
 
         &:focus {
-          border-color: var(--primary-teal);
-          box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+          border-color: $primaire;
         }
       }
     }
 
     .btn-submit {
       margin-top: 6px;
-      background: var(--primary-teal);
-      color: white;
+      min-height: 44px;
+      border: 0;
+      background: $primaire;
+      color: #ffffff;
       font-weight: 600;
-      font-size: 14px;
-      padding: 12px;
-      border-radius: var(--radius-sm);
+      font-size: 13px;
+      border-radius: $rayon-champ;
       transition: background 0.15s ease;
       cursor: pointer;
 
       &:hover:not(:disabled) {
-        background: var(--primary-teal-hover);
+        background: $primaire-fonce;
       }
       &:disabled {
-        opacity: 0.7;
+        opacity: 0.6;
         cursor: not-allowed;
       }
     }
@@ -282,13 +315,13 @@ import { AuthService, RegisterPayload } from '../../core/services/auth.service';
     .auth-footer {
       text-align: center;
       font-size: 13px;
-      color: var(--text-muted);
+      color: $gris;
 
       .link-bold {
-        color: var(--primary-teal);
+        color: $primaire-fonce;
         font-weight: 600;
         text-decoration: none;
-        &:hover { text-decoration: underline; }
+        &:hover { color: $primaire-tres-fonce; text-decoration: underline; }
       }
     }
   `]
@@ -301,7 +334,7 @@ export class RegisterComponent {
     first_name: '',
     last_name: '',
     phone_number: '',
-    role: 'user' // Default to Startup Founder
+    role: 'ENTREPRENEUR', // Défaut : Fondateur de Startup
   };
 
   loading = false;
@@ -309,6 +342,10 @@ export class RegisterComponent {
   successMessage = '';
 
   constructor(private authService: AuthService, private router: Router) {}
+
+  protected libelleRole(role?: Role): string {
+    return role ? LABEL_ROLE[role] : LABEL_ROLE.ENTREPRENEUR;
+  }
 
   onSubmit(): void {
     if (!this.formData.username || !this.formData.email || !this.formData.password) {
@@ -323,10 +360,9 @@ export class RegisterComponent {
     this.authService.register(this.formData).subscribe({
       next: () => {
         this.loading = false;
-        const roleLabel = this.formData.role === 'user' ? 'Fondateur de Startup' : 'Avocat';
-        this.successMessage = `Compte ${roleLabel} créé avec succès ! Redirection vers la connexion...`;
+        this.successMessage = `Compte ${this.libelleRole(this.formData.role)} créé avec succès ! Redirection vers la connexion...`;
         setTimeout(() => {
-          this.router.navigate(['/login']);
+          this.router.navigate(['/connexion/login']);
         }, 1200);
       },
       error: (err) => {

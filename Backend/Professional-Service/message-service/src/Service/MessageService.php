@@ -9,6 +9,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Launchpad\Common\Enum\UserRole;
 use Launchpad\Common\Exception\ApiException;
 use Launchpad\Common\Messaging\Message\DocumentDecided;
+use Launchpad\Common\Messaging\Message\FileActivity;
 use Launchpad\Common\Remote\ClientFileDirectory;
 use Launchpad\Common\Remote\Model\FileContext;
 use Launchpad\Common\Security\ActorResolver;
@@ -61,6 +62,31 @@ final class MessageService
      * Événement de document-service (RabbitMQ, voir DocumentDecidedListener) : le comptable a validé
      * ou rejeté un document. L'entrepreneur en est informé par un message automatique dans le fil du dossier.
      */
+    /**
+     * Activité d'un dossier (demande, acceptation, refus, clôture, dépôt) : message automatique attribué
+     * à l'acteur, donc non lu pour l'autre participant (notification sous sa cloche).
+     */
+    public function recordFileActivity(FileActivity $activity): Message
+    {
+        $role = UserRole::tryFrom($activity->actorRole);
+        if (UserRole::ACCOUNTANT !== $role && UserRole::ENTREPRENEUR !== $role) {
+            throw new \InvalidArgumentException('actorRole invalide : '.$activity->actorRole);
+        }
+
+        $message = new Message(
+            clientFileId: $activity->clientFileId,
+            senderId: $activity->actorId,
+            senderRole: $role,
+            content: mb_substr($activity->content, 0, 5000),
+            documentId: $activity->documentId,
+            automatic: true,
+        );
+        $this->em->persist($message);
+        $this->em->flush();
+
+        return $message;
+    }
+
     public function recordDocumentDecision(DocumentDecided $decision): Message
     {
         $document = sprintf('« %s » (v%d)', $decision->title, $decision->versionNumber);

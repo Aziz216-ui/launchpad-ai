@@ -7,6 +7,10 @@ ADMIN_USERNAME = os.getenv("KEYCLOAK_ADMIN_USER", "admin")
 ADMIN_PASSWORD = os.getenv("KEYCLOAK_ADMIN_PASSWORD", "admin")
 TARGET_REALM = "launchpad"
 CLIENT_ID = "launchpad-client"
+# Secret du client pinné via l'env plutot que laisse Keycloak en generer un aleatoire :
+# le User-Service lit KEYCLOAK_CLIENT_SECRET dans sa propre configuration, les deux
+# doivent donc toujours correspondre pour que le login/refresh fonctionnent.
+CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET")
 
 def setup():
     print(f"Connecting to Keycloak at {KEYCLOAK_URL} as {ADMIN_USERNAME}...")
@@ -45,13 +49,39 @@ def setup():
     )
 
     # 2. Check/create roles
+    # LAWYER/ADMIN/ENTREPRENEUR/ACCOUNTANT/FINANCIER couvrent les roles necessaires a tous
+    # les services du repo qui en verifient un : User-Service (authentication/
+    # authentication.py) et Professional-Service (KeycloakRoleMapper, via
+    # KEYCLOAK_ROLE_ACCOUNTANT/ENTREPRENEUR/ADMIN). Aucun autre service ne verifie de role
+    # Keycloak a ce jour.
     existing_roles = [r["name"] for r in admin_launchpad.get_realm_roles()]
-    for role in ["user", "lawyer", "admin"]:
+    for role in ["LAWYER", "ADMIN", "ENTREPRENEUR", "ACCOUNTANT", "FINANCIER"]:
         if role not in existing_roles:
             print(f"Creating realm role '{role}'...")
             admin_launchpad.create_realm_role({"name": role, "description": f"{role.capitalize()} role"})
         else:
             print(f"Realm role '{role}' already exists.")
+
+    # Anciens roles en minuscule (avant unification des noms de role) : supprimes s'ils
+    # existent encore.
+    for old_role in ["user", "lawyer", "admin"]:
+        if old_role in existing_roles:
+            print(f"Removing legacy realm role '{old_role}'...")
+            admin_launchpad.delete_realm_role(old_role)
+
+    # 2b. Disable VERIFY_PROFILE: Keycloak's default User Profile config marks
+    # firstName/lastName as required, and VERIFY_PROFILE enforces that dynamically
+    # at login even when requiredActions is empty on the user. The User-Service's
+    # RegisterSerializer treats first_name/last_name as optional, so a user
+    # registered without them would otherwise get "invalid_grant: Account is not
+    # fully set up" on login.
+    verify_profile = admin_launchpad.get_required_action_by_alias("VERIFY_PROFILE")
+    if verify_profile and verify_profile.get("enabled"):
+        verify_profile["enabled"] = False
+        admin_launchpad.update_required_action("VERIFY_PROFILE", verify_profile)
+        print("Disabled 'VERIFY_PROFILE' required action.")
+    else:
+        print("'VERIFY_PROFILE' required action already disabled.")
 
     # 3. Check/create client
     clients = admin_launchpad.get_clients()
@@ -71,18 +101,45 @@ def setup():
             "redirectUris": ["http://localhost:*", "http://127.0.0.1:*", "*"],
             "webOrigins": ["*"]
         }
+        if CLIENT_SECRET:
+            client_payload["secret"] = CLIENT_SECRET
         client_id_internal = admin_launchpad.create_client(client_payload)
         client_obj = admin_launchpad.get_client(client_id_internal)
         print(f"Client '{CLIENT_ID}' created with internal ID: {client_id_internal}")
     else:
         client_id_internal = client_obj["id"]
-        # Ensure direct access grants and service accounts are enabled
-        admin_launchpad.update_client(client_id_internal, {
+        # Ensure direct access grants and service accounts are enabled, and that the
+        # secret matches KEYCLOAK_CLIENT_SECRET so the User-Service can always log in
+        # (idempotent: re-running this script keeps correcting drift instead of
+        # leaving a stale secret from a previous environment).
+        update_payload = {
             "directAccessGrantsEnabled": True,
             "serviceAccountsEnabled": True,
             "publicClient": False
-        })
+        }
+        if CLIENT_SECRET:
+            update_payload["secret"] = CLIENT_SECRET
+        admin_launchpad.update_client(client_id_internal, update_payload)
         print(f"Client '{CLIENT_ID}' already exists (internal ID: {client_id_internal}).")
+
+    # Audience : les services Symfony (Professional-Service) exigent que le claim "aud" du jeton
+    # contienne leur KEYCLOAK_AUDIENCE. Un mapper d'audience ajoute le client au jeton d'accès.
+    mapper_name = "launchpad-client-audience"
+    existing_mappers = admin_launchpad.get_client(client_id_internal).get("protocolMappers") or []
+    if not any(m.get("name") == mapper_name for m in existing_mappers):
+        admin_launchpad.add_mapper_to_client(client_id_internal, {
+            "name": mapper_name,
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "config": {
+                "included.client.audience": CLIENT_ID,
+                "id.token.claim": "false",
+                "access.token.claim": "true",
+            },
+        })
+        print(f"Audience mapper '{mapper_name}' added.")
+    else:
+        print(f"Audience mapper '{mapper_name}' already exists.")
 
     # Get client secret
     secrets = admin_launchpad.get_client_secrets(client_id_internal)

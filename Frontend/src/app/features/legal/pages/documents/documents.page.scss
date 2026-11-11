@@ -1,0 +1,170 @@
+@use 'variables' as *;
+@use '../commun';
+
+.barre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid $bordure;
+}
+
+.onglets {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+
+  button {
+    position: relative;
+    padding: 10px 2px 12px;
+    border: 0;
+    background: none;
+    color: $texte-secondaire;
+    font-size: 15px;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &:hover {
+      color: $primaire-fonce;
+    }
+    &.actif {
+      color: $primaire-fonce;
+      font-weight: 500;
+
+      &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: 2px;
+        background: $primaire;
+      }
+    }
+  }
+  .nombre {
+    margin-left: 4px;
+    color: $gris;
+  }
+}
+
+.select-flottant {
+  position: relative;
+  display: flex;
+  margin-bottom: 10px;
+
+  span {
+    position: absolute;
+    top: -8px;
+    left: 12px;
+    padding: 0 4px;
+    background: $fond;
+    font-size: 12px;
+    color: $gris;
+  }
+  select {
+    min-width: 220px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid $bordure-champ;
+    border-radius: 6px;
+    background: $fond-carte;
+    color: $texte;
+    font-size: 14px;
+  }
+}
+
+.carte-tableau {
+  border: 1px solid $bordure;
+  border-radius: $rayon-carte;
+  background: $fond-carte;
+  overflow: hidden;
+}
+
+.tableau-defilement {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 14px 20px;
+    text-align: left;
+    vertical-align: middle;
+    font-size: 14px;
+  }
+  th {
+    font-weight: 500;
+    color: $texte-secondaire;
+    border-bottom: 1px solid $bordure;
+  }
+  tbody tr {
+    border-bottom: 1px solid $bordure-legere;
+    cursor: pointer;
+
+    &:last-child {
+      border-bottom: 0;
+    }
+    &:hover {
+      background: $fond-doux;
+    }
+  }
+}
+
+.doc {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+  a {
+    color: $texte;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+      color: $primaire-fonce;
+      text-decoration: underline;
+    }
+  }
+  span {
+    font-size: 13px;
+    color: $gris;
+  }
+}
+
+.doc-icone {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: $primaire-clair;
+  color: $primaire-fonce;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.lien {
+  color: $primaire-fonce;
+  font-weight: 600;
+  text-decoration: none;
+}

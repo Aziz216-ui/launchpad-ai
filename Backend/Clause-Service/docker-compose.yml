@@ -1,3 +1,5 @@
+# Port hôte de clause-postgres surchargeable via CLAUSE_DB_PORT (défaut 5447, déplacé de
+# 5433 pour ne pas entrer en collision avec le défaut de Finance/Prevision-Service).
 services:
   clause-postgres:
     image: postgres:16-alpine
@@ -8,7 +10,7 @@ services:
       POSTGRES_PASSWORD: postgrespassword
       POSTGRES_DB: clause_db
     ports:
-      - "5433:5432"
+      - "${CLAUSE_DB_PORT:-5447}:5432"
     volumes:
       - clause_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -41,7 +43,7 @@ services:
       EUREKA_HOST: host.docker.internal
       EUREKA_PORT: 8761
       EUREKA_APP_NAME: CLAUSE-SERVICE
-      RABBITMQ_ENABLED: \"true\"
+      RABBITMQ_ENABLED: "true"
       RABBITMQ_URL: amqp://guest:guest@host.docker.internal:5672
       RABBITMQ_EXCHANGE: launchpad.events
     ports:

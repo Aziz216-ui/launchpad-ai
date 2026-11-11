@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { NotificationService } from '../../../core/notifications/notification.service';
 import { EmptyStateComponent } from '../../../shared/components/empty-state.component';
 import { GraphiqueProjectionsComponent } from '../components/graphique-projections.component';
+import { Projection } from '../models/finance.models';
 import { MontantPipe } from '../pipes/montant.pipe';
 import { erreursChamps, texteErreur } from '../services/erreurs';
 import { FinanceApiService } from '../services/finance-api.service';
@@ -54,8 +55,12 @@ import { FinanceStore } from '../services/finance-store.service';
             }
           </section>
 
+          @if (store.peutEcrire()) {
           <form class="carte formulaire" (ngSubmit)="generer(p.previsionId)" novalidate aria-label="Générer des projections">
             <h2>Générer des projections</h2>
+            @if (p.validation.statut !== 'EN_ATTENTE') {
+              <span class="note">Si les chiffres changent, la prévision repassera en attente d'un nouvel avis du financier.</span>
+            }
             <label class="champ" [class.en-erreur]="erreur('tauxCa')">
               Évolution annuelle du CA (%)
               <input name="tauxCa" type="number" step="0.1" [(ngModel)]="tauxCa" required />
@@ -79,11 +84,14 @@ import { FinanceStore } from '../services/finance-store.service';
               {{ enCours() ? 'Calcul…' : p.projections.length ? 'Remplacer les projections' : 'Générer' }}
             </button>
           </form>
+          }
         </div>
-      } @else {
+      } @else if (store.peutEcrire()) {
         <app-empty-state titre="Aucune prévision" texte="Les projections partent d'une prévision.">
           <a class="btn-primaire" routerLink="../previsions">Créer une prévision</a>
         </app-empty-state>
+      } @else {
+        <app-empty-state titre="Aucune prévision" texte="L'entrepreneur n'a pas encore saisi de prévision pour ce projet." />
       }
     </div>
   `,
@@ -124,8 +132,20 @@ export class ProjectionsPage {
       .genererProjections(previsionId, { tauxCa: this.tauxCa, tauxDepenses: this.tauxDepenses, horizon: this.horizon })
       .subscribe({
         next: (projections) => {
-          this.store.remplacer({ ...prevision, projections });
-          this.notifications.succes(`${projections.length} projection(s) générée(s).`);
+          // Comme côté backend : seuls des chiffres différents annulent l'avis du financier.
+          const inchangees = memesProjections(prevision.projections, projections);
+          this.store.remplacer({
+            ...prevision,
+            projections,
+            validation: inchangees
+              ? prevision.validation
+              : { statut: 'EN_ATTENTE', commentaire: null, auteur: null, le: null },
+          });
+          this.notifications.succes(
+            inchangees
+              ? 'Projections identiques aux précédentes : rien n’a changé, l’avis du financier est conservé.'
+              : `${projections.length} projection(s) générée(s).`,
+          );
           this.enCours.set(false);
         },
         error: (e: unknown) => {
@@ -135,4 +155,18 @@ export class ProjectionsPage {
         },
       });
   }
+}
+
+/** Mêmes années et mêmes montants (le backend ne touche alors ni aux projections ni à l'avis). */
+function memesProjections(avant: Projection[], apres: Projection[]): boolean {
+  return (
+    avant.length === apres.length &&
+    avant.every(
+      (p, i) =>
+        p.annee === apres[i].annee &&
+        p.chiffreAffaires === apres[i].chiffreAffaires &&
+        p.depenses === apres[i].depenses &&
+        p.marge === apres[i].marge,
+    )
+  );
 }

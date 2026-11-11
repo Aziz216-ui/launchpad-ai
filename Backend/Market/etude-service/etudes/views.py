@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 
 from market_commun.evenements.producteur import publier
 from market_commun.filtres import PARAMETRE_IDS, filtrer_par_ids
+from market_commun.identite import proprietaire_a_filtrer, utilisateur_de
 from market_commun.vues import ServiceIndisponibleSerializer
 
 from . import services
@@ -27,11 +28,22 @@ from .serializers import (
 ERREURS = {503: ServiceIndisponibleSerializer}
 
 
+def etudes_visibles(request):
+    """
+    Études accessibles à l'auteur de la requête : les siennes pour un utilisateur connecté
+    (jeton transmis par la gateway), toutes pour un ADMIN ou un appel interne sans jeton.
+    """
+    proprietaire = proprietaire_a_filtrer(request)
+    if proprietaire is None:
+        return EtudeMarche.objects.all()
+    return EtudeMarche.objects.filter(entrepreneur_id=proprietaire.id)
+
+
 # --- CRUD ---------------------------------------------------------------------
 
 @extend_schema(parameters=[
     OpenApiParameter("projet_id", int, description="Filtrer par id de projet"),
-    OpenApiParameter("entrepreneur_id", int, description="Filtrer par id d'entrepreneur"),
+    OpenApiParameter("entrepreneur_id", str, description="Filtrer par entrepreneur (identifiant Keycloak)"),
     OpenApiParameter("statut", str, enum=["brouillon", "finalisee"]),
     PARAMETRE_IDS,
 ])
@@ -62,7 +74,11 @@ class EtudeMarcheViewSet(viewsets.ModelViewSet):
         return EtudeMarcheSerializer
 
     def get_queryset(self):
-        queryset = filtrer_par_ids(EtudeMarche.objects.all(), self.request)
+        # Un entrepreneur ne voit que ses études : celles d'un autre -> 404 sur toutes les
+        # actions de détail (GET, PATCH, PUT, DELETE, finaliser, rapport...). ADMIN et appels
+        # internes sans jeton : toutes les études.
+        queryset = etudes_visibles(self.request)
+        queryset = filtrer_par_ids(queryset, self.request)
         if self.action == "retrieve":
             queryset = queryset.prefetch_related("personas")
         params = self.request.query_params
@@ -71,6 +87,14 @@ class EtudeMarcheViewSet(viewsets.ModelViewSet):
             if valeur:
                 queryset = queryset.filter(**{champ: valeur})
         return queryset
+
+    def perform_create(self, serializer):
+        # Avec un jeton, le propriétaire est l'utilisateur connecté (valeur du client ignorée)
+        utilisateur = utilisateur_de(self.request)
+        if utilisateur is None:
+            serializer.save()
+        else:
+            serializer.save(entrepreneur_id=utilisateur.id)
 
     def perform_destroy(self, etude):
         # Les personas sont supprimés en cascade (même base). La SWOT est dans SWOT-SERVICE :
@@ -134,26 +158,43 @@ class PersonaViewSet(viewsets.ModelViewSet):
     search_fields = ["nom"]
 
     def get_queryset(self):
-        queryset = filtrer_par_ids(Persona.objects.all(), self.request)
+        # Personas des seules études visibles par l'utilisateur (autre entrepreneur -> 404)
+        queryset = Persona.objects.filter(etude__in=etudes_visibles(self.request))
+        queryset = filtrer_par_ids(queryset, self.request)
         etude = self.request.query_params.get("etude")
         if etude:
             queryset = queryset.filter(etude_id=etude)
         return queryset
 
+    def get_serializer_context(self):
+        # Création / modification : l'étude d'un persona doit être visible par l'utilisateur
+        return {**super().get_serializer_context(), "etudes_visibles": etudes_visibles(self.request)}
+
 
 # --- Analyse ------------------------------------------------------------------
 
 class AnalyseProjetView(APIView):
-    """Résumé du marché pour un projet (appelé notamment par le AI-Service)."""
+    """
+    Résumé du marché pour un projet (appelé notamment par le AI-Service).
+
+    - Appel interne sans jeton (AI-Service, consumers) et ADMIN : toutes les études du projet.
+    - Entrepreneur (jeton transmis par la gateway) : seulement SES études du projet ; s'il n'en a
+      aucune, réponse vide normale (listes vides, niveau "inconnu").
+    Le format de la réponse est le même dans tous les cas.
+    """
 
     @extend_schema(
         responses={200: AnalyseProjetSerializer, **ERREURS},
         summary="Analyse du marché d'un projet",
         description=(
             "Toujours 200 : un projet sans étude renvoie des listes vides "
-            "et niveau_concurrence = 'inconnu'. 503 seulement si un service appelé est arrêté."
+            "et niveau_concurrence = 'inconnu'. 503 seulement si un service appelé est arrêté. "
+            "Avec le jeton d'un entrepreneur, seules ses propres études du projet sont prises en compte "
+            "(appel interne sans jeton et ADMIN : toutes)."
         ),
     )
     def get(self, request, projet_id):
-        return Response(services.analyser_projet(projet_id))
+        filtrer = proprietaire_a_filtrer(request) is not None
+        return Response(services.analyser_projet(
+            projet_id, etudes_visibles=etudes_visibles(request) if filtrer else None))
 

@@ -1,0 +1,195 @@
+@use 'variables' as *;
+@use '../commun';
+
+.masque {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.nom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.titre-edition {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  input {
+    flex: 1 1 320px;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid $primaire;
+    border-radius: $rayon-champ;
+    font-size: 18px;
+    font-weight: 600;
+    color: $texte;
+
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba($primaire, 0.18);
+    }
+  }
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: $gris;
+}
+
+.actions-entete {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.icone {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: $gris;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  &:hover {
+    background: $fond-neutre;
+    color: $primaire-fonce;
+  }
+}
+
+// --- Colonnes ----------------------------------------------------------------------------------
+
+.colonnes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+
+  > .principale {
+    flex: 999 1 520px;
+    min-width: 0;
+  }
+  > .laterale {
+    flex: 1 1 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+  }
+}
+
+.section-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 14px;
+
+  h2 {
+    margin: 0;
+  }
+  span {
+    font-size: 13px;
+    color: $gris;
+  }
+}
+
+dl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 14px;
+  }
+  dt {
+    color: $gris;
+    flex-shrink: 0;
+  }
+  dd {
+    margin: 0;
+    text-align: right;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+}
+
+.discret {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: $gris;
+}
+
+.signataires {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .avatar {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: $primaire-clair;
+    color: $primaire-fonce;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .email {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.boutons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+
+.lien {
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  color: $primaire-fonce;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

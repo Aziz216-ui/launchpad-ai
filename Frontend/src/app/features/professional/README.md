@@ -6,31 +6,31 @@
 Ce dossier regroupe les deux écrans servis par le Professional-Service : « Comptabilité » et
 « Avocat ». Il porte le nom du service backend ; les libellés visibles restent en français.
 Les anciennes URL `/comptabilite` et `/avocat` redirigent vers les nouvelles.
-Pour l'instant, chaque sous-route affiche une page provisoire.
 
-## Quoi mettre ici
+## Comptabilité (branchée sur l'espace comptable, via l'API Gateway `/api/comptable`)
 
 ```
 features/professional/
-├── professional.routes.ts          # routes du module : comptabilite/ et avocat/
-├── README.md                       # description du module (ce fichier, à compléter)
-├── comptabilite-en-cours.page.ts   # page provisoire de /professional/comptabilite
-├── avocat-en-cours.page.ts         # page provisoire de /professional/avocat
-├── models/                         # interfaces TypeScript des réponses de l'API
-├── services/                       # appels HTTP au Professional-Service (partagés par les 2 écrans)
-├── pages/
-│   ├── comptabilite/               # écrans Comptabilité
-│   └── avocat/                     # écrans Avocat
-└── components/                     # composants propres aux écrans du module
+├── professional.routes.ts                     # comptabilite, comptabilite/comptables, avocat
+├── models/comptabilite.models.ts              # contrat JSON (dossiers, espaces comptables)
+├── services/comptabilite-api.service.ts       # appels HTTP (environment.professionalApiUrl)
+├── components/demande-comptable-modal.component.ts  # formulaire de demande (POST /files)
+└── pages/
+    ├── _commun.scss                           # mise en page partagée des pages
+    ├── comptabilite/                          # /professional/comptabilite : dossiers, onglets, compteurs
+    └── comptables/                            # /professional/comptabilite/comptables : annuaire (ENTREPRENEUR)
 ```
 
-1. Remplacer les pages provisoires dans `professional.routes.ts` par vos pages (en gardant les
-   chemins `comptabilite` et `avocat`, utilisés par `layout/menu.ts`), puis supprimer
-   `comptabilite-en-cours.page.ts` et `avocat-en-cours.page.ts`.
-2. Renseigner l'URL de l'API dans `src/environments/environment.ts` **et**
-   `environment.development.ts` (clé `professionalApiUrl`), puis l'utiliser dans votre service :
-   `private readonly url = environment.professionalApiUrl;`
-3. Vérifier que le microservice autorise l'origine `http://localhost:4200` (CORS).
+- **Comptabilité** : dossiers de l'utilisateur (`GET /files`), filtrés par statut, avec les compteurs par
+  statut et la pagination. Le bouton « Demander un comptable » (entrepreneur) ouvre l'annuaire.
+- **Demander un comptable** : une carte par comptable disponible (`GET /workspaces`). « Demander » ouvre
+  le formulaire (nom de la startup, identifiant du projet, message) qui crée la demande (`POST /files`,
+  statut `PENDING`).
+- Un comptable apparaît dans l'annuaire dès son inscription : User-Service publie l'événement
+  `workspace.accountant_registered`, workspace-service crée son espace (voir le README du Professional-Service, §12).
+- Comptes de démo : `adem` / `Adem@2026!` (entrepreneur), `nadia` et `walid` / `Comptable@2026!` (comptables).
+
+L'écran « Avocat » est servi par `features/lawyer-space` (LawyerSpaceComponent).
 
 ## Règles
 

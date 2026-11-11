@@ -1,0 +1,91 @@
+<div class="page">
+  <nav class="fil-ariane" aria-label="Fil d'Ariane">
+    <a routerLink="/">Espace avocat</a><span aria-hidden="true">/</span><span class="courant">Documents</span>
+  </nav>
+
+  <header class="entete">
+    <div class="titre">
+      <h1>Documents juridiques</h1>
+      <p>Revoyez les documents envoyés par les entrepreneurs : corrigez les clauses, posez vos questions, validez ou refusez, puis signez.</p>
+    </div>
+  </header>
+
+  @if (compteurs()['EN_VALIDATION']; as n) {
+    <p class="bandeau attention">{{ n }} document(s) attendent votre revue.</p>
+  }
+
+  <div class="barre">
+    <div class="onglets" role="tablist" aria-label="Filtrer par statut">
+      @for (o of onglets; track o.statut) {
+        <button type="button" role="tab" [attr.aria-selected]="statut() === o.statut" [class.actif]="statut() === o.statut" (click)="choisirStatut(o.statut)">
+          {{ o.libelle }} <span class="nombre">{{ compteurs()[o.statut] }}</span>
+        </button>
+      }
+    </div>
+    <label class="select-flottant">
+      <span>Type</span>
+      <select [ngModel]="type()" (ngModelChange)="choisirType($event)">
+        <option [ngValue]="null">Tous les types</option>
+        @for (m of modeles; track m.type) {
+          <option [ngValue]="m.type">{{ m.libelle }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <section class="carte-tableau">
+    @if (chargement()) {
+      <app-loader texte="Chargement des documents…" />
+    } @else if (erreur()) {
+      <div class="etat">
+        <p>{{ erreur() }}</p>
+        <button type="button" class="btn-secondaire" (click)="charger()">Réessayer</button>
+      </div>
+    } @else if (!documents().length) {
+      <div class="etat">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 12.5l2.5 2.5L16 9.5"></path></svg>
+        <p>{{ texteVide() }}</p>
+      </div>
+    } @else {
+      <div class="tableau-defilement">
+        <table>
+          <thead>
+            <tr>
+              <th>Document</th>
+              <th>Demandé par</th>
+              <th>Statut</th>
+              <th>Mis à jour</th>
+              <th><span class="masque">Action</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of documents(); track d.id) {
+              <tr (click)="ouvrir(d)">
+                <td>
+                  <div class="doc">
+                    <span class="doc-icone" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M6 8h12M6 8l-3 6h6zM18 8l-3 6h6zM8 20h8"></path></svg></span>
+                    <div>
+                      <a [routerLink]="['/juridique/revue', d.id]" (click)="$event.stopPropagation()">{{ d.titre }}</a>
+                      <span>{{ libelleType(d.type) }} · v{{ d.version }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>{{ d.clientId ?? '—' }}</td>
+                <td>
+                  <app-badge [variante]="varianteStatut(d.statut)" [petit]="true">{{ libelleStatut(d.statut) }}</app-badge>
+                  @if (d.isArchived) { <app-badge variante="neutre" [petit]="true">Archivé</app-badge> }
+                </td>
+                <td>{{ d.updatedAt | date: 'd MMM y, HH:mm' }}</td>
+                <td class="action">
+                  <a class="btn-mini" [routerLink]="['/juridique/revue', d.id]" (click)="$event.stopPropagation()">
+                    {{ d.statut === 'EN_VALIDATION' ? 'Réviser' : d.statut === 'VALIDE' ? 'Signer' : 'Ouvrir' }}
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>

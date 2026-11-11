@@ -26,6 +26,31 @@ features/auth/
    `private readonly url = environment.userApiUrl;`
 3. Vérifier que votre microservice autorise l'origine `http://localhost:4200` (CORS).
 
+## Écrans
+
+| URL | Écran |
+|---|---|
+| `/connexion/login` | Connexion (`login.component.ts`) |
+| `/connexion/register` | Inscription (`register.component.ts`) |
+| `/connexion/mot-de-passe-oublie` | Mot de passe oublié (`mot-de-passe-oublie.page.ts`) |
+
+- **Afficher / masquer le mot de passe** : `champ-mot-de-passe.component.ts` (à utiliser avec
+  `ngModel` à la place d'un `<input type="password">`). Bouton « œil » `type="button"` (n'envoie
+  pas le formulaire, activable au clavier), `aria-label` « Afficher / Masquer le mot de passe »
+  et `aria-pressed`.
+- **Mot de passe oublié**, en 2 étapes sur la même page (routes publiques du User-Service) :
+  1. `POST /api/auth/forgot-password/ {identifiant}` (e-mail ou nom d'utilisateur) : code à
+     6 chiffres envoyé par e-mail, valable 10 minutes (une nouvelle demande annule l'ancien code).
+     Toujours le même message : « Si un compte existe, un code a été envoyé. ». Au plus
+     3 demandes par e-mail et par 15 minutes ; « Renvoyer le code » est désactivé 60 secondes.
+  2. `POST /api/auth/reset-password/ {identifiant, code, nouveau_mot_de_passe}` : au plus 5 essais
+     par code, mot de passe d'au moins 8 caractères avec une majuscule, un chiffre et un caractère
+     spécial. Erreurs en français (`error`) avec `code_erreur` : `code_invalide`, `code_expire`,
+     `trop_essais`, `mot_de_passe_faible`, `champs_invalides`. Succès : retour à
+     `/connexion/login?motDePasseModifie=1` (message de confirmation).
+  E-mails : SMTP configuré par les variables `EMAIL_*` du `.env` racine (ex. Gmail) ; sans
+  `EMAIL_HOST`, ils arrivent dans Mailpit : http://localhost:8025
+
 ## Points propres à ce module
 
 - Le stockage du token JWT est déjà prévu dans `core/auth/token.service.ts`, et l'intercepteur

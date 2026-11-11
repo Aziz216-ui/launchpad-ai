@@ -2,6 +2,9 @@
 Logique métier d'une étude de marché : comparaison des prix, opportunités
 et menaces, potentiel commercial et rapport complet (reprise de marche/services/etude.py).
 
+Le niveau de concurrence et le positionnement prix utilisent les mêmes règles que
+GET /analyse/projet/<id>/ (services/analyse.py, market_commun.concurrence).
+
 Les calculs portent sur les concurrents et tendances associés à l'étude
 (concurrent_ids, tendance_ids), lus en un appel chacun sur CONCURRENT-SERVICE et
 SECTEUR-SERVICE puis gardés sur l'instance le temps de la requête. La SWOT est
@@ -11,16 +14,13 @@ lue sur SWOT-SERVICE (qui en détient les règles de génération).
 from decimal import Decimal
 
 from clients import ConcurrentClient, SecteurClient, SwotClient
+from market_commun.formats import pourcentage
 
 from ..models import EtudeMarche
-from .analyse import NIVEAU_INCONNU, arrondir, calculer_niveau_concurrence, concurrent_resume, decimal, somme
+from .analyse import arrondir, concurrent_resume, decimal, niveau_des_concurrents, positionner_prix
 
-# Écart (en %) avec le prix moyen au-delà duquel l'offre n'est plus "alignée"
-SEUIL_ECART_PRIX = Decimal("10")
 # Taux de croissance annuel (en %) à partir duquel le marché est "en forte croissance"
 SEUIL_CROISSANCE_FORTE = Decimal("10")
-
-POSITIONNEMENT_INCONNU = "inconnu"  # pas de prix proposé ou aucun concurrent
 
 LIBELLES_NIVEAU = {"faible": "faible", "moyen": "moyen", "eleve": "élevé"}
 LIBELLES_POSITIONNEMENT = {"economique": "économique", "aligne": "aligné", "premium": "premium"}
@@ -48,19 +48,16 @@ def tendances_de(etude: EtudeMarche):
 
 
 def _pourcentage(valeur):
-    """Formate un écart en % pour les textes (ex : -20.00 -> "20 %")."""
-    return f"{abs(valeur).normalize():f} %"
+    """Écart en % pour les textes, sans signe, au format français (ex : -20.00 -> "20 %", 65.28 -> "65,28 %")."""
+    return pourcentage(abs(valeur))
 
 
 def niveau_concurrence_etude(etude: EtudeMarche):
     """
     Niveau de concurrence calculé sur les concurrents identifiés pour l'étude.
-    "inconnu" si aucun concurrent n'a encore été identifié.
+    "inconnu" si aucun concurrent n'a encore été identifié (règle commune de market_commun).
     """
-    concurrents = concurrents_de(etude)
-    if not concurrents:
-        return NIVEAU_INCONNU
-    return calculer_niveau_concurrence(len(concurrents), arrondir(somme(concurrents, "part_de_marche")))
+    return niveau_des_concurrents(concurrents_de(etude))
 
 
 def comparer_prix(etude: EtudeMarche):
@@ -73,23 +70,9 @@ def comparer_prix(etude: EtudeMarche):
     concurrents = sorted(concurrents_de(etude), key=lambda c: (decimal(c["prix_moyen"]), c["nom"]))
     prix = [decimal(c["prix_moyen"]) for c in concurrents]
     nb = len(concurrents)
-    moyenne = sum(prix, Decimal("0")) / nb if nb else None
     prix_propose = etude.prix_propose
-
-    ecart = None
-    positionnement = POSITIONNEMENT_INCONNU
-    if nb and prix_propose is not None:
-        if moyenne > 0:
-            ecart = arrondir((prix_propose - moyenne) / moyenne * 100)
-            if ecart < -SEUIL_ECART_PRIX:
-                positionnement = "economique"
-            elif ecart > SEUIL_ECART_PRIX:
-                positionnement = "premium"
-            else:
-                positionnement = "aligne"
-        else:
-            # Marché gratuit : seul un prix nul est aligné
-            positionnement = "aligne" if prix_propose == 0 else "premium"
+    # Même calcul que les études de GET /analyse/projet/<id>/
+    moyenne, ecart, positionnement = positionner_prix(prix_propose, concurrents)
 
     return {
         "etude_id": etude.id,
@@ -181,7 +164,9 @@ def _swot_par_type(elements):
 def evaluer_potentiel(etude: EtudeMarche, niveau, prix, opportunites_menaces):
     """
     Potentiel commercial (faible / moyen / fort) à partir d'un score sur 7 :
-    croissance (0 à 2), concurrence (-1 à 2), prix (0 à 1), tendances (-1 à 1), personas (0 à 1).
+    croissance (-1 à 2), concurrence (-1 à 2), prix (0 à 1), tendances (-1 à 1), personas (0 à 1).
+    La somme des points peut être négative : le score affiché est borné entre 0 et SCORE_MAX,
+    la justification garde le détail de chaque point (+2, -1...).
     """
     score = 0
     justification = []
@@ -221,6 +206,7 @@ def evaluer_potentiel(etude: EtudeMarche, niveau, prix, opportunites_menaces):
         score += 1
         justification.append("Cible clients définie par des personas : +1")
 
+    score = max(0, min(SCORE_MAX, score))
     if score >= SEUIL_POTENTIEL_FORT:
         niveau_potentiel = "fort"
     elif score >= SEUIL_POTENTIEL_MOYEN:

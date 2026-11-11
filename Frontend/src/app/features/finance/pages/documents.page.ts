@@ -39,23 +39,34 @@ import { FinanceStore } from '../services/finance-store.service';
                 <tbody>
                   @for (d of documents(); track d.documentId) {
                     <tr [class.actif]="d.documentId === ouvert()?.documentId">
-                      <td><strong>{{ d.titre }}</strong></td>
+                      <td>
+                        <strong>{{ d.titre }}</strong>
+                        @if (d.certification) {
+                          <app-badge variante="succes" [petit]="true">Certifié</app-badge>
+                        }
+                      </td>
                       <td><app-badge variante="info" [petit]="true">{{ libelle(d.type) }}</app-badge></td>
                       <td>{{ d.creeLe | date: 'd MMM y, HH:mm' }}</td>
                       <td class="actions">
-                        <button type="button" class="btn-texte" (click)="ouvrir(d)">Voir</button>
+                        <button type="button" class="btn-texte" (click)="ouvrir(d)">
+                          {{ store.peutValider() && !d.certification ? 'Examiner' : 'Voir' }}
+                        </button>
                         <button type="button" class="btn-texte" (click)="exporter(d, 'pdf')" [disabled]="export() !== null">PDF</button>
                         <button type="button" class="btn-texte" (click)="exporter(d, 'xlsx')" [disabled]="export() !== null">Excel</button>
-                        <button type="button" class="btn-texte danger" (click)="aSupprimer.set(d)">Supprimer</button>
+                        @if (store.peutEcrire()) {
+                          <button type="button" class="btn-texte danger" (click)="aSupprimer.set(d)">Supprimer</button>
+                        }
                       </td>
                     </tr>
                   }
                 </tbody>
               </table>
             </div>
-          } @else {
+          } @else if (store.peutEcrire()) {
             <app-empty-state titre="Aucun document"
               texte="Générez un business plan, un bilan ou un plan de trésorerie à partir de votre prévision." />
+          } @else {
+            <app-empty-state titre="Aucun document" texte="L'entrepreneur n'a pas encore généré de document pour ce projet." />
           }
 
           @if (ouvert(); as doc) {
@@ -67,6 +78,26 @@ import { FinanceStore } from '../services/finance-store.service';
                 </div>
                 <button type="button" class="btn-texte" (click)="ouvert.set(null)">Fermer</button>
               </div>
+              @if (doc.certification; as c) {
+                <div class="certification" role="status">
+                  <strong>Certifié par {{ c.auteur }}</strong> le {{ c.le | date: 'd MMM y, HH:mm' }}
+                  @if (c.commentaire) {<p>« {{ c.commentaire }} »</p>}
+                </div>
+              } @else if (store.peutValider()) {
+                <div class="certification a-faire">
+                  <label class="champ">
+                    Certifier ce document avant son envoi à un investisseur
+                    <textarea name="commentaireCertification" rows="2" maxlength="2000"
+                      [(ngModel)]="commentaireCertification" placeholder="Commentaire (facultatif)"></textarea>
+                  </label>
+                  <button type="button" class="btn-primaire" [disabled]="certificationEnCours()" (click)="certifier(doc)">
+                    {{ certificationEnCours() ? 'Certification…' : 'Certifier le document' }}
+                  </button>
+                  <span class="note">Possible seulement si la prévision dont il est tiré a été validée et n'a pas changé depuis la génération du document.</span>
+                </div>
+              } @else {
+                <span class="note">Pas encore certifié par un financier.</span>
+              }
               @for (section of doc.contenu.sections; track section.titre) {
                 <section class="section">
                   <h3>{{ section.titre }}</h3>
@@ -84,7 +115,7 @@ import { FinanceStore } from '../services/finance-store.service';
                             <tr>
                               <td>{{ l.libelle }}</td>
                               @for (v of l.valeurs; track $index) {
-                                <td class="num">{{ valeur(section.colonnes[$index], v) }}</td>
+                                <td class="num">{{ valeur(section.colonnes[$index], l.libelle, v) }}</td>
                               }
                             </tr>
                           }
@@ -101,6 +132,7 @@ import { FinanceStore } from '../services/finance-store.service';
           }
         </section>
 
+        @if (store.peutEcrire()) {
         <form class="carte formulaire" (ngSubmit)="generer()" novalidate aria-label="Générer un document">
           <h2>Générer un document</h2>
           <label class="champ">
@@ -126,6 +158,7 @@ import { FinanceStore } from '../services/finance-store.service';
           </button>
           <span class="note">Le document se base sur la prévision la plus récente du projet.</span>
         </form>
+        }
       </div>
     </div>
 
@@ -159,6 +192,23 @@ import { FinanceStore } from '../services/finance-store.service';
       border-radius: 10px;
       padding: 12px 14px;
     }
+    .certification {
+      background: #e8f5ee;
+      color: #1c5a3d;
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .certification.a-faire {
+      background: #fdf0dc;
+      color: inherit;
+    }
+    .certification textarea {
+      font: inherit;
+      resize: vertical;
+    }
   `,
 })
 export class DocumentsPage {
@@ -178,6 +228,9 @@ export class DocumentsPage {
   protected readonly aSupprimer = signal<DocumentResume | null>(null);
   protected readonly suppressionEnCours = signal(false);
 
+  protected commentaireCertification = '';
+  protected readonly certificationEnCours = signal(false);
+
   protected type: TypeDocument = 'BUSINESS_PLAN';
   protected tresorerie: number | null = null;
   protected avecAnalyse = false;
@@ -194,18 +247,22 @@ export class DocumentsPage {
     });
   }
 
-  /** Les colonnes de taux (« Taux (%) », « % du CA ») ne sont pas des montants. */
-  protected valeur(colonne: string | undefined, valeur: number): string {
-    return colonne && /%/.test(colonne)
-      ? `${valeur.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %`
-      : this.montantPipe.transform(valeur);
+  /**
+   * Les taux ne sont pas des montants : le « % » figure soit dans la colonne (« Taux (%) », « % du CA »),
+   * soit dans le libellé de la ligne (« Taux de marge brute (%) » du rapport investisseur).
+   * Les montants s'affichent au centime, comme dans les exports PDF / Excel du même document.
+   */
+  protected valeur(colonne: string | undefined, libelle: string, valeur: number): string {
+    return /%/.test(colonne ?? '') || /%/.test(libelle)
+      ? `${valeur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`
+      : this.montantPipe.transform(valeur, 'centimes');
   }
 
   protected estAnalyse(titre: string): boolean {
     return titre.startsWith('Analyse');
   }
 
-  private charger(projetId: string): void {
+  private charger(projetId: number): void {
     this.chargement.set(true);
     this.api.listerDocuments(projetId).subscribe({
       next: (liste) => {
@@ -264,6 +321,25 @@ export class DocumentsPage {
       error: (e: unknown) => {
         messageErreur(e, this.notifications);
         this.export.set(null);
+      },
+    });
+  }
+
+  protected certifier(document: DocumentFinancier): void {
+    this.certificationEnCours.set(true);
+    this.api.certifierDocument(document.documentId, this.commentaireCertification.trim() || null).subscribe({
+      next: (certifie) => {
+        this.ouvert.set(certifie);
+        this.documents.update((liste) =>
+          liste.map((d) => (d.documentId === certifie.documentId ? { ...d, certification: certifie.certification } : d)),
+        );
+        this.commentaireCertification = '';
+        this.certificationEnCours.set(false);
+        this.notifications.succes('Document certifié.');
+      },
+      error: (e: unknown) => {
+        messageErreur(e, this.notifications);
+        this.certificationEnCours.set(false);
       },
     });
   }

@@ -18,7 +18,7 @@ import java.util.UUID;
 public class DocumentEntity extends AuditedEntity {
 
     @Column(name = "projet_id", nullable = false, updatable = false)
-    private UUID projetId;
+    private Long projetId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, updatable = false, length = 30)
@@ -29,17 +29,43 @@ public class DocumentEntity extends AuditedEntity {
     @Column(nullable = false, columnDefinition = "jsonb")
     private ContenuDocument contenu;
 
+    @Column(name = "prevision_id", updatable = false)
+    private UUID previsionId;
+
+    @Column(name = "empreinte_prevision", updatable = false, length = 64)
+    private String empreintePrevision;
+
+    @Column(name = "certifie_par", length = 320)
+    private String certifiePar;
+
+    @Column(name = "certifie_le")
+    private Instant certifieLe;
+
+    @Column(name = "commentaire_certification", length = 2000)
+    private String commentaireCertification;
+
     protected DocumentEntity() {
     }
 
-    public DocumentEntity(UUID id, UUID projetId, TypeDocument type, ContenuDocument contenu, Instant createdAt) {
+    public DocumentEntity(UUID id, Long projetId, TypeDocument type, ContenuDocument contenu, Instant createdAt,
+                          UUID previsionId, String empreintePrevision) {
         super(id, createdAt);
         this.projetId = projetId;
         this.type = type;
         this.contenu = contenu;
+        this.previsionId = previsionId;
+        this.empreintePrevision = empreintePrevision;
     }
 
-    public UUID getProjetId() {
+    public String getEmpreintePrevision() {
+        return empreintePrevision;
+    }
+
+    public UUID getPrevisionId() {
+        return previsionId;
+    }
+
+    public Long getProjetId() {
         return projetId;
     }
 
@@ -49,5 +75,23 @@ public class DocumentEntity extends AuditedEntity {
 
     public ContenuDocument getContenu() {
         return contenu;
+    }
+
+    public String getCertifiePar() {
+        return certifiePar;
+    }
+
+    public Instant getCertifieLe() {
+        return certifieLe;
+    }
+
+    public String getCommentaireCertification() {
+        return commentaireCertification;
+    }
+
+    public void certifier(String auteur, String commentaire, Instant le) {
+        this.certifiePar = auteur;
+        this.commentaireCertification = commentaire;
+        this.certifieLe = le;
     }
 }

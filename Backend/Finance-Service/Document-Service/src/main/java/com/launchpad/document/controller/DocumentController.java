@@ -3,6 +3,7 @@ package com.launchpad.document.controller;
 import com.launchpad.document.domain.DocumentFinancier;
 import com.launchpad.document.domain.FichierExporte;
 import com.launchpad.document.domain.FormatExport;
+import com.launchpad.document.dto.CertificationRequest;
 import com.launchpad.document.dto.CreerDocumentRequest;
 import com.launchpad.document.dto.DocumentResponse;
 import com.launchpad.document.dto.DocumentResumeResponse;
@@ -54,7 +55,7 @@ public class DocumentController {
 
     @Operation(summary = "Scénario 4 : lister les documents d'un projet")
     @GetMapping("/projets/{projetId}/documents")
-    public List<DocumentResumeResponse> listerDocuments(@PathVariable UUID projetId) {
+    public List<DocumentResumeResponse> listerDocuments(@PathVariable Long projetId) {
         return gestionDocuments.listerDocuments(projetId).stream().map(DocumentResumeResponse::depuis).toList();
     }
 
@@ -74,6 +75,14 @@ public class DocumentController {
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         ContentDisposition.attachment().filename(fichier.nomFichier()).build().toString())
                 .body(fichier.contenu());
+    }
+
+    @Operation(summary = "Certifier un document avant son envoi à un investisseur (financier invité sur le projet)")
+    @PostMapping("/documents/{id}/certification")
+    public DocumentResponse certifierDocument(@PathVariable UUID id,
+                                              @Valid @RequestBody(required = false) CertificationRequest requete) {
+        String commentaire = requete == null ? null : requete.commentaire();
+        return DocumentResponse.depuis(gestionDocuments.certifierDocument(id, commentaire));
     }
 
     @Operation(summary = "Scénario 4 : supprimer un document et ses fichiers")

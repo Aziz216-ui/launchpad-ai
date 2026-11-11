@@ -1,30 +1,32 @@
 # Module Juridique
 
-**Service backend :** Legal-Service
-**URL :** `/juridique`
-
-Ce dossier appartient au membre qui développe le module « Juridique ». Il porte le nom du service
-backend ; l'URL et les libellés visibles restent en français. Pour l'instant, la route `/juridique`
-affiche la page provisoire `legal-en-cours.page.ts`.
-
-## Quoi mettre ici
+**Service backend :** Legal-Service (via l'API Gateway, `environment.legalApiUrl` = `/api/legal`)
+**URL :** `/juridique` (entrepreneur) et `/juridique/revue` (avocat, lien « Documents » de la barre latérale)
 
 ```
 features/legal/
-├── legal.routes.ts   # routes du module (déjà branché dans app.routes.ts)
-├── README.md        # description du module (ce fichier, à compléter)
-├── models/          # interfaces TypeScript des réponses de votre API
-├── services/        # appels HTTP à votre microservice
-├── pages/           # un composant par écran
-└── components/      # composants propres à vos écrans (cartes, graphiques, modales…)
+├── legal.routes.ts                    # routes + rôles (roleGuard)
+├── models/legal.models.ts             # contrat JSON, libellés, champs du formulaire par type
+├── services/legal-api.service.ts      # appels /documents/** (entrepreneur) et /verification/** (avocat)
+├── components/clauses.component.ts    # clauses avec édition en place
+├── components/commentaires.component.ts  # notes, questions et réponses
+└── pages/
+    ├── documents/   # /juridique : liste filtrée (type, statut) + « Nouveau document »
+    ├── nouveau/     # /juridique/nouveau : choix du type puis formulaire → POST /documents/generate
+    ├── document/    # /juridique/documents/:id : lecture, envoi avocat, suivi, signatures, PDF, archivage
+    └── revue/       # /juridique/revue et /revue/:id : revue avocat (modifier, noter, questionner, valider/refuser, signer)
 ```
 
-1. Remplacer la page provisoire dans `legal.routes.ts` par vos pages, puis supprimer
-   `legal-en-cours.page.ts`.
-2. Renseigner l'URL de votre API dans `src/environments/environment.ts` **et**
-   `environment.development.ts` (clé `legalApiUrl`), puis l'utiliser dans votre service :
-   `private readonly url = environment.legalApiUrl;`
-3. Vérifier que votre microservice autorise l'origine `http://localhost:4200` (CORS).
+## Parcours
+
+- **Entrepreneur** : créer (BROUILLON, clauses pré-remplies) → relire (lecture seule) → envoyer à un avocat
+  (EN_VALIDATION) → suivre notes et questions (et y répondre) → si VALIDE, demander les signatures → PDF, archivage.
+- **Avocat** : liste « À revoir » (EN_VALIDATION) → seul à modifier le document (titre, titres et textes des clauses), ajouter des notes, poser des questions →
+  valider (VALIDE) ou refuser avec motif (REFUSE) → signer (SIGNE).
+- **projetId** : le Legal-Service ne connaît pas les utilisateurs ; chaque entrepreneur a son espace `ent-<username>`
+  (`LegalApiService.projetCourant`), il ne voit donc que ses documents. ADMIN voit tous les projets.
+- **Suppression** : la Gateway réserve DELETE au rôle ADMIN ; le bouton n'est proposé qu'à lui.
+- Comptes de démo : `adem` / `Adem@2026!` (entrepreneur), `sarra` / `Avocat@2026!` (avocat).
 
 ## Règles
 

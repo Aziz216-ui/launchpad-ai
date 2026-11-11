@@ -19,6 +19,10 @@
 #>
 param(
     [string]$Gateway = "http://localhost:8090",
+    # Compte de dÃ©mo ADMIN (crÃ©Ã© par User-Service, voir seed_demo_users) : la gateway exige un jeton Keycloak
+    # sur toutes les routes mÃ©tier, et le rÃ´le ADMIN pour les DELETE.
+    [string]$Utilisateur = "ahmed",
+    [string]$MotDePasse = "Ahmed@2026!",
     [switch]$SansArretDeService
 )
 
@@ -28,10 +32,27 @@ $http = New-Object System.Net.Http.HttpClient
 $http.Timeout = [TimeSpan]::FromSeconds(30)
 $script:echecs = 0
 $script:total = 0
+$script:jeton = $null
+
+function Get-Jeton {
+    # Connexion via la gateway (User-Service -> Keycloak) ; le jeton est mis en cache pour tout le script.
+    if (-not $script:jeton) {
+        $login = @{ username = $Utilisateur; password = $MotDePasse } | ConvertTo-Json -Compress
+        $req = New-Object System.Net.Http.HttpRequestMessage ([System.Net.Http.HttpMethod]::Post), "$Gateway/api/auth/login/"
+        $req.Content = New-Object System.Net.Http.StringContent $login, ([Text.Encoding]::UTF8), "application/json"
+        $rep = $http.SendAsync($req).Result
+        if ([int]$rep.StatusCode -ne 200) { throw "Connexion impossible pour $Utilisateur (HTTP $([int]$rep.StatusCode))" }
+        $script:jeton = (ConvertFrom-Json ($rep.Content.ReadAsStringAsync().Result)).access_token
+    }
+    return $script:jeton
+}
 
 function Invoke-Api([string]$Methode, [string]$Chemin, $Corps = $null) {
     # HttpClient : pas d'exception sur 4xx/5xx, et décodage UTF-8 explicite (PowerShell 5.1 et 7)
     $requete = New-Object System.Net.Http.HttpRequestMessage ([System.Net.Http.HttpMethod]::new($Methode)), "$Gateway$Chemin"
+    if (-not $Chemin.StartsWith("/api/auth/") -and -not $Chemin.Contains("/health")) {
+        $requete.Headers.Authorization = New-Object System.Net.Http.Headers.AuthenticationHeaderValue "Bearer", (Get-Jeton)
+    }
     if ($null -ne $Corps) {
         $json = ConvertTo-Json $Corps -Depth 5 -Compress
         $requete.Content = New-Object System.Net.Http.StringContent $json, ([Text.Encoding]::UTF8), "application/json"
@@ -115,6 +136,8 @@ $r = Invoke-Api POST "/api/market/etudes/" @{
     concurrent_ids = @($concurrentId); tendance_ids = @($tendanceId)
 }
 Test-Etape "POST étude liée -> 201 (secteur, concurrents, tendances vérifiés)" ($r.Status -eq 201) "(HTTP $($r.Status) $(ConvertTo-Json $r.Json -Compress))"
+# entrepreneur_id = 501 envoyé ci-dessus est ignoré : le propriétaire est l'utilisateur du jeton (sub Keycloak)
+Test-Etape "étude rattachée à l'utilisateur du jeton (entrepreneur_id envoyé ignoré)" ($r.Json.entrepreneur_id -and $r.Json.entrepreneur_id -ne "501") "(entrepreneur_id=$($r.Json.entrepreneur_id))"
 $etudeId = $r.Json.id
 
 $r = Invoke-Api POST "/api/market/etudes/" @{ projet_id = 9001; secteur_id = $secteurId; titre = "X"; concurrent_ids = @(999999) }

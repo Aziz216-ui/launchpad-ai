@@ -3,6 +3,7 @@
 namespace App\Tests\Functional;
 
 use App\Messaging\DocumentDecidedListener;
+use App\Messaging\FileActivityListener;
 use Launchpad\Common\Fixtures\FixtureCatalog;
 use Launchpad\Common\Fixtures\FixtureUsers;
 use Launchpad\Common\Messaging\QueueConsumer;
@@ -73,6 +74,47 @@ final class MessageTest extends ApiTestCase
         $read = $this->actingAs(FixtureUsers::ACCOUNTANT_SONIA)->request('POST', '/messages/'.$data['id'].'/read')['data'];
         $this->assertStatus(200);
         self::assertNotNull($read['readAt']);
+    }
+
+    public function testUnreadListsMessagesOfTheOtherParticipantUntilRead(): void
+    {
+        $fileId = $this->fileId(FixtureUsers::FILE_AGRISENSE);
+        $sent = $this->actingAs(FixtureUsers::ENTREPRENEUR_AMINE)->request('POST', "/files/$fileId/messages", [
+            'content' => 'Le relevé de mars est disponible.',
+        ])['data'];
+        $this->assertStatus(201);
+
+        // L'expéditeur ne se notifie pas lui-même
+        $own = $this->request('GET', '/messages/unread?limit=100')['data'];
+        $this->assertStatus(200);
+        self::assertNotContains($sent['id'], array_column($own, 'id'));
+
+        // La comptable du dossier le voit, avec la référence du dossier
+        $unread = $this->actingAs(FixtureUsers::ACCOUNTANT_SONIA)->request('GET', '/messages/unread?limit=100');
+        $this->assertStatus(200);
+        $found = array_values(array_filter($unread['data'], static fn (array $m): bool => $m['id'] === $sent['id']));
+        self::assertCount(1, $found);
+        self::assertSame(FixtureUsers::FILE_AGRISENSE, $found[0]['file']['reference']);
+        self::assertSame($fileId, $found[0]['file']['id']);
+        $total = $unread['meta']['total'];
+
+        // Un autre comptable ne le voit pas
+        $other = $this->actingAs(FixtureUsers::ACCOUNTANT_KARIM)->request('GET', '/messages/unread?limit=100')['data'];
+        self::assertNotContains($sent['id'], array_column($other, 'id'));
+
+        // Une fois lu, il disparaît des notifications
+        $this->actingAs(FixtureUsers::ACCOUNTANT_SONIA)->request('POST', '/messages/'.$sent['id'].'/read');
+        $after = $this->request('GET', '/messages/unread?limit=100');
+        self::assertNotContains($sent['id'], array_column($after['data'], 'id'));
+        self::assertSame($total - 1, $after['meta']['total']);
+    }
+
+    public function testUnreadIsEmptyForAUserWithoutFiles(): void
+    {
+        $body = $this->actingAs(FixtureUsers::ADMIN_NADIA)->request('GET', '/messages/unread');
+        $this->assertStatus(200);
+        self::assertSame([], $body['data']);
+        self::assertSame(0, $body['meta']['total']);
     }
 
     public function testMessagesArePossibleOnPendingRequest(): void
@@ -165,7 +207,41 @@ final class MessageTest extends ApiTestCase
 
     public function testListenerDeclaresTheDocumentQueue(): void
     {
-        self::assertSame([Queues::MESSAGE_DOCUMENT_DECIDED], static::getContainer()->get(QueueConsumer::class)->queues());
+        self::assertSame([Queues::MESSAGE_DOCUMENT_DECIDED, Queues::MESSAGE_FILE_ACTIVITY], static::getContainer()->get(QueueConsumer::class)->queues());
+    }
+
+    public function testFileActivityBecomesAnUnreadNotificationForTheOtherParticipant(): void
+    {
+        $fileId = $this->fileId(FixtureUsers::FILE_AGRISENSE);
+        static::getContainer()->get(FileActivityListener::class)->handle([
+            'clientFileId' => $fileId,
+            'activity' => 'DOCUMENT_UPLOADED',
+            'actorId' => FixtureUsers::ENTREPRENEUR_AMINE,
+            'actorRole' => 'ENTREPRENEUR',
+            'content' => 'Nouveau document déposé à valider : « Relevé avril » (v1).',
+        ]);
+
+        $unread = $this->actingAs(FixtureUsers::ACCOUNTANT_SONIA)->request('GET', '/messages/unread?limit=100')['data'];
+        $found = array_values(array_filter($unread, static fn (array $m): bool => str_contains($m['content'], 'Relevé avril')));
+        self::assertCount(1, $found);
+        self::assertTrue($found[0]['automatic']);
+        self::assertSame('ENTREPRENEUR', $found[0]['senderRole']);
+
+        // L'acteur ne se notifie pas lui-même
+        $own = $this->actingAs(FixtureUsers::ENTREPRENEUR_AMINE)->request('GET', '/messages/unread?limit=100')['data'];
+        self::assertSame([], array_values(array_filter($own, static fn (array $m): bool => str_contains($m['content'], 'Relevé avril'))));
+    }
+
+    public function testFileActivityWithAnInvalidRoleIsRefused(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        static::getContainer()->get(FileActivityListener::class)->handle([
+            'clientFileId' => $this->fileId(FixtureUsers::FILE_AGRISENSE),
+            'activity' => 'REQUESTED',
+            'actorId' => 'x',
+            'actorRole' => 'ADMIN',
+            'content' => '...',
+        ]);
     }
 
     private function documentDecidedListener(): DocumentDecidedListener

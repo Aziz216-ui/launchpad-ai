@@ -8,9 +8,9 @@ security:
         dev:
             pattern: ^/(_profiler|_wdt)/
             security: false
-        # Routes publiques : santé et documentation (Swagger UI + spécification OpenAPI)
+        # Routes publiques : santé, métriques Prometheus et documentation (Swagger UI + spécification OpenAPI)
         public:
-            pattern: ^/api/comptable/(health|docs|docs\.json)$
+            pattern: ^/api/comptable/(health|metrics|docs|docs\.json)$
             security: false
         # Appels entre microservices : clé partagée vérifiée par InternalApiKeyListener (module commun)
         internal:

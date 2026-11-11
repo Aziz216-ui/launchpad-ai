@@ -161,6 +161,24 @@ nav {
   justify-content: center;
 }
 
+.deconnexion {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid $bordure;
+  background: transparent;
+  color: $gris;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  &:hover {
+    background: $fond-doux;
+    color: $texte-secondaire;
+  }
+}
+
 // Mobile : la barre passe au-dessus du contenu et le menu défile horizontalement
 @media (max-width: $mobile) {
   :host {

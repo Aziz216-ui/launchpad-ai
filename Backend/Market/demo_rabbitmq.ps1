@@ -5,7 +5,7 @@
 .DESCRIPTION
     Prérequis : Eureka (8761), API Gateway (8090) et "docker compose up -d" de Backend/Market
     (RabbitMQ + consumers). Les appels métier passent par la gateway ; le nombre de messages
-    d'une queue est lu sur l'API de management de RabbitMQ (http://localhost:15672).
+    d'une queue est lu sur l'API de management de RabbitMQ (http://localhost:15673).
 
       1. Créer une étude et la finaliser -> etude.finalisee -> swot-consumer génère la SWOT.
       2. Arrêter swot-consumer, supprimer l'étude -> etude.supprimee reste dans la queue
@@ -23,7 +23,7 @@
 #>
 param(
     [string]$Gateway = "http://localhost:8090",
-    [string]$Management = "http://localhost:15672",
+    [string]$Management = "http://localhost:15673",
     [string]$RabbitUser = $(if ($env:RABBITMQ_USER) { $env:RABBITMQ_USER } else { "market" }),
     [string]$RabbitPassword = $(if ($env:RABBITMQ_PASSWORD) { $env:RABBITMQ_PASSWORD } else { "market" }),
     [switch]$Pause

@@ -30,6 +30,25 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(messageQueue).to(lawyerExchange).with(MESSAGE_ROUTING_KEY);
     }
 
+    // --- Écoute des événements de Lawyer-Client-Service (exchange topic déclaré par ce service) ---
+    public static final String CLIENT_EVENTS_EXCHANGE = "lawyer.topic.exchange";
+    public static final String CLIENT_EVENTS_QUEUE = "lawyer.message.client-events.queue";
+
+    @Bean
+    public TopicExchange clientEventsExchange() {
+        return new TopicExchange(CLIENT_EVENTS_EXCHANGE, true, false); // mêmes options que l'émetteur
+    }
+
+    @Bean
+    public Queue clientEventsQueue() {
+        return QueueBuilder.durable(CLIENT_EVENTS_QUEUE).build();
+    }
+
+    @Bean
+    public Binding clientEventsBinding(Queue clientEventsQueue, TopicExchange clientEventsExchange) {
+        return BindingBuilder.bind(clientEventsQueue).to(clientEventsExchange).with("lawyer.client.#");
+    }
+
     @Bean
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();

@@ -55,9 +55,19 @@ public class SecurityConfig {
             "/api/market/*/health", "/api/market/*/health/",
             "/api/ai/health", "/api/ai/health/",
             "/api/comptable/health",
-            "/actuator/health", "/actuator/health/**");
+            "/actuator/health", "/actuator/health/**",
+            // Scrapé par Prometheus sur le réseau Docker (compteurs techniques, aucune donnée métier)
+            "/actuator/prometheus");
 
+    /**
+     * Routes réservées aux appels entre services (réseau interne, sans passer par la gateway) : refusées ici,
+     * avec ou sans token. /api/finance/ia/analyse déclenche un appel payant au LLM pour le Document-Service.
+     */
+    public static final List<String> INTERNAL_PATHS = List.of("/api/finance/ia/**");
+
+    static final String INTERNAL_MESSAGE = "Route interne : non accessible via la gateway";
     static final String UNAUTHORIZED_MESSAGE = "Token manquant ou invalide";
+    static final String FORBIDDEN_MESSAGE = "Acces refuse : role insuffisant";
 
     @Bean
     SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
@@ -74,7 +84,12 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource));
 
         if (!jwtEnabled) {
-            return http.authorizeExchange(auth -> auth.anyExchange().permitAll()).build();
+            return http.authorizeExchange(auth -> auth
+                            .pathMatchers(INTERNAL_PATHS.toArray(String[]::new)).denyAll()
+                            .anyExchange().permitAll())
+                    .exceptionHandling(errors -> errors.accessDeniedHandler((exchange, ex) -> JsonResponses.write(
+                            exchange.getResponse(), HttpStatus.FORBIDDEN, Map.of("message", INTERNAL_MESSAGE))))
+                    .build();
         }
 
         ServerWebExchangeMatcher publicRoutes = new OrServerWebExchangeMatcher(
@@ -87,14 +102,26 @@ public class SecurityConfig {
         ServerBearerTokenAuthenticationConverter bearer = new ServerBearerTokenAuthenticationConverter();
         return http
                 .authorizeExchange(auth -> auth
+                        .pathMatchers(INTERNAL_PATHS.toArray(String[]::new)).denyAll()
                         .matchers(publicRoutes).permitAll()
+                        // Finance : chaque service vérifie lui-même le rôle sur le projet (le
+                        // propriétaire supprime ses documents et retire ses financiers).
+                        .pathMatchers(HttpMethod.DELETE, "/api/finance/**").authenticated()
+                        // Autorisation par rôle : ailleurs, un utilisateur connecté ne peut pas
+                        // supprimer, seul un ADMIN (rôle Keycloak) le peut. Les autres méthodes restent
+                        // ouvertes à tout utilisateur authentifié (contrôles fins dans les services).
+                        .pathMatchers(HttpMethod.DELETE, "/**").hasRole("ADMIN")
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(Customizer.withDefaults())
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(new KeycloakRoleConverter()))
                         .bearerTokenConverter(exchange -> publicRoutes.matches(exchange)
                                 .flatMap(match -> match.isMatch() ? Mono.empty() : bearer.convert(exchange)))
                         .authenticationEntryPoint(unauthorized))
-                .exceptionHandling(errors -> errors.authenticationEntryPoint(unauthorized))
+                .exceptionHandling(errors -> errors
+                        .authenticationEntryPoint(unauthorized)
+                        // Authentifié mais rôle insuffisant : 403 (et non 401)
+                        .accessDeniedHandler((exchange, ex) -> JsonResponses.write(
+                                exchange.getResponse(), HttpStatus.FORBIDDEN, Map.of("message", FORBIDDEN_MESSAGE))))
                 .build();
     }
 

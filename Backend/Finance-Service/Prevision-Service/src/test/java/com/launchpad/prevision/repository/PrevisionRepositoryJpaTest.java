@@ -29,7 +29,7 @@ class PrevisionRepositoryJpaTest {
     @Autowired
     private EntityManager entityManager;
 
-    private final UUID projetId = UUID.randomUUID();
+    private final Long projetId = 1L;
 
     private PrevisionFinanciere prevision(String periode, Instant creeLe) {
         return new PrevisionFinanciere(UUID.randomUUID(), projetId, periode, new BigDecimal("100000.50"),
@@ -62,7 +62,7 @@ class PrevisionRepositoryJpaTest {
                 .avecProjections(List.of(projection(1, "110", "70")));
         repository.save(ancienne);
         repository.save(recente);
-        repository.save(new PrevisionFinanciere(UUID.randomUUID(), UUID.randomUUID(), "autre projet",
+        repository.save(new PrevisionFinanciere(UUID.randomUUID(), 2L, "autre projet",
                 BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE, t0.plusSeconds(120), List.of()));
         viderContexte();
 
@@ -70,8 +70,8 @@ class PrevisionRepositoryJpaTest {
                 .containsExactly(recente.id(), ancienne.id());
         assertThat(repository.findByProjetId(projetId).get(0).projections()).hasSize(1);
         assertThat(repository.findLatestByProjetId(projetId)).map(PrevisionFinanciere::id).contains(recente.id());
-        assertThat(repository.findByProjetId(UUID.randomUUID())).isEmpty();
-        assertThat(repository.findLatestByProjetId(UUID.randomUUID())).isEmpty();
+        assertThat(repository.findByProjetId(999L)).isEmpty();
+        assertThat(repository.findLatestByProjetId(999L)).isEmpty();
     }
 
     @Test

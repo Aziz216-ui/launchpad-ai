@@ -20,7 +20,7 @@ final class ExportTestFixtures {
 
     /** Document à deux sections : un tableau à deux colonnes et une section sans ligne mais avec note. */
     static DocumentFinancier document() {
-        return new DocumentFinancier(DOCUMENT_ID, UUID.fromString("11111111-1111-1111-1111-111111111111"),
+        return new DocumentFinancier(DOCUMENT_ID, 1L,
                 TypeDocument.BUSINESS_PLAN, new ContenuDocument("Business plan - période 2026", List.of(
                 new SectionDocument("Marges", List.of("Montant", "Taux (%)"), List.of(
                         LigneDocument.de("Marge brute", new BigDecimal("60000.00"), new BigDecimal("60.00")),

@@ -32,7 +32,7 @@ export class MarketApiService {
 
   // --- Études -----------------------------------------------------------------
 
-  listerEtudes(filtres: { search?: string; statut?: string; entrepreneur_id?: number } = {}): Observable<EtudeMarche[]> {
+  listerEtudes(filtres: { search?: string; statut?: string } = {}): Observable<EtudeMarche[]> {
     return this.http.get<EtudeMarche[]>(`${this.url}/etudes/`, { params: parametres(filtres) });
   }
 

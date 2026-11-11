@@ -7,6 +7,9 @@ déploiement ; seuls les mécanismes techniques identiques sont ici :
 - reglages.py   : réglages Django communs (sécurité, base, CSRF, CORS, DRF, logs, Eureka, RabbitMQ)
 - eureka.py     : enregistrement du service dans Eureka (démarré par apps.py)
 - clients.py    : client REST de base (résolution Eureka, timeout, nouvelle tentative, 404 / 503)
+- concurrence.py: niveau de concurrence (règle unique : 0 concurrent -> "inconnu") et prix moyen
+- identite.py   : utilisateur connecté lu dans le jeton transmis par la gateway (sub, username, rôles)
+- formats.py    : nombres au format français pour les textes (2 000 000 €, 12 %, 65,28 %)
 - exceptions.py : gestionnaire d'erreurs DRF (ServiceIndisponible -> 503 JSON)
 - filtres.py    : filtre ?ids=1,2,3
 - vues.py       : health check

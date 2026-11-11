@@ -4,7 +4,7 @@ import com.launchpad.document.config.RabbitMQConfig;
 import com.launchpad.document.domain.ContenuDocument;
 import com.launchpad.document.domain.DocumentFinancier;
 import com.launchpad.document.domain.DocumentGenere;
-import com.launchpad.document.domain.NotificationDocument;
+import com.launchpad.document.domain.Notification;
 import com.launchpad.document.domain.TypeDocument;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.AmqpConnectException;
@@ -29,7 +29,7 @@ import static org.mockito.Mockito.verify;
 
 class EvenementsDocumentTest {
 
-    private static DocumentGenere evenement(UUID projetId, String titre) {
+    private static DocumentGenere evenement(Long projetId, String titre) {
         DocumentFinancier document = DocumentFinancier.creer(projetId, TypeDocument.BUSINESS_PLAN,
                 new ContenuDocument(titre, List.of()));
         return DocumentGenere.de(document);
@@ -38,20 +38,21 @@ class EvenementsDocumentTest {
     // --- Producteur -------------------------------------------------------------------------
 
     @Test
-    void le_producteur_publie_sur_la_queue_par_son_nom() {
+    void le_producteur_publie_sur_l_exchange_finance_events() {
         RabbitTemplate rabbit = mock(RabbitTemplate.class);
         DocumentGenere evenement = evenement(PROJET_ID, "Business plan - période 2026");
 
         new PublicateurDocumentGenere(rabbit).publier(evenement);
 
-        verify(rabbit).convertAndSend(eq(RabbitMQConfig.DOCUMENT_GENERE_QUEUE), eq((Object) evenement));
+        verify(rabbit).convertAndSend(eq(RabbitMQConfig.EXCHANGE), eq(RabbitMQConfig.CLE_DOCUMENT_GENERE),
+                eq((Object) evenement));
     }
 
     @Test
     void broker_indisponible_n_interrompt_pas_l_appelant() {
         RabbitTemplate rabbit = mock(RabbitTemplate.class);
         doThrow(new AmqpConnectException(new IOException("refusé"))).when(rabbit)
-                .convertAndSend(any(String.class), any(Object.class));
+                .convertAndSend(any(String.class), any(String.class), any(Object.class));
 
         assertThatCode(() -> new PublicateurDocumentGenere(rabbit).publier(evenement(PROJET_ID, "t")))
                 .doesNotThrowAnyException();
@@ -66,7 +67,7 @@ class EvenementsDocumentTest {
 
         new DocumentGenereConsumer(journal).recevoir(evenement);
 
-        List<NotificationDocument> notifications = journal.notificationsDuProjet(PROJET_ID);
+        List<Notification> notifications = journal.notificationsDuProjet(PROJET_ID);
         assertThat(notifications).hasSize(1);
         assertThat(notifications.get(0).documentId()).isEqualTo(evenement.documentId());
         assertThat(notifications.get(0).message()).contains("Plan de trésorerie - période 2026");
@@ -86,14 +87,14 @@ class EvenementsDocumentTest {
     @Test
     void les_notifications_sont_isolees_par_projet_et_les_plus_recentes_d_abord() {
         JournalNotifications journal = new JournalNotifications();
-        UUID autreProjet = UUID.randomUUID();
+        Long autreProjet = 2L;
         DocumentGenere premier = evenement(PROJET_ID, "premier");
         DocumentGenere second = evenement(PROJET_ID, "second");
         journal.enregistrer(premier);
         journal.enregistrer(evenement(autreProjet, "ailleurs"));
         journal.enregistrer(second);
 
-        assertThat(journal.notificationsDuProjet(PROJET_ID)).extracting(NotificationDocument::documentId)
+        assertThat(journal.notificationsDuProjet(PROJET_ID)).extracting(Notification::documentId)
                 .containsExactly(second.documentId(), premier.documentId());
         assertThat(journal.notificationsDuProjet(autreProjet)).hasSize(1);
     }
@@ -119,7 +120,7 @@ class EvenementsDocumentTest {
         String json = new String(message.getBody(), java.nio.charset.StandardCharsets.UTF_8);
 
         assertThat(json).contains("\"documentId\":\"" + evenement.documentId() + "\"")
-                .contains("\"projetId\":\"" + PROJET_ID + "\"")
+                .contains("\"projetId\":" + PROJET_ID)
                 .contains("\"type\":\"BUSINESS_PLAN\"")
                 .contains("\"titre\":\"Business plan - période 2026\"")
                 // Date en texte ISO-8601, comme l'API REST (et non en nombre de secondes).
@@ -135,7 +136,7 @@ class EvenementsDocumentTest {
         proprietes.setContentType("application/json");
         proprietes.setInferredArgumentType(DocumentGenere.class); // type du paramètre du @RabbitListener
         String json = """
-                {"documentId":"3b262c72-2222-4f01-9de3-6fb7669e7ce6","projetId":"%s","type":"COMPTE_RESULTAT",
+                {"documentId":"3b262c72-2222-4f01-9de3-6fb7669e7ce6","projetId":%s,"type":"COMPTE_RESULTAT",
                  "titre":"Publié par un service Python","creeLe":"2026-11-05T13:00:36Z","champFutur":42}
                 """.formatted(PROJET_ID);
 

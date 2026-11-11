@@ -43,6 +43,35 @@ final class WorkspaceService
         return $workspace;
     }
 
+    /**
+     * Espace d'un comptable qui vient de s'inscrire (événement RabbitMQ de User-Service).
+     * Créé ouvert aux demandes : il est visible dans l'annuaire des entrepreneurs sans attendre sa
+     * première connexion. S'il existe déjà, seul le nom d'affichage est rafraîchi : un comptable qui a
+     * fermé son espace, ou un espace désactivé par un administrateur, garde son état.
+     *
+     * @return array{0: AccountantWorkspace, 1: bool} l'espace et true s'il vient d'être créé
+     */
+    public function provisionRegisteredAccountant(string $accountantId, string $displayName): array
+    {
+        $workspace = $this->workspaces->findOneByAccountantId($accountantId);
+
+        if (null !== $workspace) {
+            if ($workspace->getDisplayName() !== $displayName) {
+                $workspace->setDisplayName($displayName);
+                $this->em->flush();
+            }
+
+            return [$workspace, false];
+        }
+
+        $workspace = new AccountantWorkspace($accountantId, $displayName);
+        $workspace->setAcceptingClients(true);
+        $this->em->persist($workspace);
+        $this->em->flush();
+
+        return [$workspace, true];
+    }
+
     public function setAcceptingClients(AccountantWorkspace $workspace, bool $acceptingClients): void
     {
         if (!$workspace->isActive()) {

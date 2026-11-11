@@ -1,10 +1,15 @@
+import atexit
+import logging
 import os
 import sys
-import logging
 import threading
+
 from django.apps import AppConfig
 
 logger = logging.getLogger(__name__)
+
+_eureka_lock = threading.Lock()
+_eureka_registered = False
 
 
 class AuthenticationConfig(AppConfig):
@@ -12,48 +17,81 @@ class AuthenticationConfig(AppConfig):
     name = "authentication"
 
     def ready(self):
-        # Prevent registration during database migrations or shell commands
         commands = sys.argv
-        is_server = any(cmd in commands for cmd in ["runserver", "gunicorn", "uvicorn", "waitress"]) or ("runserver" in commands)
+        is_runserver = "runserver" in commands
+        # sys.argv[0] is a full path (e.g. "/usr/local/bin/gunicorn"), never the
+        # bare string "gunicorn", so this must be a substring check against each
+        # argv entry, not a list-membership check against the list of commands.
+        is_server = is_runserver or any(
+            name in arg for arg in commands for name in ("gunicorn", "uvicorn", "waitress")
+        )
+        if not is_server:
+            # migrate, test, shell, makemigrations, etc. must not register.
+            return
 
-        # In runserver dev mode, only register from the reloader child process to avoid duplicate registration
-        # If --noreload is used, is_reloader is False, so check if noreload is present
-        is_reloader = (os.environ.get("RUN_MAIN") == "true") or ("--noreload" in commands)
+        if is_runserver:
+            # runserver's autoreloader starts a watcher process and a reloaded
+            # child; only the child (RUN_MAIN=true) or a run with --noreload
+            # should register, otherwise the watcher registers a duplicate too.
+            # gunicorn/uvicorn/waitress have no such double-process reloader.
+            is_reloader_child = os.environ.get("RUN_MAIN") == "true" or "--noreload" in commands
+            if not is_reloader_child:
+                return
 
         from django.conf import settings
-        eureka_enabled = getattr(settings, "EUREKA_ENABLED", True)
 
-        if eureka_enabled and is_server and is_reloader:
-            def register_eureka():
-                try:
-                    import py_eureka_client.eureka_client as eureka_client
-                    import asyncio
+        if not getattr(settings, "EUREKA_ENABLED", True):
+            return
 
-                    eureka_server = getattr(settings, "EUREKA_SERVER_URL", "http://localhost:8761/eureka")
-                    service_port = getattr(settings, "SERVICE_PORT", 8001)
-                    # Dynamically detect port passed on command line (e.g. runserver 8001 or 0.0.0.0:8001)
-                    for arg in commands:
-                        if arg.isdigit() and len(arg) >= 4:
-                            service_port = int(arg)
-                        elif ":" in arg and arg.split(":")[-1].isdigit():
-                            service_port = int(arg.split(":")[-1])
-                    service_name = "user-service"
+        global _eureka_registered
+        with _eureka_lock:
+            if _eureka_registered:
+                return
+            _eureka_registered = True
 
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    loop.run_until_complete(
-                        eureka_client.init_async(
-                            eureka_server=eureka_server,
-                            app_name=service_name,
-                            instance_port=service_port,
-                            instance_host="localhost",
-                            status_page_url=f"http://localhost:{service_port}/api/docs/",
-                            health_check_url=f"http://localhost:{service_port}/api/auth/health/",
-                        )
-                    )
-                    logger.info(f"Registered {service_name} with Eureka Discovery at {eureka_server}")
-                except Exception as ex:
-                    logger.warning(f"Eureka discovery registration skipped or failed: {ex}")
+        threading.Thread(target=_register_eureka, daemon=True).start()
 
-            thread = threading.Thread(target=register_eureka, daemon=True)
-            thread.start()
+
+def _register_eureka():
+    try:
+        import asyncio
+
+        import py_eureka_client.eureka_client as eureka_client
+        from django.conf import settings
+
+        eureka_server = getattr(settings, "EUREKA_SERVER_URL", "http://localhost:8761/eureka")
+        service_port = getattr(settings, "SERVICE_PORT", 8001)
+        instance_host = getattr(settings, "EUREKA_INSTANCE_HOST", "localhost")
+        service_name = "user-service"
+        # Stable instance-id (host:app:port) so a restart renews the same lease
+        # instead of registering a second, duplicate instance.
+        instance_id = f"{instance_host}:{service_name}:{service_port}"
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(
+            eureka_client.init_async(
+                eureka_server=eureka_server,
+                app_name=service_name,
+                instance_id=instance_id,
+                instance_host=instance_host,
+                instance_port=service_port,
+                status_page_url=f"http://{instance_host}:{service_port}/api/docs/",
+                health_check_url=f"http://{instance_host}:{service_port}/api/auth/health/",
+            )
+        )
+        logger.info(f"Registered {service_name} with Eureka Discovery at {eureka_server}")
+
+        atexit.register(_deregister_eureka, loop)
+    except Exception as ex:
+        logger.warning(f"Eureka discovery registration skipped or failed: {ex}")
+
+
+def _deregister_eureka(loop):
+    try:
+        import py_eureka_client.eureka_client as eureka_client
+
+        loop.run_until_complete(eureka_client.stop_async())
+        logger.info("Deregistered user-service from Eureka Discovery")
+    except Exception as ex:
+        logger.warning(f"Eureka deregistration failed: {ex}")

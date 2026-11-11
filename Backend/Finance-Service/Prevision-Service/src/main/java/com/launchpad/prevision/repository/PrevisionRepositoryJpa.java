@@ -2,8 +2,11 @@ package com.launchpad.prevision.repository;
 
 import com.launchpad.prevision.domain.PrevisionFinanciere;
 import com.launchpad.prevision.domain.ProjectionFinanciere;
+import com.launchpad.prevision.domain.StatutValidation;
+import com.launchpad.prevision.domain.ValidationPrevision;
 import com.launchpad.prevision.entities.PrevisionEntity;
 import com.launchpad.prevision.entities.ProjectionEntity;
+import com.launchpad.prevision.exception.PrevisionIntrouvable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,7 +46,7 @@ public class PrevisionRepositoryJpa implements PrevisionRepository {
     }
 
     @Override
-    public List<PrevisionFinanciere> findByProjetId(UUID projetId) {
+    public List<PrevisionFinanciere> findByProjetId(Long projetId) {
         List<PrevisionEntity> entites = previsions.findByProjetIdOrderByCreatedAtDesc(projetId);
         if (entites.isEmpty()) {
             return List.of();
@@ -58,7 +61,7 @@ public class PrevisionRepositoryJpa implements PrevisionRepository {
     }
 
     @Override
-    public Optional<PrevisionFinanciere> findLatestByProjetId(UUID projetId) {
+    public Optional<PrevisionFinanciere> findLatestByProjetId(Long projetId) {
         return previsions.findFirstByProjetIdOrderByCreatedAtDesc(projetId)
                 .map(entite -> versDomaine(entite, projections.findByPrevisionIdOrderByAnneeAsc(entite.getId())));
     }
@@ -67,6 +70,20 @@ public class PrevisionRepositoryJpa implements PrevisionRepository {
     @Transactional
     public void replaceProjections(UUID previsionId, List<ProjectionFinanciere> nouvellesProjections) {
         remplacer(previsionId, nouvellesProjections);
+    }
+
+    @Override
+    @Transactional
+    public void updateValidation(UUID previsionId, ValidationPrevision validation) {
+        PrevisionEntity entite = previsions.findById(previsionId)
+                .orElseThrow(() -> new PrevisionIntrouvable(previsionId));
+        entite.appliquerValidation(validation.statut(), validation.commentaire(), validation.auteur(),
+                validation.le());
+    }
+
+    @Override
+    public long countByProjetIdAndStatut(Long projetId, StatutValidation statut) {
+        return previsions.countByProjetIdAndStatutValidation(projetId, statut);
     }
 
     private void remplacer(UUID previsionId, List<ProjectionFinanciere> nouvellesProjections) {
@@ -78,8 +95,11 @@ public class PrevisionRepositoryJpa implements PrevisionRepository {
     }
 
     private static PrevisionEntity versEntite(PrevisionFinanciere p) {
-        return new PrevisionEntity(p.id(), p.projetId(), p.periode(), p.chiffreAffaires(), p.coutsDirects(),
-                p.depenses(), p.creeLe());
+        PrevisionEntity entite = new PrevisionEntity(p.id(), p.projetId(), p.periode(), p.chiffreAffaires(),
+                p.coutsDirects(), p.depenses(), p.creeLe());
+        ValidationPrevision v = p.validation();
+        entite.appliquerValidation(v.statut(), v.commentaire(), v.auteur(), v.le());
+        return entite;
     }
 
     private static PrevisionFinanciere versDomaine(PrevisionEntity e, List<ProjectionEntity> projectionsEntites) {
@@ -87,6 +107,8 @@ public class PrevisionRepositoryJpa implements PrevisionRepository {
                 .map(p -> new ProjectionFinanciere(p.getAnnee(), p.getChiffreAffaires(), p.getDepenses(), p.getMarge()))
                 .toList();
         return new PrevisionFinanciere(e.getId(), e.getProjetId(), e.getPeriode(), e.getChiffreAffaires(),
-                e.getCoutsDirects(), e.getDepenses(), e.getCreatedAt(), projectionsDomaine);
+                e.getCoutsDirects(), e.getDepenses(), e.getCreatedAt(), projectionsDomaine,
+                new ValidationPrevision(e.getStatutValidation(), e.getCommentaireValidation(), e.getValidePar(),
+                        e.getValideLe()));
     }
 }

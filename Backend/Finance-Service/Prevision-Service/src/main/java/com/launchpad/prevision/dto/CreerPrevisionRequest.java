@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 public record CreerPrevisionRequest(
-        @NotNull UUID projetId,
+        @NotNull Long projetId,
         @NotBlank @Size(max = 50) String periode,
         @NotNull @PositiveOrZero @Digits(integer = 13, fraction = 2) BigDecimal chiffreAffaires,
         @NotNull @PositiveOrZero @Digits(integer = 13, fraction = 2) BigDecimal coutsDirects,

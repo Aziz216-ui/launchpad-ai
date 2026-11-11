@@ -13,8 +13,12 @@
 # ce dossier (non commité), à créer depuis .env.example. Sans eux, docker compose s'arrête.
 #
 # Communication asynchrone : RabbitMQ (exchange topic "market.events", interface web
-# http://localhost:15672) et un conteneur consumer par service qui reçoit des événements
-# (python manage.py consume_events) : concurrent-consumer, etude-consumer, swot-consumer.
+# http://localhost:15673 par défaut, port hôte AMQP 5673) et un conteneur consumer par
+# service qui reçoit des événements (python manage.py consume_events) : concurrent-consumer,
+# etude-consumer, swot-consumer.
+# Ports hôte RabbitMQ surchargeables (MARKET_RABBITMQ_PORT / MARKET_RABBITMQ_MGMT_PORT) :
+# déplacés de 5672/15672 vers 5673/15673 par défaut pour ne pas entrer en collision avec le
+# RabbitMQ du docker-compose.yml racine (services avocat), qui utilise les ports par défaut.
 # =============================================================================
 
 x-service-commun: &service-commun
@@ -75,8 +79,8 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?RABBITMQ_USER manquant dans .env}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD manquant dans .env}
     ports:
-      - "5672:5672"     # AMQP (producers et consumers)
-      - "15672:15672"   # interface web de management
+      - "${MARKET_RABBITMQ_PORT:-5673}:5672"     # AMQP (producers et consumers)
+      - "${MARKET_RABBITMQ_MGMT_PORT:-15673}:15672"   # interface web de management
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:

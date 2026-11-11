@@ -1,0 +1,267 @@
+@use 'variables' as *;
+@use '../commun';
+
+.masque {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.nom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.titre-edition {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  input {
+    flex: 1 1 320px;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid $primaire;
+    border-radius: $rayon-champ;
+    font-size: 18px;
+    font-weight: 600;
+    color: $texte;
+
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba($primaire, 0.18);
+    }
+  }
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: $gris;
+}
+
+.actions-entete {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.icone {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: $gris;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  &:hover {
+    background: $fond-neutre;
+    color: $primaire-fonce;
+  }
+}
+
+// --- Suivi de l'avancement ---------------------------------------------------------------------
+
+.suivi {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: etape;
+
+  li {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: $gris;
+    text-align: center;
+
+    // trait entre deux étapes
+    &:not(:first-child)::before {
+      content: '';
+      position: absolute;
+      top: 15px;
+      right: 50%;
+      width: 100%;
+      height: 2px;
+      background: $bordure;
+      z-index: 0;
+    }
+    &.faite::before,
+    &.courante::before {
+      background: $primaire;
+    }
+  }
+  .pastille {
+    position: relative;
+    z-index: 1;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid $bordure;
+    background: $fond-carte;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .faite {
+    color: $texte-secondaire;
+
+    .pastille {
+      border-color: $primaire;
+      background: $primaire;
+      color: #ffffff;
+    }
+  }
+  .courante {
+    color: $primaire-tres-fonce;
+    font-weight: 600;
+
+    .pastille {
+      border-color: $primaire;
+      color: $primaire-fonce;
+      box-shadow: 0 0 0 4px rgba($primaire, 0.15);
+    }
+  }
+  .refus {
+    color: $rouge-fonce;
+
+    .pastille {
+      border-color: $rouge;
+      background: $rouge;
+      color: #ffffff;
+      box-shadow: 0 0 0 4px rgba($rouge, 0.12);
+    }
+  }
+}
+
+// --- Colonnes ----------------------------------------------------------------------------------
+
+.colonnes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+
+  > .principale {
+    flex: 999 1 520px;
+    min-width: 0;
+  }
+  > .laterale {
+    flex: 1 1 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+  }
+}
+
+.section-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 14px;
+
+  h2 {
+    margin: 0;
+  }
+  span {
+    font-size: 13px;
+    color: $gris;
+  }
+}
+
+dl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 14px;
+  }
+  dt {
+    color: $gris;
+    flex-shrink: 0;
+  }
+  dd {
+    margin: 0;
+    text-align: right;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+}
+
+.discret {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: $gris;
+}
+
+.signataires {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .avatar {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: $primaire-clair;
+    color: $primaire-fonce;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .email {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.boutons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 560px) {
+  .suivi li {
+    font-size: 11px;
+  }
+}

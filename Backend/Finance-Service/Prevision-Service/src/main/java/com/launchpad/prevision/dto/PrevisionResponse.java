@@ -9,18 +9,20 @@ import java.util.UUID;
 
 public record PrevisionResponse(
         UUID previsionId,
-        UUID projetId,
+        Long projetId,
         String periode,
         BigDecimal chiffreAffaires,
         BigDecimal coutsDirects,
         BigDecimal depenses,
         BigDecimal resultat,
         Instant creeLe,
-        List<ProjectionResponse> projections) {
+        List<ProjectionResponse> projections,
+        ValidationResponse validation) {
 
     public static PrevisionResponse depuis(PrevisionFinanciere p) {
         return new PrevisionResponse(p.id(), p.projetId(), p.periode(), p.chiffreAffaires(), p.coutsDirects(),
                 p.depenses(), p.calculerResultat(), p.creeLe(),
-                p.projections().stream().map(ProjectionResponse::depuis).toList());
+                p.projections().stream().map(ProjectionResponse::depuis).toList(),
+                ValidationResponse.depuis(p.validation()));
     }
 }

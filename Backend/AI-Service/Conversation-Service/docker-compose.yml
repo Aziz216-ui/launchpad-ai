@@ -33,10 +33,14 @@ services:
       DB_PASSWORD: conversation_password
       DB_HOST: conversation_db
       DB_PORT: "5432"
-      EUREKA_SERVER: "http://eureka-server:8761/eureka/"
+      # Ce compose cree son propre reseau Docker (separe de celui du compose racine) : le nom
+      # de conteneur "eureka-server" ne resout pas ici, host.docker.internal si.
+      EUREKA_SERVER: "http://host.docker.internal:8761/eureka/"
       APP_NAME: "conversation-service"
       APP_PORT: "8008"
-      HOST_IP: "host.docker.internal"
+      # "localhost" : l'API Gateway tourne sur l'hote et ne peut pas resoudre
+      # host.docker.internal depuis lui-meme (uniquement dans l'autre sens).
+      HOST_IP: "localhost"
       PROJET_SERVICE_NAME: "projet-service"
       PROJET_SERVICE_URL: "http://host.docker.internal:8006"
       MARKET_SERVICE_NAME: "ETUDE-SERVICE"

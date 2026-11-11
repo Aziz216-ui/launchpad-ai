@@ -31,4 +31,12 @@ final class HttpClientFileDirectory implements ClientFileDirectory
 
         return $this->cache[$fileId];
     }
+
+    public function participantFiles(string $userId, bool $accountant): array
+    {
+        $query = http_build_query([$accountant ? 'accountantId' : 'entrepreneurId' => $userId]);
+        $data = $this->remote->call('GET', '/internal/files?'.$query) ?? [];
+
+        return array_map(static fn (array $file): FileContext => FileContext::fromArray($file), array_values($data));
+    }
 }

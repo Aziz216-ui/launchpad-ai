@@ -25,7 +25,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {
         "eureka.client.enabled=false",
         "spring.rabbitmq.listener.simple.auto-startup=false",
-        "client-service.url=http://localhost:8082"
 })
 @AutoConfigureMockMvc
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)

@@ -12,7 +12,7 @@ public class PrevisionIntrouvable extends ExceptionMetier {
         super(message);
     }
 
-    public static PrevisionIntrouvable pourProjet(UUID projetId) {
+    public static PrevisionIntrouvable pourProjet(Long projetId) {
         return new PrevisionIntrouvable("Aucune prévision pour le projet : " + projetId);
     }
 }

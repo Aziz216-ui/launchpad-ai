@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public final class Fixtures {
 
-    public static final UUID PROJET_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+    public static final Long PROJET_ID = 1L;
 
     private Fixtures() {
     }

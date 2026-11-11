@@ -22,7 +22,12 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GestionErreursAdvice extends ResponseEntityExceptionHandler {
 
-    @ExceptionHandler(PrevisionIntrouvable.class)
+    @ExceptionHandler(AccesRefuse.class)
+    public ProblemDetail accesRefuse(AccesRefuse exception) {
+        return probleme(HttpStatus.FORBIDDEN, "Accès refusé", exception.getMessage());
+    }
+
+    @ExceptionHandler({PrevisionIntrouvable.class, MembreIntrouvable.class})
     public ProblemDetail ressourceIntrouvable(ExceptionMetier exception) {
         return probleme(HttpStatus.NOT_FOUND, "Ressource introuvable", exception.getMessage());
     }

@@ -8,7 +8,7 @@ import java.util.UUID;
  * Il ne contient que des identifiants et des libellés (jamais le contenu du document), en JSON simple,
  * pour rester lisible par des services écrits dans d'autres langages.
  */
-public record DocumentGenere(UUID documentId, UUID projetId, TypeDocument type, String titre, Instant creeLe) {
+public record DocumentGenere(UUID documentId, Long projetId, TypeDocument type, String titre, Instant creeLe) {
 
     public static DocumentGenere de(DocumentFinancier document) {
         return new DocumentGenere(document.id(), document.projetId(), document.type(), document.contenu().titre(),

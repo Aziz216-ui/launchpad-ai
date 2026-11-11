@@ -130,6 +130,15 @@ class Command(BaseCommand):
                         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
                 def on_finance_message(ch, method, properties, body):
+                    # finance.# reçoit aussi les événements du suivi des prévisions
+                    # (finance.prevision.a-valider, finance.prevision.avis) : seuls les documents
+                    # générés concernent ce service, les autres messages sont acquittés et ignorés.
+                    if method.routing_key != "finance.document.genere":
+                        ch.basic_ack(delivery_tag=method.delivery_tag)
+                        self.stdout.write(
+                            f"[CONSUMER FINANCE] Clé '{method.routing_key}' ignorée -> ACK"
+                        )
+                        return
                     try:
                         payload = json.loads(body.decode("utf-8"))
                         self.stdout.write(self.style.NOTICE(

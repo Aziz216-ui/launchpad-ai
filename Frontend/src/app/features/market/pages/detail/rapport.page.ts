@@ -11,6 +11,7 @@ import { POSITIONNEMENTS, POTENTIELS } from '../../models/libelles';
 import { RapportEtude } from '../../models/market.models';
 import { EtudeStore } from '../../services/etude-store.service';
 import { MarketApiService } from '../../services/market-api.service';
+import { avecScoreBorne } from '../../utils/potentiel';
 
 const SECTIONS = [
   'Marché cible',
@@ -81,7 +82,7 @@ export class RapportPage {
   private charger(id: number): void {
     this.api.rapport(id).subscribe({
       next: (r) => {
-        this.rapport.set(r);
+        this.rapport.set(avecScoreBorne(r));
         this.genereLe.set(new Date());
         this.chargement.set(false);
         this.compterPagesPdf(id);

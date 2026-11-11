@@ -28,9 +28,11 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     class Role(models.TextChoices):
-        USER = "user", "User"
-        LAWYER = "lawyer", "Lawyer"
-        ADMIN = "admin", "Admin"
+        ENTREPRENEUR = "ENTREPRENEUR", "Entrepreneur"
+        LAWYER = "LAWYER", "Lawyer"
+        ACCOUNTANT = "ACCOUNTANT", "Accountant"
+        FINANCIER = "FINANCIER", "Financier"
+        ADMIN = "ADMIN", "Admin"
 
     keycloak_id = models.CharField(max_length=64, unique=True, db_index=True)
     username = models.CharField(max_length=150, unique=True)
@@ -38,7 +40,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=150, blank=True)
     last_name = models.CharField(max_length=150, blank=True)
     phone_number = models.CharField(max_length=30, blank=True)
-    role = models.CharField(max_length=20, choices=Role.choices, default=Role.USER)
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.ENTREPRENEUR)
     
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -57,3 +59,42 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.username} ({self.role})"
+
+
+class DemandeReinitialisation(models.Model):
+    """
+    Demande « Mot de passe oublié » (POST /api/auth/forgot-password/), pour limiter le nombre
+    de demandes par e-mail. Stockée en base : la limite est partagée par tous les workers.
+    cle = e-mail du compte trouvé dans Keycloak, sinon l'identifiant saisi (en minuscules).
+    """
+
+    cle = models.CharField(max_length=254, db_index=True)
+    date = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "demandes_reinitialisation"
+        verbose_name = "Demande de réinitialisation"
+
+    def __str__(self):
+        return f"{self.cle} ({self.date:%Y-%m-%d %H:%M})"
+
+
+class CodeReinitialisation(models.Model):
+    """
+    Code « Mot de passe oublié » envoyé par e-mail. Un seul code actif par compte Keycloak
+    (une nouvelle demande remplace l'ancien) ; seul son haché (HMAC-SHA256) est stocké.
+    Annulé après PASSWORD_RESET_MAX_ATTEMPTS essais faux ; supprimé une fois utilisé.
+    """
+
+    keycloak_id = models.CharField(max_length=64, unique=True)
+    code_hache = models.CharField(max_length=64)
+    expire_le = models.DateTimeField()
+    essais = models.PositiveSmallIntegerField(default=0)
+    cree_le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "codes_reinitialisation"
+        verbose_name = "Code de réinitialisation"
+
+    def __str__(self):
+        return f"code de {self.keycloak_id} (expire {self.expire_le:%Y-%m-%d %H:%M})"

@@ -1,0 +1,157 @@
+<div class="page">
+  @if (chargement()) {
+    <app-loader texte="Chargement du document…" />
+  } @else if (erreur() || !document()) {
+    <nav class="fil-ariane" aria-label="Fil d'Ariane">
+      <a routerLink="/">Espace startup</a><span aria-hidden="true">/</span><a routerLink="/juridique">Juridique</a>
+    </nav>
+    <div class="etat carte">
+      <p>{{ erreur() }}</p>
+      <a class="btn-secondaire" routerLink="/juridique">← Mes documents</a>
+    </div>
+  } @else {
+    @let d = document()!;
+    <nav class="fil-ariane" aria-label="Fil d'Ariane">
+      <a routerLink="/">Espace startup</a><span aria-hidden="true">/</span>
+      <a routerLink="/juridique">Juridique</a><span aria-hidden="true">/</span>
+      <span class="courant">{{ libelleType(d.type) }}</span>
+    </nav>
+
+    <header class="entete">
+      <div class="titre">
+        <h1>{{ d.titre }}</h1>
+        <div class="meta">
+          <app-badge [variante]="varianteStatut(d.statut)" [petit]="true">{{ libelleStatut(d.statut) }}</app-badge>
+          @if (d.isArchived) {
+            <app-badge variante="neutre" [petit]="true">Archivé</app-badge>
+          }
+          <span>{{ libelleType(d.type) }} · version {{ d.version }} · créé le {{ d.createdAt | date: 'dd/MM/y' }}</span>
+        </div>
+      </div>
+      <div class="actions-entete">
+        <button type="button" class="btn-secondaire" (click)="telechargerPdf()" [disabled]="telechargement()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"></path></svg>
+          {{ telechargement() ? 'Export…' : 'PDF' }}
+        </button>
+        @if (!d.isArchived) {
+          @if (d.statut === 'BROUILLON') {
+            <button type="button" class="btn-primaire" (click)="ouvrirAction('envoyer')">Envoyer à un avocat</button>
+          } @else if (d.statut === 'VALIDE') {
+            <button type="button" class="btn-primaire" (click)="ouvrirAction('signatures')">
+              {{ signatures()?.signataires?.length ? 'Modifier les signataires' : 'Demander les signatures' }}
+            </button>
+          }
+        }
+      </div>
+    </header>
+
+    <ol class="suivi" aria-label="Avancement du document">
+      @for (e of etapes; track e.statut; let i = $index) {
+        <li [class.faite]="i < etapeCourante()" [class.courante]="i === etapeCourante()"
+          [class.refus]="i === 2 && d.statut === 'REFUSE'" [attr.aria-current]="i === etapeCourante() ? 'step' : null">
+          <span class="pastille" aria-hidden="true">
+            @if (i < etapeCourante()) { ✓ } @else if (i === 2 && d.statut === 'REFUSE') { ✕ } @else { {{ i + 1 }} }
+          </span>
+          {{ i === 2 && d.statut === 'REFUSE' ? 'Refusé' : e.libelle }}
+        </li>
+      }
+    </ol>
+
+    @switch (d.statut) {
+      @case ('BROUILLON') {
+        <p class="bandeau neutre">Brouillon : relisez le document, puis envoyez-le à un avocat. C'est lui qui corrigera les clauses si nécessaire, pendant sa revue.</p>
+      }
+      @case ('EN_VALIDATION') {
+        <p class="bandeau attention">En cours de revue par un avocat. Ses notes et questions apparaissent à droite ; vous pouvez lui répondre.</p>
+      }
+      @case ('REFUSE') {
+        <p class="bandeau danger"><strong>Refusé par l'avocat.</strong>@if (d.motifRefus) { Motif : {{ d.motifRefus }} }</p>
+      }
+      @case ('VALIDE') {
+        <p class="bandeau succes">Validé par un avocat. {{ signatures()?.signataires?.length ? 'Les signatures ont été demandées.' : 'Vous pouvez demander les signatures.' }}</p>
+      }
+      @case ('SIGNE') {
+        <p class="bandeau info">Document signé{{ signatures()?.signedAt ? ' le ' + (signatures()!.signedAt | date: 'dd/MM/y à HH:mm') : '' }}.</p>
+      }
+    }
+    @if (d.isArchived) {
+      <p class="bandeau neutre">Archivé{{ d.archivedAt ? ' le ' + (d.archivedAt | date: 'dd/MM/y') : '' }} : lecture seule définitive.</p>
+    }
+
+    <div class="colonnes">
+      <section class="principale carte">
+        <div class="section-entete">
+          <h2>Clauses</h2>
+          <span>{{ d.clauses.length }} article(s){{ d.statut === 'EN_VALIDATION' ? ' · en cours de correction par l\'avocat' : '' }}</span>
+        </div>
+        <app-clauses [clauses]="d.clauses" />
+      </section>
+
+      <aside class="laterale">
+        <section class="carte">
+          <h2>Revue de l'avocat</h2>
+          <app-commentaires [commentaires]="d.commentaires"
+            [texteVide]="d.statut === 'BROUILLON' ? 'Les notes de l\'avocat apparaîtront ici après l\'envoi en validation.' : 'Aucune note de l\'avocat pour le moment.'"
+            [libelleReponse]="d.statut === 'EN_VALIDATION' && !d.isArchived ? 'Répondre à l\'avocat' : ''"
+            placeholder="Apportez les précisions demandées…" libelleEnvoyer="Répondre"
+            [enCours]="envoiReponse()" [erreur]="erreurReponse()" (envoye)="repondre($event)" />
+        </section>
+
+        @if (signatures(); as s) {
+          <section class="carte">
+            <h2>Signatures</h2>
+            <p class="discret">
+              @if (s.isSigne) {
+                Signé{{ s.signedAt ? ' le ' + (s.signedAt | date: 'dd/MM/y à HH:mm') : '' }} (version {{ s.version }}).
+              } @else if (s.signataires.length) {
+                En attente de signature.
+              } @else {
+                Aucun signataire pour l'instant.
+              }
+            </p>
+            @if (s.signataires.length) {
+              <ul class="signataires">
+                @for (email of s.signataires; track email) {
+                  <li>
+                    <span class="avatar" aria-hidden="true">{{ email[0].toUpperCase() }}</span>
+                    <span class="email">{{ email }}</span>
+                    <app-badge [variante]="s.isSigne ? 'succes' : 'attention'" [petit]="true">{{ s.isSigne ? 'Signé' : 'Invité' }}</app-badge>
+                  </li>
+                }
+              </ul>
+            }
+          </section>
+        }
+
+        <section class="carte">
+          <h2>Informations</h2>
+          <dl>
+            @for (p of parametres(); track p.cle) {
+              <div><dt>{{ p.libelle }}</dt><dd>{{ p.valeur }}</dd></div>
+            }
+            <div><dt>Dernière modification</dt><dd>{{ d.updatedAt | date: 'dd/MM/y HH:mm' }}</dd></div>
+          </dl>
+        </section>
+
+        @if (!d.isArchived) {
+          <section class="carte zone-risque">
+            <h2>Gestion</h2>
+            <p class="discret">L'archivage rend le document définitivement non modifiable.</p>
+            <div class="boutons">
+              <button type="button" class="btn-secondaire" (click)="ouvrirAction('archiver')">Archiver</button>
+              @if (peutSupprimer()) {
+                <button type="button" class="btn-danger" (click)="ouvrirAction('supprimer')">Supprimer</button>
+              }
+            </div>
+          </section>
+        }
+      </aside>
+    </div>
+  }
+</div>
+
+@if (textesAction(); as t) {
+  <app-saisie-modal [titre]="t.titre" [texte]="t.texte" [libelleChamp]="t.champ" [obligatoire]="t.obligatoire"
+    [placeholder]="t.placeholder" [libelleConfirmer]="t.confirmer" [variante]="t.variante"
+    [enCours]="actionEnCours()" [erreur]="erreurAction()" (confirmer)="confirmerAction($event)" (annuler)="action.set(null)" />
+}

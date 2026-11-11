@@ -19,7 +19,7 @@ de leur entité parente et restent dans le même service et la même base qu'ell
 
 | | |
 |---|---|
-| Stack | PHP 8.2+ (testé en 8.4), Symfony 7.4 LTS, Doctrine ORM 3, MySQL / MariaDB |
+| Stack | PHP 8.4+, Symfony 7.4 LTS, Doctrine ORM 3, MySQL / MariaDB |
 | Préfixe des routes publiques | `/api/comptable` (identique pour les 4 services) |
 | Authentification | JWT Keycloak (`Authorization: Bearer …`), validé par chaque service |
 | Appels entre services | **Synchrone** : HTTP JSON sur `/internal/**`, protégé par une clé partagée (`X-Internal-Key`) — **asynchrone** : événements JSON via **RabbitMQ** (AMQP) |
@@ -65,6 +65,7 @@ de leur entité parente et restent dans le même service et la même base qu'ell
   Événements asynchrones (RabbitMQ, queues durables) — aucune réponse attendue :
     (1) workspace-service ──► [client_file.workspace_status] ──► client-file-service   espace activé / désactivé
     (5) document-service  ──► [message.document_decided]     ──► message-service       document validé / rejeté
+    (6) User-Service      ──► [workspace.accountant_registered] ──► workspace-service  comptable inscrit : espace créé
 ```
 
 ### Règles du découpage
@@ -86,6 +87,7 @@ de leur entité parente et restent dans le même service et la même base qu'ell
 | 3 | document, message → client-file | HTTP `GET /internal/files/{id}` → contexte du dossier | À chaque requête sur les documents / messages d'un dossier (droits d'accès, statut) |
 | 4 | message → document | HTTP `GET /internal/documents/{id}` | Un message cite un document : il doit exister, appartenir au dossier et ne pas être supprimé |
 | 5 | document → message | **RabbitMQ**, queue `message.document_decided` | Un comptable valide / rejette un document : l'entrepreneur reçoit une notification dans le fil du dossier (§12) |
+| 6 | User-Service → workspace | **RabbitMQ**, queue `workspace.accountant_registered` | Un utilisateur s'inscrit avec le rôle ACCOUNTANT : son espace est créé, ouvert aux demandes, et apparaît dans l'annuaire « Demander un comptable » (§12) |
 
 Règle de choix : **HTTP quand l'appelant a besoin de la réponse pour continuer** (droits d'accès, disponibilité),
 **RabbitMQ quand il informe simplement un autre service** d'un événement, sans attendre de réponse.
@@ -155,12 +157,12 @@ Les règles métier sont inchangées par rapport au service unique d'origine :
 
 ### Prérequis
 
-- PHP **8.2+** avec les extensions `pdo_mysql`, `intl`, `mbstring`, `xml`, `fileinfo`, `openssl`, `sodium`, `zip`, `curl`
+- PHP **8.4+** avec les extensions `pdo_mysql`, `intl`, `mbstring`, `xml`, `fileinfo`, `openssl`, `sodium`, `zip`, `curl`
 - Composer 2
 - MySQL ou MariaDB (XAMPP convient : MariaDB 10.4)
 - RabbitMQ (avec Erlang) et l'extension PHP `sockets` (`extension=sockets` dans `php.ini`) — voir §12
 
-> Sous Windows, si le PHP de XAMPP est trop ancien (8.0), installez un PHP 8.2+ séparé (ex. `C:\php84`) et gardez MariaDB de XAMPP.
+> Sous Windows, si le PHP de XAMPP est trop ancien (8.0), installez un PHP 8.4+ séparé (ex. `C:\php84`) et gardez MariaDB de XAMPP.
 
 ### Tout installer et tout lancer
 
@@ -475,8 +477,12 @@ Tous les chemins publics sont préfixés par `/api/comptable`. `{id}` est un UUI
 | GET | `/files/{id}/messages` | message | voir | Fil de discussion (le plus récent d'abord) |
 | POST | `/files/{id}/messages` | message | ENTREPRENEUR, ACCOUNTANT | Envoyer un message (`content`, `documentId` facultatif) |
 | POST | `/messages/{id}/read` | message | destinataire | Marquer comme lu |
+| GET | `/messages/unread` | message | ACCOUNTANT, ENTREPRENEUR | Notifications : messages non lus de l'utilisateur dans tous ses dossiers (cloche de l'en-tête), avec la référence et le nom de la startup |
 
 Routes internes (sans préfixe `/api/comptable`, clé `X-Internal-Key`) : voir le tableau des appels entre services (§1).
+client-file-service expose aussi `GET /internal/files?entrepreneurId=…` (ou `?accountantId=…`) : les dossiers d'un participant, utilisés par `/messages/unread`.
+
+Données de démo en Docker : `app:fixtures:load-if-empty` ne les charge que dans une base vide ; recréer un conteneur ne vide donc plus les données saisies.
 
 ```bash
 curl -H "X-Internal-Key: launchpad-dev-internal-key" http://127.0.0.1:8092/internal/files/019a2000-0000-7000-8000-000000000001
@@ -589,12 +595,13 @@ Dans chaque service, `src/Controller` contient les routes publiques (`/api/compt
 Mise en œuvre de l'atelier « Communication asynchrone entre les micro-services — RabbitMQ », transposée de Spring AMQP
 à Symfony avec [`php-amqplib`](https://github.com/php-amqplib/php-amqplib) (implémentation PHP du protocole AMQP).
 
-### Les deux flux
+### Les trois flux
 
 | Flux | Producteur | Queue (durable) | Consommateur | Traitement |
 |---|---|---|---|---|
 | 1 | workspace-service (`WorkspaceService::setActive`) | `client_file.workspace_status` | client-file-service (`WorkspaceStatusListener`) | Dossiers de l'espace en lecture seule ; demandes en attente refusées |
 | 2 | document-service (`DocumentService::decide`) | `message.document_decided` | message-service (`DocumentDecidedListener`) | Notification automatique dans le fil du dossier (badge « Notification » dans le front) |
+| 3 | User-Service (`authentication/events.py`, à l'inscription d'un ACCOUNTANT) | `workspace.accountant_registered` | workspace-service (`AccountantRegisteredListener`) | Espace créé et ouvert aux demandes (idempotent : un espace existant garde son état, seul son nom est rafraîchi). User-Service republie tous les comptables à chaque démarrage (`manage.py sync_accountant_workspaces`) pour rattraper un message perdu. En Docker, le consommateur est le conteneur `workspace-consumer`. |
 
 ### Correspondance avec l'atelier (Spring → Symfony)
 

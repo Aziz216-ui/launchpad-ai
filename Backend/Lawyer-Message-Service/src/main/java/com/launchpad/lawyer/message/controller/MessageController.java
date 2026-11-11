@@ -17,7 +17,6 @@ import java.util.Map;
 @RestController
 @RequestMapping({"/api/lawyer/messages", "/api/lawyer/communication/messages"})
 @Tag(name = "Message Management", description = "Endpoints for sending, retrieving, marking as read, and deleting messages with clients.")
-@CrossOrigin(origins = "*")
 public class MessageController {
 
     private final MessageService messageService;

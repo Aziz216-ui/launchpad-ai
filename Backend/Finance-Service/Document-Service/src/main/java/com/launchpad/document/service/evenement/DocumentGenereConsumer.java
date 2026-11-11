@@ -1,6 +1,7 @@
 package com.launchpad.document.service.evenement;
 
 import com.launchpad.document.config.RabbitMQConfig;
+import com.launchpad.document.domain.DocumentCertifie;
 import com.launchpad.document.domain.DocumentGenere;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,12 @@ public class DocumentGenereConsumer {
     @RabbitListener(queues = RabbitMQConfig.DOCUMENT_GENERE_QUEUE)
     public void recevoir(DocumentGenere evenement) {
         LOG.info("DocumentGenere reçu depuis RabbitMQ : {}", evenement);
+        notifications.enregistrer(evenement);
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.DOCUMENT_CERTIFIE_QUEUE)
+    public void recevoir(DocumentCertifie evenement) {
+        LOG.info("DocumentCertifie reçu depuis RabbitMQ : {}", evenement);
         notifications.enregistrer(evenement);
     }
 }

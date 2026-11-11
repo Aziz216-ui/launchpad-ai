@@ -2,6 +2,8 @@
 
 namespace App\Tests\Functional;
 
+use Launchpad\Common\Testing\FakeMessagePublisher;
+use Launchpad\Common\Messaging\Message\FileActivity;
 use App\Enum\ClientFileStatus;
 use App\Messaging\WorkspaceStatusListener;
 use Launchpad\Common\Fixtures\FixtureCatalog;
@@ -26,6 +28,46 @@ final class ClientFileTest extends ApiTestCase
         self::assertSame('Thomas Moreau', $data['entrepreneurDisplayName']);
         self::assertSame(FixtureUsers::ACCOUNTANT_SONIA, $data['workspace']['accountantId']);
         self::assertStringEndsWith('/api/comptable/files/'.$data['id'], $this->client->getResponse()->headers->get('Location'));
+
+        // Le comptable est notifié (message automatique dans le fil, via message-service)
+        $activities = $this->activities();
+        self::assertCount(1, $activities);
+        self::assertSame(FileActivity::REQUESTED, $activities[0]->activity);
+        self::assertSame($data['id'], $activities[0]->clientFileId);
+        self::assertSame(FixtureUsers::ENTREPRENEUR_THOMAS, $activities[0]->actorId);
+        self::assertSame('ENTREPRENEUR', $activities[0]->actorRole);
+        self::assertStringContainsString('Le Fournil Solidaire', $activities[0]->content);
+        self::assertStringContainsString('boulangerie en septembre', $activities[0]->content);
+    }
+
+    public function testAcceptRejectAndCloseNotifyTheEntrepreneur(): void
+    {
+        $pending = $this->fileId(FixtureUsers::FILE_MEDICONNECT_PENDING);
+        $this->actingAs(FixtureUsers::ACCOUNTANT_SONIA)->request('POST', "/files/$pending/accept");
+        $this->assertStatus(200);
+        $this->request('POST', "/files/$pending/close");
+        $this->assertStatus(200);
+
+        $other = $this->fileId(FixtureUsers::FILE_BOULANGERIE_PENDING_CLAIRE);
+        $this->actingAs(FixtureUsers::ACCOUNTANT_CLAIRE)->request('POST', "/files/$other/reject", ['reason' => 'Agenda complet ce trimestre.']);
+        $this->assertStatus(200);
+
+        $activities = $this->activities();
+        self::assertSame([FileActivity::ACCEPTED, FileActivity::CLOSED, FileActivity::REJECTED], array_map(static fn (FileActivity $a): string => $a->activity, $activities));
+        foreach ($activities as $activity) {
+            self::assertSame('ACCOUNTANT', $activity->actorRole);
+        }
+        self::assertSame(FixtureUsers::ACCOUNTANT_SONIA, $activities[0]->actorId);
+        self::assertSame(FixtureUsers::ACCOUNTANT_CLAIRE, $activities[2]->actorId);
+        self::assertStringContainsString('Agenda complet ce trimestre.', $activities[2]->content);
+    }
+
+    /**
+     * @return list<FileActivity>
+     */
+    private function activities(): array
+    {
+        return static::getContainer()->get(FakeMessagePublisher::class)->on(Queues::MESSAGE_FILE_ACTIVITY);
     }
 
     public function testDuplicateOpenRequestIsRefused(): void
@@ -307,10 +349,27 @@ final class ClientFileTest extends ApiTestCase
             'entrepreneurId' => FixtureUsers::ENTREPRENEUR_THOMAS,
             'accountantId' => FixtureUsers::ACCOUNTANT_KARIM,
             'workspaceActive' => true,
+            'startupName' => 'ÉcoLivraison',
         ], $context);
 
         $this->internal('GET', '/files/019a2000-0000-7000-8000-0000000000ff');
         $this->assertError(404, 'NOT_FOUND');
+    }
+
+    public function testInternalParticipantFilesListsTheFilesOfAUser(): void
+    {
+        $karim = array_column($this->internal('GET', '/files?accountantId='.FixtureUsers::ACCOUNTANT_KARIM)['data'], 'reference');
+        $this->assertStatus(200);
+        self::assertContains(FixtureUsers::FILE_ECOLIVRAISON, $karim);
+        self::assertNotContains(FixtureUsers::FILE_AGRISENSE, $karim);
+
+        $amine = array_column($this->internal('GET', '/files?entrepreneurId='.FixtureUsers::ENTREPRENEUR_AMINE)['data'], 'reference');
+        self::assertContains(FixtureUsers::FILE_AGRISENSE, $amine);
+        self::assertContains(FixtureUsers::FILE_AGRISENSE_EXPORT_CLOSED, $amine);
+        self::assertNotContains(FixtureUsers::FILE_ECOLIVRAISON, $amine);
+
+        $this->internal('GET', '/files');
+        $this->assertError(400, 'MISSING_PARTICIPANT');
     }
 
     public function testInternalRoutesRequireTheSharedKey(): void

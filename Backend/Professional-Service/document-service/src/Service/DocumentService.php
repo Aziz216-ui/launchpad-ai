@@ -15,7 +15,9 @@ use App\Storage\DocumentStorageInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Launchpad\Common\Enum\UserRole;
 use Launchpad\Common\Exception\ApiException;
+use Launchpad\Common\Messaging\FileActivityNotifier;
 use Launchpad\Common\Messaging\Message\DocumentDecided;
+use Launchpad\Common\Messaging\Message\FileActivity;
 use Launchpad\Common\Messaging\MessagePublisher;
 use Launchpad\Common\Messaging\MessagingException;
 use Launchpad\Common\Messaging\Queues;
@@ -54,6 +56,7 @@ final class DocumentService
         private readonly MessagePublisher $publisher,
         private readonly LoggerInterface $logger,
         private readonly string $maxUploadSize,
+        private readonly FileActivityNotifier $activity,
     ) {
     }
 
@@ -242,6 +245,23 @@ final class DocumentService
         }
 
         $this->em->flush();
+
+        if (UserRole::ENTREPRENEUR === $role) {
+            // Notification du comptable : un document attend sa validation
+            $this->activity->notify(
+                $document->getClientFileId()->toRfc4122(),
+                FileActivity::DOCUMENT_UPLOADED,
+                $user->getId(),
+                UserRole::ENTREPRENEUR,
+                sprintf(
+                    '%s à valider : « %s » (v%d).',
+                    null !== $previous ? 'Nouvelle version déposée' : 'Nouveau document déposé',
+                    $document->getTitle(),
+                    $document->getVersionNumber(),
+                ),
+                $document->getId()->toRfc4122(),
+            );
+        }
 
         return $document;
     }

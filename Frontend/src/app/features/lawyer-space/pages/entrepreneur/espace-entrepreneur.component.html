@@ -1,0 +1,211 @@
+<div class="page">
+  <nav class="fil-ariane" aria-label="Fil d'Ariane">
+    <a routerLink="/">Espace startup</a><span aria-hidden="true">/</span><span class="courant">Avocat</span>
+  </nav>
+
+  <header class="entete">
+    <div class="titre">
+      <h1>Avocats</h1>
+      <p>Trouvez un avocat, échangez avec lui et faites revoir vos documents juridiques.</p>
+    </div>
+    <a class="btn-secondaire" routerLink="/juridique">Mes documents juridiques</a>
+  </header>
+
+  <div class="onglets" role="tablist" aria-label="Espace avocat">
+    <button type="button" role="tab" [attr.aria-selected]="onglet() === 'avocats'" [class.actif]="onglet() === 'avocats'" (click)="choisirOnglet('avocats')">
+      Avocats <span class="nombre">{{ avocats().length }}</span>
+    </button>
+    <button type="button" role="tab" [attr.aria-selected]="onglet() === 'messagerie'" [class.actif]="onglet() === 'messagerie'" (click)="choisirOnglet('messagerie')">
+      Messagerie @if (totalNonLus()) { <span class="pastille" [attr.aria-label]="totalNonLus() + ' non lu(s)'">{{ totalNonLus() }}</span> }
+    </button>
+    <button type="button" role="tab" [attr.aria-selected]="onglet() === 'demandes'" [class.actif]="onglet() === 'demandes'" (click)="choisirOnglet('demandes')">
+      Demande revue <span class="nombre">{{ demandes().length }}</span>
+    </button>
+  </div>
+
+  @if (chargement()) {
+    <app-loader texte="Chargement de l'espace avocat…" />
+  } @else if (erreur()) {
+    <div class="etat carte">
+      <p>{{ erreur() }}</p>
+      <button type="button" class="btn-secondaire" (click)="charger()">Réessayer</button>
+    </div>
+  } @else {
+    @switch (onglet()) {
+      @case ('avocats') {
+        <div class="barre">
+          <label class="recherche">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+            <input type="search" placeholder="Rechercher un avocat" aria-label="Rechercher un avocat"
+              [ngModel]="recherche()" (ngModelChange)="recherche.set($event)" />
+          </label>
+          <span class="discret">{{ filtres().length }} avocat(s) inscrit(s)</span>
+        </div>
+
+        @if (filtres().length) {
+          <ul class="grille">
+            @for (a of filtres(); track a.id) {
+              @let derniere = derniereDemande()[a.username];
+              <li class="carte-avocat">
+                <div class="identite">
+                  <span class="avatar" aria-hidden="true">{{ initiales(nomAvocat(a)) }}</span>
+                  <div>
+                    <h2>{{ nomAvocat(a) }}</h2>
+                    <span class="role">Avocat</span>
+                  </div>
+                  <button type="button" class="icone-message" (click)="ecrire(a)" [attr.aria-label]="'Envoyer un message à ' + nomAvocat(a)" title="Envoyer un message">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    @if (nonLus()[a.username]) { <span class="point" aria-hidden="true"></span> }
+                  </button>
+                </div>
+                <ul class="coordonnees">
+                  <li>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>
+                    {{ a.email }}
+                  </li>
+                  @if (a.phone_number) {
+                    <li>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"></path></svg>
+                      {{ a.phone_number }}
+                    </li>
+                  }
+                </ul>
+                @if (derniere) {
+                  <p class="suivi">
+                    Dernière demande :
+                    <app-badge [variante]="statutsDemande[derniere.status].variante" [petit]="true">{{ libelleStatutDemande(derniere) }}</app-badge>
+                  </p>
+                }
+                <button type="button" class="btn-primaire" (click)="demandeA.set(a)">Demander un avocat</button>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="etat carte">
+            <p>{{ recherche() ? 'Aucun avocat ne correspond à « ' + recherche() + ' ».' : "Aucun avocat n'est encore inscrit sur la plateforme." }}</p>
+          </div>
+        }
+      }
+
+      @case ('messagerie') {
+        <section class="messagerie">
+          @if (!relations().length) {
+            <div class="etat">
+              <p>Aucune conversation. Cliquez sur l'icône message d'un avocat pour lui écrire.</p>
+              <button type="button" class="btn-secondaire" (click)="choisirOnglet('avocats')">Voir les avocats</button>
+            </div>
+          } @else {
+            <ul class="conversations" aria-label="Conversations">
+              @for (r of relations(); track r.avocat.username) {
+                <li>
+                  <button type="button" [class.actif]="r.avocat.username === avocatActif()" (click)="ouvrirConversation(r.avocat.username)"
+                    [attr.aria-current]="r.avocat.username === avocatActif() ? 'true' : null">
+                    <span class="avatar" aria-hidden="true">{{ initiales(nomAvocat(r.avocat)) }}</span>
+                    <span class="texte"><strong>{{ nomAvocat(r.avocat) }}</strong><small>{{ r.avocat.email }}</small></span>
+                    @if (nonLus()[r.avocat.username]) { <span class="non-lus">{{ nonLus()[r.avocat.username] }}</span> }
+                  </button>
+                </li>
+              }
+            </ul>
+            @if (relationActive(); as r) {
+              <app-conversation [messages]="messages()" [interlocuteur]="nomAvocat(r.avocat)" [sousTitre]="r.avocat.email" monRole="CLIENT"
+                [chargement]="chargementMessages()" [envoi]="envoi()" [erreur]="erreurEnvoi()" (envoye)="envoyer($event)" />
+            } @else {
+              <div class="etat"><p>Choisissez une conversation.</p></div>
+            }
+          }
+        </section>
+      }
+
+      @case ('demandes') {
+        @if (!demandes().length) {
+          <div class="etat carte">
+            <p>Aucune demande de revue. Choisissez un avocat et cliquez sur « Demander un avocat » : ses réponses sur votre document apparaîtront ici.</p>
+            <button type="button" class="btn-secondaire" (click)="choisirOnglet('avocats')">Voir les avocats</button>
+          </div>
+        } @else {
+          @if (documentsDemandes().length > 1) {
+            <label class="select-flottant">
+              <span>Document</span>
+              <select [ngModel]="filtreDocument()" (ngModelChange)="filtreDocument.set($event)">
+                <option [ngValue]="null">Tous les documents</option>
+                @for (doc of documentsDemandes(); track doc.url) {
+                  <option [ngValue]="doc.url">{{ doc.titre }}</option>
+                }
+              </select>
+            </label>
+          }
+
+          <ul class="revues">
+            @for (r of revues(); track r.demande.id + '-' + r.demande.lawyerId) {
+              <li class="revue">
+                <header>
+                  <span class="doc-icone" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M9 13h6M9 17h4"></path></svg></span>
+                  <div class="titre-revue">
+                    <h2>{{ r.demande.documentTitle }}</h2>
+                    <span>{{ typesJuridiques[r.demande.documentType] ?? r.demande.documentType }} · {{ nomAvocat(r.relation.avocat) }} · envoyée le {{ r.demande.createdAt | date: 'd MMM y' }}</span>
+                  </div>
+                  <app-badge [variante]="statutsDemande[r.demande.status].variante">{{ libelleStatutDemande(r.demande) }}</app-badge>
+                </header>
+
+                @if (r.question) {
+                  <div class="bloc question">
+                    <strong>Votre question</strong>
+                    <p>{{ r.question.commentText }}</p>
+                  </div>
+                }
+
+                @if (r.reponses.length || !r.decision) {
+                <div class="bloc reponse">
+                  <strong>Réponse de {{ nomAvocat(r.relation.avocat) }}</strong>
+                  @if (r.reponses.length) {
+                    <ol>
+                      @for (c of r.reponses; track c.id) {
+                        <li [class.correction]="c.correctionRequested">
+                          <div class="meta">
+                            @if (c.correctionRequested) { <span class="etiquette">Correction demandée</span> }
+                            <time>{{ c.createdAt | date: 'dd/MM/y HH:mm' }}</time>
+                          </div>
+                          <p>{{ c.commentText }}</p>
+                        </li>
+                      }
+                    </ol>
+                  } @else {
+                    <p class="attente">
+                      @switch (r.demande.status) {
+                        @case ('PENDING') { En attente : l'avocat n'a pas encore accepté votre demande. }
+                        @case ('IN_PROGRESS') { L'avocat revoit votre document ; sa réponse apparaîtra ici. }
+                        @default { Pas de commentaire détaillé. }
+                      }
+                    </p>
+                  }
+                </div>
+                }
+
+                @if (r.decision) {
+                  <p [class]="'decision ' + statutsDemande[r.demande.status].variante">
+                    <strong>{{ r.demande.status === 'APPROVED' ? 'Avis final' : r.demande.status === 'NEEDS_CORRECTION' ? 'Corrections attendues' : 'Motif' }} :</strong>
+                    {{ r.decision }}
+                  </p>
+                }
+
+                <footer>
+                  @if (r.idDocument) {
+                    <a class="btn-secondaire" [routerLink]="['/juridique/documents', r.idDocument]">Voir le document</a>
+                  }
+                  <a class="btn-primaire" [routerLink]="['/professional/avocat/demandes', r.demande.id]" [queryParams]="{ avocat: r.demande.lawyerId }">
+                    {{ r.demande.status === 'APPROVED' || r.demande.status === 'REJECTED' ? 'Voir la revue complète' : "Répondre à l'avocat" }}
+                  </a>
+                </footer>
+              </li>
+            }
+          </ul>
+        }
+      }
+    }
+  }
+</div>
+
+@if (demandeA(); as a) {
+  <app-demande-avocat-modal [avocat]="a" (envoyee)="demandeEnvoyee($event)" (annuler)="demandeA.set(null)" />
+}

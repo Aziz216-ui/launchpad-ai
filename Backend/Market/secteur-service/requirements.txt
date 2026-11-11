@@ -714,3 +714,11 @@ whitenoise==6.12.0 \
     --hash=sha256:f723ebb76a112e98816ff80fcea0a6c9b8ecde835f8ddda25df7a30a3c2db6ad \
     --hash=sha256:fc5e8c572e33ebf24795b47b6a7da8da3c00cff2349f5b04c02f28d0cc5a3cc2
     # via -r requirements.in
+
+# Ajouté manuellement : hash calculé via `pip download --only-binary :all: django-prometheus==2.3.1`
+django-prometheus==2.3.1 \
+    --hash=sha256:cf9b26f7ba2e4568f08f8f91480a2882023f5908579681bcf06a4d2465f12168
+    # via -r requirements.in
+prometheus-client==0.26.0 \
+    --hash=sha256:fa93d06737aa02bacd05794768508bb97d2fbee28cb3bca04eaae92f0ca953d6
+    # via django-prometheus

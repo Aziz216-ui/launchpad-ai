@@ -19,6 +19,8 @@ final class FileContext
         public readonly string $accountantId,
         /** L'espace du comptable affecté est-il actif ? (sinon : lecture seule) */
         public readonly bool $workspaceActive,
+        /** Nom de la startup : affichage seulement (notifications), jamais utilisé pour les droits. */
+        public readonly string $startupName = '',
     ) {
     }
 
@@ -34,6 +36,7 @@ final class FileContext
             entrepreneurId: (string) $data['entrepreneurId'],
             accountantId: (string) $data['accountantId'],
             workspaceActive: (bool) $data['workspaceActive'],
+            startupName: (string) ($data['startupName'] ?? ''),
         );
     }
 
@@ -49,6 +52,7 @@ final class FileContext
             'entrepreneurId' => $this->entrepreneurId,
             'accountantId' => $this->accountantId,
             'workspaceActive' => $this->workspaceActive,
+            'startupName' => $this->startupName,
         ];
     }
 

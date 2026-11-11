@@ -1,13 +1,15 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { routeParDefaut } from '../../core/auth/role-routes';
+import { ChampMotDePasseComponent } from './champ-mot-de-passe.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, ChampMotDePasseComponent],
   template: `
     <div class="auth-page">
       <div class="auth-card">
@@ -23,41 +25,44 @@ import { AuthService } from '../../core/services/auth.service';
 
         <div class="auth-header">
           <h2>Se connecter</h2>
-          <p>Accédez à votre espace LaunchPad AI (Fondateur ou Avocat).</p>
+          <p>Accédez à votre espace LaunchPad AI.</p>
         </div>
 
+        <div class="alert success" role="status" *ngIf="successMessage && !errorMessage">
+          {{ successMessage }}
+        </div>
         <div class="alert error" *ngIf="errorMessage">
           {{ errorMessage }}
         </div>
 
         <form (ngSubmit)="onSubmit()" class="auth-form">
           <div class="form-group">
-            <label>Nom d'utilisateur</label>
+            <label for="login-username">Nom d'utilisateur</label>
             <div class="input-wrapper">
-              <input 
-                type="text" 
-                [(ngModel)]="username" 
-                name="username" 
-                placeholder="Ex: amira ou maitre_karoui" 
-                required 
+              <input
+                id="login-username"
+                type="text"
+                [(ngModel)]="username"
+                name="username"
+                placeholder="Ex: amira ou maitre_karoui"
+                autocomplete="username"
+                required
               />
             </div>
           </div>
 
           <div class="form-group">
             <div class="label-row">
-              <label>Mot de passe</label>
-              <a href="#" class="forgot-link">Mot de passe oublié ?</a>
+              <label for="login-password">Mot de passe</label>
+              <a routerLink="/connexion/mot-de-passe-oublie" class="forgot-link">Mot de passe oublié ?</a>
             </div>
-            <div class="input-wrapper">
-              <input 
-                type="password" 
-                [(ngModel)]="password" 
-                name="password" 
-                placeholder="••••••••" 
-                required 
-              />
-            </div>
+            <app-champ-mot-de-passe
+              inputId="login-password"
+              name="password"
+              [(ngModel)]="password"
+              autocomplete="current-password"
+              [required]="true"
+            />
           </div>
 
           <button type="submit" class="btn-submit" [disabled]="loading">
@@ -74,27 +79,28 @@ import { AuthService } from '../../core/services/auth.service';
         </div>
 
         <div class="auth-footer">
-          Pas encore de compte ? 
-          <a routerLink="/register" class="link-bold">Créer un compte</a>
+          Pas encore de compte ?
+          <a routerLink="/connexion/register" class="link-bold">Créer un compte</a>
         </div>
       </div>
     </div>
   `,
   styles: [`
+    @use 'variables' as *;
+
     .auth-page {
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #f0fdfa 0%, #f4f7f6 100%);
+      background: $fond;
       padding: 24px;
     }
 
     .auth-card {
-      background: #ffffff;
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-lg);
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+      background: $fond-carte;
+      border: 1px solid $bordure;
+      border-radius: $rayon-carte;
       width: 100%;
       max-width: 440px;
       padding: 36px 32px;
@@ -114,42 +120,46 @@ import { AuthService } from '../../core/services/auth.service';
       width: 36px;
       height: 36px;
       border-radius: 10px;
-      background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%);
-      color: white;
+      background: $primaire;
+      color: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .brand-name {
-      font-size: 19px;
-      font-weight: 800;
-      color: var(--text-main);
-      .teal { color: var(--primary-teal); }
+      font-size: 17px;
+      font-weight: 600;
+      color: $texte;
+      .teal { color: $primaire; }
     }
 
     .auth-header {
       text-align: center;
       h2 {
+        margin: 0;
         font-size: 22px;
-        font-weight: 700;
-        color: var(--text-main);
+        font-weight: 600;
+        color: $texte;
       }
       p {
+        margin: 4px 0 0;
         font-size: 13px;
-        color: var(--text-muted);
-        margin-top: 4px;
+        color: $gris;
       }
     }
 
     .alert {
       padding: 10px 14px;
-      border-radius: var(--radius-sm);
+      border-radius: $rayon-champ;
       font-size: 12.5px;
       &.error {
-        background: #fef2f2;
-        color: #dc2626;
-        border: 1px solid #fee2e2;
+        background: $rouge-clair;
+        color: $rouge-fonce;
+      }
+      &.success {
+        background: $vert-clair;
+        color: $vert-fonce;
       }
     }
 
@@ -167,7 +177,7 @@ import { AuthService } from '../../core/services/auth.service';
       label {
         font-size: 12px;
         font-weight: 600;
-        color: var(--text-main);
+        color: $texte;
       }
     }
 
@@ -179,34 +189,36 @@ import { AuthService } from '../../core/services/auth.service';
 
     .forgot-link {
       font-size: 11.5px;
-      color: var(--primary-teal);
+      color: $primaire-fonce;
       text-decoration: none;
-      &:hover { text-decoration: underline; }
+      &:hover { color: $primaire-tres-fonce; text-decoration: underline; }
     }
 
     .input-wrapper input {
       width: 100%;
-      padding: 11px 14px;
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-sm);
+      min-height: 44px;
+      padding: 0 14px;
+      border: 1px solid $bordure-champ;
+      border-radius: $rayon-champ;
       font-size: 13.5px;
+      color: $texte;
       outline: none;
-      transition: all 0.15s ease;
+      transition: border-color 0.15s ease;
 
       &:focus {
-        border-color: var(--primary-teal);
-        box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+        border-color: $primaire;
       }
     }
 
     .btn-submit {
       margin-top: 6px;
-      background: var(--primary-teal);
-      color: white;
+      min-height: 44px;
+      border: 0;
+      background: $primaire;
+      color: #ffffff;
       font-weight: 600;
-      font-size: 14px;
-      padding: 12px;
-      border-radius: var(--radius-sm);
+      font-size: 13px;
+      border-radius: $rayon-champ;
       transition: background 0.15s ease;
       display: flex;
       align-items: center;
@@ -214,10 +226,10 @@ import { AuthService } from '../../core/services/auth.service';
       cursor: pointer;
 
       &:hover:not(:disabled) {
-        background: var(--primary-teal-hover);
+        background: $primaire-fonce;
       }
       &:disabled {
-        opacity: 0.7;
+        opacity: 0.6;
         cursor: not-allowed;
       }
     }
@@ -228,22 +240,22 @@ import { AuthService } from '../../core/services/auth.service';
       justify-content: center;
       gap: 6px;
       font-size: 11px;
-      color: var(--text-light);
-      background: #f8fafc;
+      color: $gris;
+      background: $fond-doux;
       padding: 8px;
-      border-radius: var(--radius-sm);
+      border-radius: $rayon-champ;
     }
 
     .auth-footer {
       text-align: center;
       font-size: 13px;
-      color: var(--text-muted);
+      color: $gris;
 
       .link-bold {
-        color: var(--primary-teal);
+        color: $primaire-fonce;
         font-weight: 600;
         text-decoration: none;
-        &:hover { text-decoration: underline; }
+        &:hover { color: $primaire-tres-fonce; text-decoration: underline; }
       }
     }
   `]
@@ -253,8 +265,14 @@ export class LoginComponent {
   password = '';
   loading = false;
   errorMessage = '';
+  successMessage = '';
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private authService: AuthService, private router: Router, route: ActivatedRoute) {
+    // Retour de « Mot de passe oublié » après un changement réussi
+    if (route.snapshot.queryParamMap.has('motDePasseModifie')) {
+      this.successMessage = 'Votre mot de passe a été modifié. Connectez-vous avec le nouveau mot de passe.';
+    }
+  }
 
   onSubmit(): void {
     if (!this.username || !this.password) {
@@ -268,15 +286,9 @@ export class LoginComponent {
     this.authService.login({ username: this.username, password: this.password }).subscribe({
       next: (res) => {
         this.loading = false;
-        // Direction selon le rôle de l'utilisateur connecté :
-        const role = res?.user?.role || this.authService.currentUserValue?.role;
-        if (role === 'lawyer') {
-          // L'avocat est dirigé vers son espace cabinet
-          this.router.navigate(['/lawyer']);
-        } else {
-          // Le fondateur de startup est dirigé vers son tableau de bord / vue fondateur
-          this.router.navigate(['/dashboard']);
-        }
+        // Direction selon le rôle de l'utilisateur connecté (voir core/auth/role-routes.ts).
+        const role = res?.user?.role ?? this.authService.currentUserValue?.role;
+        this.router.navigateByUrl(routeParDefaut(role));
       },
       error: (err) => {
         this.loading = false;

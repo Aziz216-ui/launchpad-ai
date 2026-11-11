@@ -14,6 +14,7 @@ def urls_service(ressource, urls_app):
     """
     prefixe = f"api/market/{ressource}/"
     return [
+        path("", include("django_prometheus.urls")),  # /metrics, hors préfixe (scrape Prometheus)
         path("admin/", admin.site.urls),
         path(f"{prefixe}schema/", SpectacularAPIView.as_view(), name="schema"),
         path(f"{prefixe}docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),

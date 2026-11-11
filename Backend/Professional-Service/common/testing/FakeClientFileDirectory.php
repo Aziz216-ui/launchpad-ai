@@ -20,6 +20,19 @@ final class FakeClientFileDirectory implements ClientFileDirectory
         return $this->overrides[$fileId] ?? FixtureCatalog::fileContext($fileId);
     }
 
+    public function participantFiles(string $userId, bool $accountant): array
+    {
+        $files = [];
+        foreach (array_keys(FixtureCatalog::FILES) as $fileId) {
+            $file = $this->context($fileId);
+            if (null !== $file && ($accountant ? $file->accountantId : $file->entrepreneurId) === $userId) {
+                $files[] = $file;
+            }
+        }
+
+        return $files;
+    }
+
     public function override(FileContext $context): void
     {
         $this->overrides[$context->id] = $context;

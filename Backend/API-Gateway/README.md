@@ -9,6 +9,7 @@ Le frontend n'appelle plus chaque service sur son port : il appelle la gateway s
 | Port | **8090** (`SERVER_PORT`) — 8080 est pris par Keycloak |
 | Nom Eureka | `API-GATEWAY` |
 | Eureka | `Backend/Eureka`, port 8761, `http://localhost:8761/eureka/` |
+| Config Server | `Backend/Config-Server`, port 8888 (`CONFIG_SERVER_URL`) : configuration lue au démarrage depuis `config-repo/application.yml` + `config-repo/API-GATEWAY.yml`, en `optional` (la gateway démarre aussi sans lui) |
 | Routes chargées | http://localhost:8090/actuator/gateway/routes |
 | Santé | http://localhost:8090/actuator/health |
 

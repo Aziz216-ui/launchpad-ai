@@ -4,6 +4,7 @@ from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 urlpatterns = [
+    path("", include("django_prometheus.urls")),  # /metrics, hors préfixe (scrape Prometheus)
     path("admin/", admin.site.urls),
     path("api/ai/", include("recommandation.urls")),
     path("api/ai/schema/", SpectacularAPIView.as_view(), name="schema"),

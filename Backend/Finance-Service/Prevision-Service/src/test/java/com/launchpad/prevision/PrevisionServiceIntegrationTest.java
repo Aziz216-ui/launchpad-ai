@@ -26,7 +26,7 @@ class PrevisionServiceIntegrationTest {
     @Autowired
     private TestRestTemplate http;
 
-    private final UUID projetId = UUID.randomUUID();
+    private final Long projetId = 1L;
 
     private ResponseEntity<JsonNode> post(String url, Object corps) {
         return http.postForEntity("/api/finance" + url, corps, JsonNode.class);
@@ -75,7 +75,7 @@ class PrevisionServiceIntegrationTest {
 
     @Test
     void synthese_d_un_projet_sans_prevision_renvoie_404() {
-        ResponseEntity<JsonNode> reponse = get("/projets/" + UUID.randomUUID() + "/synthese");
+        ResponseEntity<JsonNode> reponse = get("/projets/" + 999L + "/synthese");
 
         assertThat(reponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }

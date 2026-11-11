@@ -17,7 +17,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/lawyer/clients")
 @Tag(name = "1. Client Management", description = "Endpoints for creating, viewing, updating, archiving, deleting, and searching lawyer clients.")
-@CrossOrigin(origins = "*")
 public class ClientController {
 
     private final ClientService clientService;

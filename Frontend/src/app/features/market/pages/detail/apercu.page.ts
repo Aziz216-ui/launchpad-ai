@@ -9,6 +9,7 @@ import { NIVEAUX, POTENTIELS, SOUS_TITRES_NIVEAU } from '../../models/libelles';
 import { RapportEtude } from '../../models/market.models';
 import { EtudeStore } from '../../services/etude-store.service';
 import { MarketApiService } from '../../services/market-api.service';
+import { avecScoreBorne } from '../../utils/potentiel';
 
 /** Longueur de l'arc de la jauge (demi-cercle de rayon 70). */
 const LONGUEUR_ARC = 220;
@@ -64,7 +65,7 @@ export class ApercuPage {
       untracked(() => {
         this.api.rapport(etude.id).subscribe({
           next: (r) => {
-            this.rapport.set(r);
+            this.rapport.set(avecScoreBorne(r));
             this.chargementRapport.set(false);
           },
           error: () => this.chargementRapport.set(false),

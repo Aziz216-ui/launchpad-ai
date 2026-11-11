@@ -59,9 +59,13 @@ Les couleurs viennent de `src/styles/_variables.scss` (`@use 'variables' as *;`)
 
 ## Données provisoires
 
-- `environment.utilisateur` (projet 1, entrepreneur 101) remplit `projet_id` et `entrepreneur_id`
-  à la création, en attendant le token JWT du User-Service. La liste affiche toutes les études
-  tant qu'il n'y a pas d'authentification.
+- **Propriétaire des études** : le module n'envoie plus d'`entrepreneur_id`. Le backend
+  (etude-service) le déduit du jeton de connexion transmis par la gateway (`sub` Keycloak) :
+  chaque entrepreneur ne voit et ne modifie que ses études (une étude d'un autre → 404, y compris
+  personas et SWOT), l'ADMIN les voit toutes.
+- **Projet : provisoire, toujours le projet 1.** `projet_id` vient de
+  `environment.utilisateur.projetId` (= 1) tant que le sélecteur de projet n'est pas relié au
+  Projet-Service : toutes les études créées sont rattachées au projet 1.
 - Le Market-Service ne fournit pas de devise : elle est réglée dans `market.config.ts`.
 
 ## Éléments des maquettes absents de l'API

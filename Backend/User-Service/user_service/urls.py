@@ -7,6 +7,7 @@ from drf_spectacular.views import (
 )
 
 urlpatterns = [
+    path("", include("django_prometheus.urls")),  # /metrics, hors préfixe (scrape Prometheus)
     path("admin/", admin.site.urls),
     path("api/auth/", include("authentication.urls")),
     # OpenAPI Schema & Interactive Docs

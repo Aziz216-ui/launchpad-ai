@@ -11,5 +11,5 @@ import java.util.UUID;
 public interface DocumentDistant {
 
     /** Demande la génération d'un document (sans analyse IA) et renvoie son identifiant. */
-    UUID genererDocument(UUID projetId, TypeDocument type);
+    UUID genererDocument(Long projetId, TypeDocument type);
 }

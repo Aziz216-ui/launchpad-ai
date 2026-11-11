@@ -485,7 +485,7 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     this.authService.currentUser$.subscribe(u => {
       this.currentUser = u;
-      this.isLawyer = u?.role === 'lawyer';
+      this.isLawyer = u?.role === 'LAWYER';
     });
 
     this.lawyerService.getLawyers().subscribe(l => this.lawyers = l);

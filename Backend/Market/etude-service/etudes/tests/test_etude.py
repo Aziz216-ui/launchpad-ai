@@ -64,7 +64,8 @@ class EtudeCrudTests(EtudeBaseTestCase):
         self.assertEqual(response.data["secteur_nom"], "FinTech")
         etude = EtudeMarche.objects.get(id=response.data["id"])
         self.assertEqual(etude.tendance_ids, [self.positive])
-        self.assertEqual(etude.entrepreneur_id, 42)
+        # Sans jeton (appel interne) : la valeur envoyée est gardée, en chaîne (identifiant Keycloak)
+        self.assertEqual(etude.entrepreneur_id, "42")
 
     def test_creer_sans_nouveaux_champs(self):
         # Compatibilité : le format de création d'origine reste valide
@@ -223,6 +224,80 @@ class EtudeCrudTests(EtudeBaseTestCase):
     def test_finaliser_etude_inexistante(self):
         response = self.client.post(reverse("etude-finaliser", args=[9999]))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class CoherenceSecteurTests(EtudeBaseTestCase):
+    """Concurrents et tendances d'une étude : toujours du secteur de l'étude."""
+
+    def setUp(self):
+        super().setUp()
+        d = self.distant
+        self.edtech = d.secteur("EdTech")
+        self.concurrent_edtech = d.concurrent("Coursera", self.edtech, "50", "40")
+        self.tendance_edtech = d.tendance("Hybride", self.edtech, "positif")
+
+    def test_creation_concurrent_d_un_autre_secteur_400(self):
+        data = {"projet_id": 5, "secteur": self.secteur, "titre": "X",
+                "concurrent_ids": [self.concurrents[0], self.concurrent_edtech]}
+        response = self.client.post(reverse("etude-list"), data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json(), {"concurrent_ids": [
+            f"Concurrent(s) hors du secteur de l'étude : {self.concurrent_edtech}"]})
+        self.assertFalse(EtudeMarche.objects.filter(titre="X").exists())
+
+    def test_modification_ajout_d_un_concurrent_d_un_autre_secteur_400(self):
+        response = self.client.patch(self.url("detail"),
+                                     {"concurrent_ids": [*self.concurrents, self.concurrent_edtech]},
+                                     format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("hors du secteur", response.json()["concurrent_ids"][0])
+        self.etude.refresh_from_db()
+        self.assertEqual(self.etude.concurrent_ids, self.concurrents)
+
+    def test_tendance_d_un_autre_secteur_400(self):
+        response = self.client.patch(self.url("detail"), {"tendance_ids": [self.tendance_edtech]}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json(), {"tendance_ids": [
+            f"Tendance(s) hors du secteur de l'étude : {self.tendance_edtech}"]})
+
+    def test_changement_de_secteur_retire_concurrents_et_tendances(self):
+        response = self.client.patch(self.url("detail"), {"secteur": self.edtech}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        self.assertEqual(response.data["secteur_id"], self.edtech)
+        self.assertEqual(response.data["concurrent_ids"], [])
+        self.assertEqual(response.data["concurrents_retires"], self.concurrents)
+        self.assertEqual(response.data["tendances_retirees"], [self.positive, self.negative, self.neutre])
+        self.etude.refresh_from_db()
+        self.assertEqual((self.etude.concurrent_ids, self.etude.tendance_ids), ([], []))
+
+    def test_changement_de_secteur_avec_concurrents_du_nouveau_secteur(self):
+        # Ancien concurrent gardé dans la requête -> retiré ; nouveau du bon secteur -> accepté
+        response = self.client.patch(self.url("detail"), {
+            "secteur": self.edtech, "concurrent_ids": [self.concurrents[0], self.concurrent_edtech],
+        }, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        self.assertEqual(response.data["concurrent_ids"], [self.concurrent_edtech])
+        self.assertEqual(response.data["concurrents_retires"], [self.concurrents[0]])
+
+    def test_changement_de_secteur_niveau_recalcule(self):
+        self.client.patch(self.url("detail"), {"secteur": self.edtech}, format="json")
+        niveau = self.client.get(self.url("opportunites-menaces")).json()["niveau_concurrence"]
+        self.assertEqual(niveau, "inconnu")
+
+    def test_modification_sans_changement_de_secteur(self):
+        # Rien de retiré ; les ids déjà associés ne sont pas relus (aucun appel de validation)
+        self.mocks["concurrent_list"].reset_mock()
+        response = self.client.patch(self.url("detail"), {"cible": "PME"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.mocks["concurrent_list"].call_count, 0)
+        self.assertEqual(response.data["concurrents_retires"], [])
+        self.assertEqual(response.data["tendances_retirees"], [])
+        self.assertEqual(response.data["concurrent_ids"], self.concurrents)
+
+    def test_lecture_sans_champs_de_retrait(self):
+        # Les champs *_retires n'apparaissent qu'en réponse à une écriture
+        self.assertNotIn("concurrents_retires", self.client.get(self.url("detail")).json())
+        self.assertNotIn("concurrents_retires", self.client.get(reverse("etude-list")).json()[0])
 
 
 class PersonaCrudTests(EtudeBaseTestCase):
@@ -391,6 +466,48 @@ class RapportTests(EtudeBaseTestCase):
                                            concurrent_ids=self.concurrents, tendance_ids=[self.negative])
         data = self.client.get(self.url("rapport", etude)).json()
         self.assertEqual(data["potentiel_commercial"]["niveau"], "faible")
+        # Somme des points = -3 : le score affiché est borné à 0, le détail reste visible
+        self.assertEqual(data["potentiel_commercial"]["score"], 0)
+        self.assertEqual(data["potentiel_commercial"]["conclusion"], "Potentiel commercial faible (score 0/7).")
+        self.assertIn("Marché en recul (5 %/an) : -1", data["potentiel_commercial"]["justification"])
+        self.assertIn("Niveau de concurrence élevé : -1", data["potentiel_commercial"]["justification"])
+
+    def test_potentiel_concurrence_elevee_sans_croissance_zero_sur_7(self):
+        # Concurrence élevée (-1), croissance nulle (0), aucun autre point : 0/7, pas -1/7
+        etude = EtudeMarche.objects.create(projet_id=3, secteur_id=self.secteur, titre="Saturée",
+                                           taux_croissance=Decimal("0"), concurrent_ids=self.concurrents)
+        p = self.client.get(self.url("rapport", etude)).json()["potentiel_commercial"]
+        self.assertEqual((p["score"], p["score_max"], p["niveau"]), (0, 7, "faible"))
+        self.assertEqual(p["justification"], ["Niveau de concurrence élevé : -1"])
+
+    def test_textes_au_format_francais(self):
+        om = self.client.get(self.url("opportunites-menaces")).json()
+        textes = [e["description"] for e in om["opportunites"] + om["menaces"]]
+        self.assertIn("Marché en forte croissance (+12,5 % par an).", textes)
+        self.assertIn("Prix inférieur de 20 % à la moyenne des concurrents : "
+                      "argument fort pour attirer les clients.", textes)
+        justification = self.client.get(self.url("rapport")).json()["potentiel_commercial"]["justification"]
+        self.assertIn("Forte croissance du marché (+12,5 %/an) : +2", justification)
+        # Les nombres bruts du JSON restent des nombres
+        self.assertEqual(om["taux_croissance"], 12.5)
+
+    def test_rapport_pdf_nombres_au_format_francais(self):
+        self.etude.taille_marche = Decimal("2000000")
+        self.etude.prix_propose = Decimal("25")
+        self.etude.save()
+        Persona.objects.create(etude=self.etude, nom="Sami", revenu_estime=Decimal("400"))
+        textes = []
+        from etudes.services import rapport_pdf
+        vrai = rapport_pdf.Paragraph
+        with mock.patch.object(rapport_pdf, "Paragraph",
+                               side_effect=lambda texte, *a, **k: textes.append(str(texte)) or vrai(texte, *a, **k)):
+            response = self.client.get(self.url("rapport-pdf"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        S = " "
+        for attendu in (f"2{S}000{S}000{S}€", f"12,5{S}%", f"25{S}€", f"400{S}€ / mois",
+                        f"20{S}€", f"+25{S}%", f"30{S}%"):  # prix moyen 20 €, écart +25 %, part 30 %
+            self.assertIn(attendu, textes, attendu)
+        self.assertFalse([t for t in textes if ".00" in t], "aucun « .00 » dans le PDF")
 
     def test_rapport_etude_vide(self):
         etude = EtudeMarche.objects.create(projet_id=3, secteur_id=self.secteur, titre="Vide")

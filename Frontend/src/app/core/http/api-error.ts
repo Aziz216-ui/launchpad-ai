@@ -25,6 +25,22 @@ export class ApiError extends Error {
     const erreursChamps: Record<string, string[]> = {};
     let message = messageParDefaut(reponse.status);
 
+    // Services NestJS (juridique) : {"statusCode", "message": "…" | ["…", "…"], "error"}
+    if (corps && typeof corps === 'object' && !(corps instanceof Blob) && typeof corps.statusCode === 'number' && corps.message) {
+      const messages: string[] = (Array.isArray(corps.message) ? corps.message : [corps.message]).map(String);
+      // class-validator ajoute un message technique anglais après le message métier : on garde le premier
+      return new ApiError(reponse.status, messages.filter((m) => !/ must be | should not /.test(m))[0] ?? messages[0]);
+    }
+
+    // Services Symfony (espace comptable) : {"error": {"code", "message", "details": [{"field", "message"}]}}
+    const erreurSymfony = corps && typeof corps === 'object' && !(corps instanceof Blob) ? corps.error : undefined;
+    if (erreurSymfony && typeof erreurSymfony === 'object' && typeof erreurSymfony.message === 'string') {
+      for (const detail of Array.isArray(erreurSymfony.details) ? erreurSymfony.details : []) {
+        if (detail?.field) (erreursChamps[detail.field] ??= []).push(String(detail.message));
+      }
+      return new ApiError(reponse.status, erreurSymfony.message, erreursChamps);
+    }
+
     if (corps && typeof corps === 'object' && !(corps instanceof Blob)) {
       for (const [cle, valeur] of Object.entries(corps)) {
         // Services Spring (ProblemDetail, RFC 7807) : les métadonnées ne sont pas des champs de formulaire,
