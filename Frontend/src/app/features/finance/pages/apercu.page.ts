@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
@@ -6,8 +7,8 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state.comp
 import { LoaderComponent } from '../../../shared/components/loader.component';
 import { NotificationService } from '../../../core/notifications/notification.service';
 import { GraphiqueProjectionsComponent } from '../components/graphique-projections.component';
-import { Ecart, Marges } from '../models/finance.models';
-import { STATUTS_ECART } from '../models/libelles';
+import { Ecart, Marges, NotificationFinance } from '../models/finance.models';
+import { STATUTS_ECART, STATUTS_VALIDATION } from '../models/libelles';
 import { MontantPipe, TauxPipe } from '../pipes/montant.pipe';
 import { messageErreur } from '../services/erreurs';
 import { FinanceApiService } from '../services/finance-api.service';
@@ -16,7 +17,7 @@ import { FinanceStore } from '../services/finance-store.service';
 /** Vue d'ensemble : chiffres clés de la prévision courante, projections et commentaire de l'IA. */
 @Component({
   selector: 'app-finance-apercu',
-  imports: [RouterLink, BadgeComponent, EmptyStateComponent, LoaderComponent, GraphiqueProjectionsComponent, MontantPipe, TauxPipe],
+  imports: [DatePipe, RouterLink, BadgeComponent, EmptyStateComponent, LoaderComponent, GraphiqueProjectionsComponent, MontantPipe, TauxPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -25,6 +26,17 @@ import { FinanceStore } from '../services/finance-store.service';
       } @else if (store.erreur(); as erreur) {
         <div class="bandeau-erreur" role="alert">{{ erreur }}</div>
       } @else if (store.prevision(); as p) {
+        <div class="avis-courant">
+          <app-badge [variante]="statutsValidation[p.validation.statut].variante">
+            Prévision {{ p.periode }} · {{ statutsValidation[p.validation.statut].libelle }}
+          </app-badge>
+          @if (p.validation.commentaire) {
+            <span class="note">« {{ p.validation.commentaire }} » ({{ p.validation.auteur }})</span>
+          }
+          @if (store.peutValider() && p.validation.statut === 'EN_ATTENTE') {
+            <a class="btn-texte" routerLink="../previsions">Donner mon avis</a>
+          }
+        </div>
         <div class="grille-kpi">
           <div class="kpi">
             <span class="libelle">Chiffre d'affaires</span>
@@ -60,7 +72,7 @@ import { FinanceStore } from '../services/finance-store.service';
                 <h2>Projections pluriannuelles</h2>
                 <span class="sous-titre">Chiffre d'affaires, dépenses et marge par année</span>
               </div>
-              <a class="btn-secondaire" routerLink="../projections">Gérer les projections</a>
+              <a class="btn-secondaire" routerLink="../projections">{{ store.peutEcrire() ? 'Gérer les projections' : 'Voir le détail' }}</a>
             </div>
             @if (p.projections.length) {
               <app-graphique-projections [projections]="p.projections" />
@@ -92,15 +104,70 @@ import { FinanceStore } from '../services/finance-store.service';
                 <span class="note">Rédigé par IA à partir des chiffres calculés ci-dessus.</span>
               </section>
             }
+            @if (activite().length) {
+              <section class="carte" aria-label="Activité récente">
+                <h2>Activité récente</h2>
+                <ul class="activite">
+                  @for (n of activite(); track $index) {
+                    <li>
+                      <span class="pastille" [class]="'pastille ' + n.type"></span>
+                      <span>{{ n.message }}<br /><span class="note">{{ n.recueLe | date: 'd MMM, HH:mm' }}</span></span>
+                    </li>
+                  }
+                </ul>
+              </section>
+            }
           </div>
         </div>
-      } @else {
+      } @else if (store.peutEcrire()) {
         <app-empty-state titre="Aucune prévision pour ce projet"
           texte="Créez votre première prévision pour obtenir vos marges, vos écarts et vos projections.">
           <a class="btn-primaire" routerLink="../previsions">Créer une prévision</a>
         </app-empty-state>
+      } @else {
+        <app-empty-state titre="Aucune prévision pour ce projet"
+          texte="L'entrepreneur n'a pas encore saisi de prévision : rien à relire pour l'instant." />
       }
     </div>
+  `,
+  styles: `
+    .avis-courant {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .activite {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 13px;
+    }
+    .activite li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .pastille {
+      flex: none;
+      width: 8px;
+      height: 8px;
+      margin-top: 6px;
+      border-radius: 50%;
+      background: #2b7a86;
+    }
+    .pastille.PREVISION_A_VALIDER {
+      background: #c77c0e;
+    }
+    .pastille.PREVISION_VALIDEE {
+      background: #2e8b57;
+    }
+    .pastille.PREVISION_REJETEE {
+      background: #b23b3b;
+    }
   `,
 })
 export class ApercuPage {
@@ -109,12 +176,26 @@ export class ApercuPage {
   private readonly notifications = inject(NotificationService);
 
   protected readonly statuts = STATUTS_ECART;
+  protected readonly statutsValidation = STATUTS_VALIDATION;
   protected readonly marges = signal<Marges | null>(null);
   protected readonly ecart = signal<Ecart | null>(null);
   protected readonly commentaire = signal<string | null>(null);
   protected readonly commentaireEnCours = signal(false);
+  /** 5 dernières notifications du projet pour l'utilisateur (avis pour l'entrepreneur, demandes pour le financier). */
+  protected readonly activite = signal<NotificationFinance[]>([]);
 
   constructor() {
+    effect(() => {
+      const projetId = this.store.projetId();
+      // Recharge aussi quand la liste des prévisions change (nouvel avis, nouvelle prévision).
+      this.store.previsions();
+      untracked(() =>
+        this.api.listerNotifications(projetId).subscribe({
+          next: (liste) => this.activite.set(liste.slice(0, 5)),
+          error: () => this.activite.set([]),
+        }),
+      );
+    });
     // Marges et écart sont recalculés par le backend à chaque changement de prévision courante.
     effect(() => {
       const prevision = this.store.prevision();

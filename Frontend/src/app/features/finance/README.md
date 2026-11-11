@@ -10,7 +10,18 @@
 | `/finance/previsions` | Liste et création des prévisions | 1 |
 | `/finance/projections` | Génération des projections pluriannuelles | 2 |
 | `/finance/documents` | Génération (avec analyse IA optionnelle), consultation, export PDF / Excel, suppression | 3, 4 |
+| `/finance/equipe` | Financiers invités : inviter par e-mail, retirer (propriétaire) | Rôles |
 | `/finance/assistant` | Assistant financier IA (outils : marges, génération de document) | IA |
+
+## Rôles
+
+- **ENTREPRENEUR** (propriétaire du projet) : saisit les prévisions, génère projections et documents, invite des
+  financiers (onglet Équipe), utilise l'assistant.
+- **FINANCIER** : arrive sur `/finance` en mode relecture ; choisit l'un des projets où il est invité. Lecture seule,
+  avec un avis (valider / rejeter, commentaire obligatoire pour un rejet) sur chaque prévision et la certification
+  des documents.
+- Les droits viennent du backend (`GET /projets/{id}/acces`, signaux `peutEcrire` / `peutValider` du `FinanceStore`) :
+  l'interface masque les actions interdites, le backend les refuse (403).
 
 ## Organisation
 

@@ -6,8 +6,10 @@ import { roleGuard } from '../../core/auth/role.guard';
 /**
  * Routes du module « Finance » (chargées à la demande sous /finance).
  * FinanceComponent enveloppe tous les écrans, porte l'en-tête, les onglets et les styles du module.
- * Accessible à ENTREPRENEUR (gère les finances de son propre projet) et FINANCIER (même
- * interface, pas de vue dédiée distincte aujourd'hui) ; ADMIN par défaut comme ENTREPRENEUR.
+ * Accessible à ENTREPRENEUR (propriétaire : saisit, génère, invite des financiers) et FINANCIER
+ * (relecteur invité : lecture seule, avis sur les prévisions, certification des documents, sur les
+ * seuls projets où il est invité). ADMIN a tous les droits. Les droits fins viennent du backend
+ * (GET /projets/{id}/acces) ; les onglets Équipe et Assistant ne s'affichent qu'au propriétaire.
  */
 export default [
   {
@@ -35,6 +37,11 @@ export default [
         path: 'documents',
         loadComponent: () => import('./pages/documents.page').then((m) => m.DocumentsPage),
         title: 'Documents · Finance',
+      },
+      {
+        path: 'equipe',
+        loadComponent: () => import('./pages/equipe.page').then((m) => m.EquipePage),
+        title: 'Équipe · Finance',
       },
       {
         path: 'assistant',

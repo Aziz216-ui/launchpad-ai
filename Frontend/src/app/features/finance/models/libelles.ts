@@ -1,5 +1,5 @@
 import { VarianteBadge } from '../../../shared/components/badge.component';
-import { StatutEcart, TypeDocument } from './finance.models';
+import { RoleProjet, StatutEcart, StatutValidation, TypeDocument } from './finance.models';
 
 /** Devise d'affichage des montants (le Finance-Service stocke des montants sans devise). */
 export const DEVISE = 'TND';
@@ -20,4 +20,17 @@ export const STATUTS_ECART: Record<StatutEcart, { libelle: string; variante: Var
   EXCEDENT: { libelle: 'Excédent', variante: 'succes' },
   EQUILIBRE: { libelle: 'Équilibre', variante: 'neutre' },
   DEFICIT: { libelle: 'Déficit', variante: 'danger' },
+};
+
+export const STATUTS_VALIDATION: Record<StatutValidation, { libelle: string; variante: VarianteBadge }> = {
+  EN_ATTENTE: { libelle: 'En attente d’avis', variante: 'attention' },
+  VALIDEE: { libelle: 'Validée', variante: 'succes' },
+  REJETEE: { libelle: 'Rejetée', variante: 'danger' },
+};
+
+export const ROLES_PROJET: Record<RoleProjet, string> = {
+  PROPRIETAIRE: 'Propriétaire',
+  FINANCIER: 'Financier invité',
+  ADMIN: 'Administrateur',
+  AUCUN: 'Aucun accès',
 };

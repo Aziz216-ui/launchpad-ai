@@ -7,9 +7,9 @@ import { Role } from '../services/auth.service';
  *
  * ACCOUNTANT -> Comptabilité (Professional-Service), LAWYER -> espace avocat,
  * ENTREPRENEUR -> tableau de bord (bundle fondateur : marché, finance, IA, juridique),
- * FINANCIER -> module Finance (pensé pour un seul projet, pas de vue dédiée financier
- * distincte de la vue entrepreneur), ADMIN -> pas d'espace dédié pour l'instant, même
- * bundle que ENTREPRENEUR.
+ * FINANCIER -> module Finance en mode relecture (projets où un entrepreneur l'a invité :
+ * avis sur les prévisions, certification des documents), ADMIN -> pas d'espace dédié pour
+ * l'instant, même bundle que ENTREPRENEUR.
  */
 const ROUTE_PAR_ROLE: Record<Role, string> = {
   LAWYER: '/professional/avocat',

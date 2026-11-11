@@ -7,6 +7,17 @@ export interface Projection {
   marge: number;
 }
 
+/** Avis du financier sur une prévision. */
+export type StatutValidation = 'EN_ATTENTE' | 'VALIDEE' | 'REJETEE';
+
+export interface Validation {
+  statut: StatutValidation;
+  /** Commentaire, auteur et date sont null tant que la prévision est EN_ATTENTE. */
+  commentaire: string | null;
+  auteur: string | null;
+  le: string | null;
+}
+
 export interface Prevision {
   previsionId: string;
   projetId: number;
@@ -17,6 +28,76 @@ export interface Prevision {
   resultat: number;
   creeLe: string;
   projections: Projection[];
+  validation: Validation;
+}
+
+export interface AvisSaisie {
+  decision: 'VALIDEE' | 'REJETEE';
+  /** Obligatoire pour un rejet. */
+  commentaire?: string | null;
+}
+
+// --- Rôles sur un projet -----------------------------------------------------
+
+/** Rôle sur UN projet : propriétaire (entrepreneur), financier invité, administrateur ou aucun. */
+export type RoleProjet = 'PROPRIETAIRE' | 'FINANCIER' | 'ADMIN' | 'AUCUN';
+
+/** Droits de l'utilisateur connecté sur le projet courant (calculés par le backend). */
+export interface DroitsProjet {
+  projetId: number;
+  role: RoleProjet;
+  /** Consulter prévisions, projections et documents. */
+  lecture: boolean;
+  /** Saisir, générer, supprimer, inviter des financiers (propriétaire). */
+  ecriture: boolean;
+  /** Valider les prévisions et certifier les documents (financier invité). */
+  validation: boolean;
+}
+
+export interface ProjetAccessible {
+  projetId: number;
+  role: RoleProjet;
+  depuis: string;
+  previsionsEnAttente: number;
+}
+
+/**
+ * Projet de la plateforme, tel que le connaît le Projet-Service (module IA) : c'est son identifiant que
+ * Finance utilise comme projetId. L'utilisateur ne voit que le titre.
+ */
+export interface ProjetPlateforme {
+  id: number;
+  entrepreneur_id: number;
+  titre: string;
+  secteur: string;
+  stade: 'idee' | 'prototype' | 'lancement' | 'croissance';
+  statut: 'brouillon' | 'actif' | 'archive';
+}
+
+export interface ProjetPlateformeSaisie {
+  titre: string;
+  secteur: string;
+  stade: ProjetPlateforme['stade'];
+}
+
+export type TypeNotification = 'DOCUMENT_GENERE' | 'PREVISION_A_VALIDER' | 'PREVISION_VALIDEE' | 'PREVISION_REJETEE';
+
+/** Notification issue des événements RabbitMQ, déjà filtrée par le backend selon le rôle sur le projet. */
+export interface NotificationFinance {
+  type: TypeNotification;
+  pour: 'PROPRIETAIRE' | 'FINANCIER' | 'TOUS';
+  projetId: number;
+  message: string;
+  recueLe: string;
+  documentId: string | null;
+  previsionId: string | null;
+}
+
+export interface MembreProjet {
+  projetId: number;
+  email: string;
+  role: RoleProjet;
+  ajouteLe: string;
 }
 
 export interface PrevisionSaisie {
@@ -81,12 +162,20 @@ export interface ContenuDocument {
   sections: SectionDocument[];
 }
 
+/** Certification d'un document par un financier invité (null tant que non certifié). */
+export interface Certification {
+  auteur: string;
+  commentaire: string | null;
+  le: string;
+}
+
 export interface DocumentResume {
   documentId: string;
   projetId: number;
   type: TypeDocument;
   titre: string;
   creeLe: string;
+  certification: Certification | null;
 }
 
 export interface DocumentFinancier {
@@ -95,6 +184,9 @@ export interface DocumentFinancier {
   type: TypeDocument;
   creeLe: string;
   contenu: ContenuDocument;
+  /** Prévision dont le document est tiré : elle doit être validée pour que le document soit certifié. */
+  previsionId: string | null;
+  certification: Certification | null;
 }
 
 export interface DocumentSaisie {

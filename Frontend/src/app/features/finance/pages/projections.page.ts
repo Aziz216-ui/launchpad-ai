@@ -54,8 +54,12 @@ import { FinanceStore } from '../services/finance-store.service';
             }
           </section>
 
+          @if (store.peutEcrire()) {
           <form class="carte formulaire" (ngSubmit)="generer(p.previsionId)" novalidate aria-label="Générer des projections">
             <h2>Générer des projections</h2>
+            @if (p.validation.statut !== 'EN_ATTENTE') {
+              <span class="note">Nouvelles projections = nouvel avis du financier : la prévision repassera en attente.</span>
+            }
             <label class="champ" [class.en-erreur]="erreur('tauxCa')">
               Évolution annuelle du CA (%)
               <input name="tauxCa" type="number" step="0.1" [(ngModel)]="tauxCa" required />
@@ -79,11 +83,14 @@ import { FinanceStore } from '../services/finance-store.service';
               {{ enCours() ? 'Calcul…' : p.projections.length ? 'Remplacer les projections' : 'Générer' }}
             </button>
           </form>
+          }
         </div>
-      } @else {
+      } @else if (store.peutEcrire()) {
         <app-empty-state titre="Aucune prévision" texte="Les projections partent d'une prévision.">
           <a class="btn-primaire" routerLink="../previsions">Créer une prévision</a>
         </app-empty-state>
+      } @else {
+        <app-empty-state titre="Aucune prévision" texte="L'entrepreneur n'a pas encore saisi de prévision pour ce projet." />
       }
     </div>
   `,
@@ -124,7 +131,12 @@ export class ProjectionsPage {
       .genererProjections(previsionId, { tauxCa: this.tauxCa, tauxDepenses: this.tauxDepenses, horizon: this.horizon })
       .subscribe({
         next: (projections) => {
-          this.store.remplacer({ ...prevision, projections });
+          // De nouveaux chiffres annulent l'avis du financier : la prévision repasse en attente (comme côté backend).
+          this.store.remplacer({
+            ...prevision,
+            projections,
+            validation: { statut: 'EN_ATTENTE', commentaire: null, auteur: null, le: null },
+          });
           this.notifications.succes(`${projections.length} projection(s) générée(s).`);
           this.enCours.set(false);
         },
