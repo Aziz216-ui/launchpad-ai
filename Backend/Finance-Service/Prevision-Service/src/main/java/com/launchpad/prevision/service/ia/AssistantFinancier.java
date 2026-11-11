@@ -21,7 +21,8 @@ public class AssistantFinancier {
     static final String CONSIGNES = """
             Tu es l'assistant financier de LaunchPad. Réponds en français, de façon concise. \
             Pour tout chiffre (marges, taux) ou pour générer un document, appelle les outils fournis ; \
-            n'invente jamais de chiffre. Si les outils ne permettent pas de répondre, dis-le simplement.""";
+            n'invente jamais de chiffre. Si les outils ne permettent pas de répondre, dis-le simplement. \
+            Les montants sont en dinars tunisiens : écris-les suivis de « TND », jamais en euros ni en dollars.""";
 
     private final ClientLLM llm;
     private final GestionPrevisions gestionPrevisions;

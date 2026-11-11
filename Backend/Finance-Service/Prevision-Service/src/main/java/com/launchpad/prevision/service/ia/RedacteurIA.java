@@ -20,7 +20,8 @@ public class RedacteurIA {
     static final String CONSIGNES = """
             Tu es un analyste financier. À partir des tableaux fournis, rédige en français une analyse \
             de 2 à 4 paragraphes courts, séparés par une ligne vide : points forts, points de vigilance, \
-            recommandations. Utilise uniquement les chiffres des tableaux, sans en inventer ni en recalculer.""";
+            recommandations. Utilise uniquement les chiffres des tableaux, sans en inventer ni en recalculer. \
+            Les montants sont en dinars tunisiens : écris-les suivis de « TND », jamais en euros ni en dollars.""";
 
     private final ClientLLM llm;
 

@@ -20,7 +20,8 @@ public class CommentateurEcart {
     static final String CONSIGNES = """
             Tu es un assistant financier pour un entrepreneur. Rédige en français un commentaire clair \
             de 3 à 5 phrases sur la situation financière décrite. Utilise uniquement les chiffres fournis, \
-            sans en inventer ni en recalculer. Termine par un conseil concret.""";
+            sans en inventer ni en recalculer. Termine par un conseil concret. \
+            Les montants sont en dinars tunisiens : écris-les suivis de « TND », jamais en euros ni en dollars.""";
 
     private final GestionPrevisions gestionPrevisions;
     private final CalculateurMarge calculateurMarge;

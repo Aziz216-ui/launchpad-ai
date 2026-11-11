@@ -695,8 +695,12 @@ services:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_USERNAME: ${RABBITMQ_USER:-guest}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
-      SPRING_AI_MODEL_CHAT: none
+      # IA désactivée par défaut ; pour l'activer (analyse des documents, assistant) : dans .env,
+      # SPRING_AI_MODEL_CHAT=openai et XAI_API_KEY=<clé> (+ XAI_BASE_URL / XAI_MODEL pour un autre fournisseur compatible)
+      SPRING_AI_MODEL_CHAT: ${SPRING_AI_MODEL_CHAT:-none}
       XAI_API_KEY: ${XAI_API_KEY:-}
+      XAI_BASE_URL: ${XAI_BASE_URL:-https://api.x.ai}
+      XAI_MODEL: ${XAI_MODEL:-grok-4}
     depends_on:
       prevision-db: {condition: service_healthy}
 
