@@ -59,6 +59,8 @@ class JwtSecurityTest extends GatewayTestSupport {
             registry.add("launchpad.services." + service + ".uri", keycloakAndMarket::url);
         }
         registry.add("launchpad.services.legal.uri", keycloakAndMarket::url);
+        registry.add("launchpad.services.prevision.uri", keycloakAndMarket::url);
+        registry.add("launchpad.services.document.uri", keycloakAndMarket::url);
         registry.add("launchpad.services.user.uri", keycloakAndMarket::url);
     }
 
@@ -174,6 +176,33 @@ class JwtSecurityTest extends GatewayTestSupport {
         client.delete().uri("/api/market/etudes/1/")
                 .headers(h -> h.setBearerAuth(token(keycloakKey, 300, "ADMIN"))).exchange()
                 .expectStatus().isOk();
+    }
+
+    @Test
+    void financeDeleteIsForwardedForAnyAuthenticatedRole() {
+        // Le Finance-Service vérifie lui-même que l'utilisateur est propriétaire du projet.
+        client.delete().uri("/api/finance/documents/0d1b4c32-b9e5-4223-9ad5-efc92ef32af7")
+                .headers(h -> h.setBearerAuth(token(keycloakKey, 300, "ENTREPRENEUR"))).exchange()
+                .expectStatus().isOk();
+        client.delete().uri("/api/finance/projets/1/financiers/conseil@launchpad.tn")
+                .headers(h -> h.setBearerAuth(token(keycloakKey, 300, "ENTREPRENEUR"))).exchange()
+                .expectStatus().isOk();
+    }
+
+    @Test
+    void financeInternalAiRouteIsRefusedEvenForAdmin() {
+        client.post().uri("/api/finance/ia/analyse")
+                .headers(h -> h.setBearerAuth(token(keycloakKey, 300, "ADMIN"))).exchange()
+                .expectStatus().isForbidden();
+        // Rien n'est transmis au service (seul le JWKS a pu être lu pour valider le token)
+        var derniere = keycloakAndMarket.lastRequest();
+        assertThat(derniere == null || JWKS_PATH.equals(derniere.getPath())).isTrue();
+    }
+
+    @Test
+    void financeDeleteWithoutTokenGives401() {
+        client.delete().uri("/api/finance/documents/0d1b4c32-b9e5-4223-9ad5-efc92ef32af7").exchange()
+                .expectStatus().isUnauthorized();
     }
 
     @Test
