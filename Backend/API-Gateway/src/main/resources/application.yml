@@ -241,6 +241,41 @@ spring:
               metadata:
                 service: lawyer-docreview-service
 
+            # Docs Finance (springdoc), même principe que l'espace avocat :
+            #   /docs/finance/<service>/swagger-ui/**  -> /swagger-ui/**
+            #   /docs/finance/<service>/v3/api-docs/** -> /v3/api-docs/**
+            # Swagger UI : http://localhost:8090/docs/finance/prevision/swagger-ui/index.html
+            - id: finance-prevision-docs
+              uri: ${launchpad.services.prevision.uri}
+              predicates:
+                - Path=/docs/finance/prevision/swagger-ui/**, /docs/finance/prevision/v3/api-docs/**
+              filters:
+                - RewritePath=/docs/finance/prevision/(?<segment>.*), /$\{segment}
+              metadata:
+                service: PREVISION-SERVICE
+            - id: finance-document-docs
+              uri: ${launchpad.services.document.uri}
+              predicates:
+                - Path=/docs/finance/document/swagger-ui/**, /docs/finance/document/v3/api-docs/**
+              filters:
+                - RewritePath=/docs/finance/document/(?<segment>.*), /$\{segment}
+              metadata:
+                service: DOCUMENT-SERVICE
+            - id: finance-prevision-schema
+              uri: ${launchpad.services.prevision.uri}
+              predicates:
+                - Path=/v3/api-docs/**
+                - Header=Referer, .*/docs/finance/prevision/.*
+              metadata:
+                service: PREVISION-SERVICE
+            - id: finance-document-schema
+              uri: ${launchpad.services.document.uri}
+              predicates:
+                - Path=/v3/api-docs/**
+                - Header=Referer, .*/docs/finance/document/.*
+              metadata:
+                service: DOCUMENT-SERVICE
+
             # --- Juridique : Legal-Service, port 3003 ----------------------------
             - id: legal-service
               uri: ${launchpad.services.legal.uri}
