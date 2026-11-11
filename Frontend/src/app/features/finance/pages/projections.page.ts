@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { NotificationService } from '../../../core/notifications/notification.service';
 import { EmptyStateComponent } from '../../../shared/components/empty-state.component';
 import { GraphiqueProjectionsComponent } from '../components/graphique-projections.component';
+import { Projection } from '../models/finance.models';
 import { MontantPipe } from '../pipes/montant.pipe';
 import { erreursChamps, texteErreur } from '../services/erreurs';
 import { FinanceApiService } from '../services/finance-api.service';
@@ -58,7 +59,7 @@ import { FinanceStore } from '../services/finance-store.service';
           <form class="carte formulaire" (ngSubmit)="generer(p.previsionId)" novalidate aria-label="Générer des projections">
             <h2>Générer des projections</h2>
             @if (p.validation.statut !== 'EN_ATTENTE') {
-              <span class="note">Nouvelles projections = nouvel avis du financier : la prévision repassera en attente.</span>
+              <span class="note">Si les chiffres changent, la prévision repassera en attente d'un nouvel avis du financier.</span>
             }
             <label class="champ" [class.en-erreur]="erreur('tauxCa')">
               Évolution annuelle du CA (%)
@@ -131,13 +132,20 @@ export class ProjectionsPage {
       .genererProjections(previsionId, { tauxCa: this.tauxCa, tauxDepenses: this.tauxDepenses, horizon: this.horizon })
       .subscribe({
         next: (projections) => {
-          // De nouveaux chiffres annulent l'avis du financier : la prévision repasse en attente (comme côté backend).
+          // Comme côté backend : seuls des chiffres différents annulent l'avis du financier.
+          const inchangees = memesProjections(prevision.projections, projections);
           this.store.remplacer({
             ...prevision,
             projections,
-            validation: { statut: 'EN_ATTENTE', commentaire: null, auteur: null, le: null },
+            validation: inchangees
+              ? prevision.validation
+              : { statut: 'EN_ATTENTE', commentaire: null, auteur: null, le: null },
           });
-          this.notifications.succes(`${projections.length} projection(s) générée(s).`);
+          this.notifications.succes(
+            inchangees
+              ? 'Projections identiques aux précédentes : rien n’a changé, l’avis du financier est conservé.'
+              : `${projections.length} projection(s) générée(s).`,
+          );
           this.enCours.set(false);
         },
         error: (e: unknown) => {
@@ -147,4 +155,18 @@ export class ProjectionsPage {
         },
       });
   }
+}
+
+/** Mêmes années et mêmes montants (le backend ne touche alors ni aux projections ni à l'avis). */
+function memesProjections(avant: Projection[], apres: Projection[]): boolean {
+  return (
+    avant.length === apres.length &&
+    avant.every(
+      (p, i) =>
+        p.annee === apres[i].annee &&
+        p.chiffreAffaires === apres[i].chiffreAffaires &&
+        p.depenses === apres[i].depenses &&
+        p.marge === apres[i].marge,
+    )
+  );
 }

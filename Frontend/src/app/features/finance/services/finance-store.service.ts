@@ -59,6 +59,20 @@ export class FinanceStore {
   readonly titre = (projetId: number): string =>
     this.projets().find((p) => p.id === projetId)?.titre ?? this.titresSuivis()[projetId] ?? `Projet n° ${projetId}`;
 
+  /**
+   * Libellé d'un projet dans la liste : « titre · secteur ». Si plusieurs projets portent le même titre, la date de
+   * création les distingue (l'identifiant technique n'est jamais montré).
+   */
+  libelleProjet(projet: ProjetPlateforme): string {
+    const homonyme = this.projets().some((p) => p.id !== projet.id && p.titre === projet.titre);
+    const date = homonyme && projet.date_creation
+      ? ' · créé le ' + new Date(projet.date_creation).toLocaleString('fr-FR', {
+          day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+        })
+      : '';
+    return projet.titre + (projet.secteur ? ' · ' + projet.secteur : '') + date;
+  }
+
   /** Prévision sélectionnée ; à défaut, la plus récente (le backend trie du plus récent au plus ancien). */
   private readonly previsionChoisie = signal<string | null>(null);
   readonly prevision = computed<Prevision | null>(() => {

@@ -93,7 +93,7 @@ import { FinanceStore } from '../services/finance-store.service';
                   <button type="button" class="btn-primaire" [disabled]="certificationEnCours()" (click)="certifier(doc)">
                     {{ certificationEnCours() ? 'Certification…' : 'Certifier le document' }}
                   </button>
-                  <span class="note">Possible seulement si la prévision dont il est tiré a été validée.</span>
+                  <span class="note">Possible seulement si la prévision dont il est tiré a été validée et n'a pas changé depuis la génération du document.</span>
                 </div>
               } @else {
                 <span class="note">Pas encore certifié par un financier.</span>
@@ -250,11 +250,12 @@ export class DocumentsPage {
   /**
    * Les taux ne sont pas des montants : le « % » figure soit dans la colonne (« Taux (%) », « % du CA »),
    * soit dans le libellé de la ligne (« Taux de marge brute (%) » du rapport investisseur).
+   * Les montants s'affichent au centime, comme dans les exports PDF / Excel du même document.
    */
   protected valeur(colonne: string | undefined, libelle: string, valeur: number): string {
     return /%/.test(colonne ?? '') || /%/.test(libelle)
-      ? `${valeur.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %`
-      : this.montantPipe.transform(valeur);
+      ? `${valeur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`
+      : this.montantPipe.transform(valeur, 'centimes');
   }
 
   protected estAnalyse(titre: string): boolean {

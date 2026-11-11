@@ -58,7 +58,7 @@ import { FinanceStore } from './services/finance-store.service';
                 Projet
                 <select name="projet" [ngModel]="store.projetId()" (ngModelChange)="store.changerProjet($event)">
                   @for (p of store.projets(); track p.id) {
-                    <option [ngValue]="p.id">{{ p.titre }}{{ p.secteur ? ' · ' + p.secteur : '' }}</option>
+                    <option [ngValue]="p.id">{{ store.libelleProjet(p) }}</option>
                   }
                 </select>
               </label>
@@ -108,9 +108,10 @@ import { FinanceStore } from './services/finance-store.service';
       }
 
       @if (store.droits(); as d) {
-        @if (d.role !== 'AUCUN') {
+        <!-- Projet encore sans prévision (« libre ») : l'entrepreneur qui l'ouvre en est le propriétaire. -->
+        @if (d.role !== 'AUCUN' || d.ecriture) {
           <p class="role-projet">
-            Votre rôle sur ce projet : <app-badge [variante]="d.role === 'FINANCIER' ? 'info' : 'neutre'" [petit]="true">{{ roles[d.role] }}</app-badge>
+            Votre rôle sur ce projet : <app-badge [variante]="d.role === 'FINANCIER' ? 'info' : 'neutre'" [petit]="true">{{ d.role === 'AUCUN' ? roles.PROPRIETAIRE : roles[d.role] }}</app-badge>
             @if (d.role === 'FINANCIER') { <span class="note">Lecture seule : vous validez les prévisions et certifiez les documents.</span> }
           </p>
         }

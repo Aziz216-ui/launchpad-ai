@@ -105,8 +105,8 @@ import { FinanceStore } from '../services/finance-store.service';
               </section>
             }
             @if (activite().length) {
-              <section class="carte" aria-label="Activité récente">
-                <h2>Activité récente</h2>
+              <section class="carte" aria-label="Notifications">
+                <h2>Notifications</h2>
                 <ul class="activite">
                   @for (n of activite(); track $index) {
                     <li>
@@ -165,6 +165,9 @@ import { FinanceStore } from '../services/finance-store.service';
     .pastille.PREVISION_VALIDEE {
       background: #2e8b57;
     }
+    .pastille.DOCUMENT_CERTIFIE {
+      background: #1c5a3d;
+    }
     .pastille.PREVISION_REJETEE {
       background: #b23b3b;
     }
@@ -181,7 +184,7 @@ export class ApercuPage {
   protected readonly ecart = signal<Ecart | null>(null);
   protected readonly commentaire = signal<string | null>(null);
   protected readonly commentaireEnCours = signal(false);
-  /** 5 dernières notifications du projet pour l'utilisateur (avis pour l'entrepreneur, demandes pour le financier). */
+  /** 5 dernières notifications du projet destinées à l'utilisateur (avis pour l'entrepreneur, demandes pour le financier). */
   protected readonly activite = signal<NotificationFinance[]>([]);
 
   constructor() {

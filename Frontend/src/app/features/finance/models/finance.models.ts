@@ -72,6 +72,7 @@ export interface ProjetPlateforme {
   secteur: string;
   stade: 'idee' | 'prototype' | 'lancement' | 'croissance';
   statut: 'brouillon' | 'actif' | 'archive';
+  date_creation: string;
 }
 
 export interface ProjetPlateformeSaisie {
@@ -80,7 +81,7 @@ export interface ProjetPlateformeSaisie {
   stade: ProjetPlateforme['stade'];
 }
 
-export type TypeNotification = 'DOCUMENT_GENERE' | 'PREVISION_A_VALIDER' | 'PREVISION_VALIDEE' | 'PREVISION_REJETEE';
+export type TypeNotification = 'DOCUMENT_GENERE' | 'DOCUMENT_CERTIFIE' | 'PREVISION_A_VALIDER' | 'PREVISION_VALIDEE' | 'PREVISION_REJETEE';
 
 /** Notification issue des événements RabbitMQ, déjà filtrée par le backend selon le rôle sur le projet. */
 export interface NotificationFinance {

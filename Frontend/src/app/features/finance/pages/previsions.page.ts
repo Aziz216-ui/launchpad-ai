@@ -96,6 +96,9 @@ import { FinanceStore } from '../services/finance-store.service';
               }
 
               @if (store.peutValider()) {
+                @if (p.validation.statut !== 'EN_ATTENTE') {
+                  <span class="note">Vous pouvez modifier votre avis.</span>
+                }
                 <label class="champ" [class.en-erreur]="erreurAvis()">
                   Commentaire
                   <textarea name="commentaire" rows="3" maxlength="2000" [(ngModel)]="commentaire"
