@@ -1,10 +1,15 @@
 """
 Aides pour les tests des services (pas utilisées en production).
 
+jeton / connecte : jeton Keycloak factice (non signé) tel que transmis par la gateway.
+
 CsrfTestsMixin : les tests CSRF identiques des 4 services (session admin, POST via la
 gateway, origine refusée, jeton exigé, admin Django). Chaque service ne décrit que sa
 ressource : URL de création, données valides, modèle et page d'ajout de l'admin.
 """
+
+import base64
+import json
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -16,6 +21,21 @@ from rest_framework.test import APIClient
 GATEWAY = "http://localhost:8090"
 # Jeton CSRF fixe (32 caractères alphanumériques) placé dans le cookie et l'en-tête
 JETON = "abcdefghijklmnopqrstuvwxyz012345"
+
+
+def _b64(donnees):
+    return base64.urlsafe_b64encode(json.dumps(donnees).encode()).rstrip(b"=").decode()
+
+
+def jeton(sub, username="", roles=("ENTREPRENEUR",)):
+    """JWT non signé (claims Keycloak sub, preferred_username, realm_access.roles) pour les tests."""
+    claims = {"sub": sub, "preferred_username": username, "realm_access": {"roles": list(roles)}}
+    return f"{_b64({'alg': 'none', 'typ': 'JWT'})}.{_b64(claims)}.signature"
+
+
+def connecte(sub, username="", roles=("ENTREPRENEUR",)):
+    """En-têtes d'une requête transmise par la gateway pour cet utilisateur (client.get(..., **connecte(...)))."""
+    return {"HTTP_AUTHORIZATION": f"Bearer {jeton(sub, username, roles)}"}
 
 
 class CsrfTestsMixin:

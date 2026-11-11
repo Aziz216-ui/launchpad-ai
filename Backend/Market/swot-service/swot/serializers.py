@@ -29,7 +29,10 @@ class ElementSWOTSerializer(serializers.ModelSerializer):
         read_only_fields = ["genere_automatiquement"]
 
     def validate(self, attrs):
-        verifier_reference(attrs, self.instance, "etude_id", EtudeClient().exists, ETUDE_INTROUVABLE)
+        # Utilisateur connecté (hors ADMIN) : seules ses études existent pour lui (voir views.etudes_visibles)
+        visibles = self.context.get("etudes_visibles")
+        existe = EtudeClient().exists if visibles is None else visibles.__contains__
+        verifier_reference(attrs, self.instance, "etude_id", existe, ETUDE_INTROUVABLE)
         return attrs
 
 

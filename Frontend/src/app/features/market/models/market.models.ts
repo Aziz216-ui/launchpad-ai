@@ -92,7 +92,8 @@ export type ElementSwotSaisie = Pick<ElementSwot, 'etude' | 'type' | 'descriptio
 export interface EtudeMarche {
   id: number;
   projet_id: number;
-  entrepreneur_id: number | null;
+  /** Propriétaire : identifiant Keycloak (sub), fixé par le backend à partir du jeton. */
+  entrepreneur_id: string | null;
   statut: StatutEtude;
   secteur: number | null;
   secteur_id: number | null;
@@ -129,7 +130,6 @@ export type EtudeSaisie = Partial<
   Pick<
     EtudeMarche,
     | 'projet_id'
-    | 'entrepreneur_id'
     | 'secteur'
     | 'titre'
     | 'taille_marche'
@@ -204,7 +204,7 @@ export interface RapportEtude {
     id: number;
     titre: string;
     projet_id: number;
-    entrepreneur_id: number | null;
+    entrepreneur_id: string | null;
     statut: StatutEtude;
     date_creation: string;
     date_mise_a_jour: string;

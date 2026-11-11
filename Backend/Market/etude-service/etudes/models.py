@@ -22,8 +22,9 @@ class EtudeMarche(models.Model):
         FINALISEE = "finalisee", "Finalisée"
 
     projet_id = models.PositiveIntegerField(db_index=True)  # pas de FK : autre microservice
-    # Entrepreneur (utilisateur du User-Service) : pas de FK, nullable pour les études existantes
-    entrepreneur_id = models.PositiveIntegerField(null=True, blank=True, db_index=True)
+    # Entrepreneur propriétaire : identifiant Keycloak (claim "sub" du jeton transmis par la gateway),
+    # fixé à la création. Pas de FK ; nullable pour les études créées sans jeton (appels internes).
+    entrepreneur_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
     statut = models.CharField(max_length=10, choices=Statut.choices, default=Statut.BROUILLON)
     # Pas de FK : SECTEUR-SERVICE. null : secteur supprimé (événement secteur.supprime)
     secteur_id = models.PositiveIntegerField(null=True, blank=True, db_index=True)
