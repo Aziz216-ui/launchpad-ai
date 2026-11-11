@@ -168,10 +168,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      # market-commun ne déclare aucune dépendance (pyproject.toml) : on installe celles
+      # qu'utilisent réellement les services (requirements.txt verrouillé par hash).
       - working-directory: Backend/Market/market-commun
         run: |
-          pip install -e .
-          pip install Django djangorestframework django-cors-headers drf-spectacular
+          pip install --require-hashes --only-binary :all: -r ../etude-service/requirements.txt
+          pip install --no-deps -e .
           python runtests.py
 
   # ---------------------------------------------------------------------------
@@ -226,9 +228,13 @@ jobs:
         with:
           php-version: "8.4"
           extensions: apcu, pdo_mysql
+        env:
+          # Composer authentifié auprès de GitHub : évite les 404 de codeload.github.com
+          # renvoyés aux téléchargements anonymes (limite de débit).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - working-directory: Backend/Professional-Service/${{ matrix.name }}
         run: |
-          composer install --no-interaction --prefer-dist
+          for i in 1 2 3; do composer install --no-interaction --prefer-dist && break; [ $i = 3 ] && exit 1; sleep 15; done
           composer validate --strict
           php bin/console lint:yaml config/
           php bin/console lint:container

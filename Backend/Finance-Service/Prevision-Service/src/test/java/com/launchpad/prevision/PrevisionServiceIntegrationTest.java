@@ -19,7 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Rejoue les scénarios 1 et 2 (prévisions, marges, écart, projections) et la synthèse consommée par le
  * Document-Service.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "eureka.client.enabled=false")
+// Pas de RabbitMQ pendant les tests (CI) : son indicateur de santé passerait /actuator/health à DOWN.
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+        "eureka.client.enabled=false",
+        "management.health.rabbit.enabled=false" })
 @Import(TestcontainersConfiguration.class)
 class PrevisionServiceIntegrationTest {
 

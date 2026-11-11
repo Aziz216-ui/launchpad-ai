@@ -31,9 +31,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Le Prevision-Service est simulé par un serveur HTTP local qui répond à la synthèse d'un projet
  * (CA 120 000 puis 144 000, dépenses 70 000 par an). Rejoue les scénarios 3 et 4.
  */
+// Pas de RabbitMQ pendant les tests (CI) : son indicateur de santé passerait /actuator/health à DOWN.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "finance.stockage.local.repertoire=target/test-documents",
         "spring.rabbitmq.listener.simple.auto-startup=false",
+        "management.health.rabbit.enabled=false",
         "eureka.client.enabled=false" })
 @Import(TestcontainersConfiguration.class)
 class DocumentServiceIntegrationTest {
