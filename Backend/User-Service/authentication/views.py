@@ -10,6 +10,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 from .events import publier_comptable_inscrit
 from .keycloak_client import KeycloakService
+from .synchronisation import provisionner_profil
 from .serializers import (
     RegisterSerializer,
     LoginSerializer,
@@ -123,9 +124,7 @@ class LoginView(APIView):
 
         try:
             token_response = keycloak_service.login_user(username, password)
-            
-            # Fetch or sync user from PostgreSQL
-            user = User.objects.filter(username=username).first()
+            user = self._profil(keycloak_service, token_response.get("access_token"), username)
             user_data = UserSerializer(user).data if user else None
 
             return Response(
@@ -152,6 +151,19 @@ class LoginView(APIView):
                 {"error": "Internal login error", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+    @staticmethod
+    def _profil(keycloak_service, access_token, username):
+        """
+        Profil local de l'utilisateur connecté : créé ou relié à partir du jeton s'il manque
+        (Keycloak est la source de vérité). Si le jeton ne peut pas être lu, la connexion
+        réussit quand même avec le profil trouvé par username (ou aucun).
+        """
+        try:
+            return provisionner_profil(keycloak_service.verify_token(access_token))
+        except Exception as e:
+            logger.warning(f"Provisioning du profil impossible pour {username}: {e}")
+            return User.objects.filter(username__iexact=username).first()
 
 
 class RefreshTokenView(APIView):

@@ -1,7 +1,9 @@
-import os
 from django.conf import settings
 from keycloak import KeycloakAdmin, KeycloakOpenID
-from keycloak.exceptions import KeycloakError
+
+# Rôles du realm qui portent un rôle applicatif (les autres, ex. default-roles-launchpad, sont ignorés)
+APP_ROLES = ("ADMIN", "LAWYER", "ACCOUNTANT", "FINANCIER", "ENTREPRENEUR")
+
 
 class KeycloakService:
     def __init__(self):
@@ -11,6 +13,7 @@ class KeycloakService:
         self.client_secret = settings.KEYCLOAK_CLIENT_SECRET
         self.admin_user = settings.KEYCLOAK_ADMIN_USER
         self.admin_password = settings.KEYCLOAK_ADMIN_PASSWORD
+        self._admin = None
 
     def get_admin_client(self):
         return KeycloakAdmin(
@@ -21,6 +24,63 @@ class KeycloakService:
             user_realm_name="master",
             verify=True
         )
+
+    @property
+    def admin(self):
+        """Client d'administration réutilisé pour toutes les opérations d'une même instance."""
+        if self._admin is None:
+            self._admin = self.get_admin_client()
+        return self._admin
+
+    # --- Administration des comptes (synchronisation avec la base) ----------
+
+    def find_user(self, username):
+        """Compte Keycloak dont le username est exactement celui-ci, ou None."""
+        users = self.admin.get_users({"username": username, "exact": True})
+        return users[0] if users else None
+
+    def list_users(self):
+        """Tous les comptes du realm (hors comptes de service des clients)."""
+        return [u for u in self.admin.get_users({}) if not u.get("serviceAccountClientId")]
+
+    def get_app_roles(self, user_id):
+        """Rôles applicatifs (APP_ROLES) affectés au compte dans le realm."""
+        return [r["name"] for r in self.admin.get_realm_roles_of_user(user_id) if r["name"] in APP_ROLES]
+
+    def set_app_role(self, user_id, role):
+        """Rôle applicatif unique : retire les autres rôles applicatifs et affecte celui-ci."""
+        en_trop = [r for r in self.admin.get_realm_roles_of_user(user_id)
+                   if r["name"] in APP_ROLES and r["name"] != role]
+        if en_trop:
+            self.admin.delete_realm_roles_of_user(user_id, en_trop)
+        if role not in self.get_app_roles(user_id):
+            self.admin.assign_realm_roles(user_id=user_id, roles=[self.admin.get_realm_role(role)])
+
+    def create_account(self, username, email, password, role, first_name="", last_name="", temporary=False):
+        """
+        Crée le compte (mot de passe + rôle) et renvoie son id. temporary=True : mot de passe
+        temporaire et action requise UPDATE_PASSWORD (à changer à la première connexion).
+        En cas d'échec de l'affectation du rôle, le compte créé est supprimé.
+        """
+        payload = {
+            "username": username,
+            "email": email,
+            "firstName": first_name,
+            "lastName": last_name,
+            "enabled": True,
+            "emailVerified": True,
+            "attributes": {"role": [role]},
+            "credentials": [{"type": "password", "value": password, "temporary": temporary}],
+        }
+        if temporary:
+            payload["requiredActions"] = ["UPDATE_PASSWORD"]
+        user_id = self.admin.create_user(payload)
+        try:
+            self.set_app_role(user_id, role)
+        except Exception:
+            self.admin.delete_user(user_id)
+            raise
+        return user_id
 
     def get_openid_client(self):
         return KeycloakOpenID(
@@ -36,37 +96,8 @@ class KeycloakService:
         Creates user in Keycloak, sets credentials, and assigns role.
         Returns the Keycloak user ID (UUID string).
         """
-        admin = self.get_admin_client()
-        user_payload = {
-            "username": username,
-            "email": email,
-            "firstName": first_name,
-            "lastName": last_name,
-            "enabled": True,
-            "emailVerified": True,
-            "attributes": {
-                "role": [role]
-            }
-        }
-        
-        # 1. Create user
-        user_id = admin.create_user(user_payload)
-        
-        # 2. Set user password
-        admin.set_user_password(user_id=user_id, password=password, temporary=False)
-
-        # 3. Assign realm role
-        try:
-            realm_roles = admin.get_realm_roles()
-            target_role = next((r for r in realm_roles if r["name"] == role), None)
-            if target_role:
-                admin.assign_realm_roles(user_id=user_id, roles=[target_role])
-        except Exception as e:
-            # If role assignment fails, cleanup user and re-raise
-            admin.delete_user(user_id)
-            raise e
-
-        return user_id
+        return self.create_account(username=username, email=email, password=password, role=role,
+                                   first_name=first_name, last_name=last_name)
 
     def login_user(self, username, password):
         """

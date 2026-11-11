@@ -123,6 +123,13 @@ services:
       EUREKA_SERVER_URL: ${EUREKA_SERVER_URL:-http://host.docker.internal:8761/eureka}
       EUREKA_INSTANCE_HOST: ${EUREKA_INSTANCE_HOST:-localhost}
       EUREKA_ENABLED: ${EUREKA_ENABLED:-true}
+      # Comptes de démo créés ou réparés au démarrage (Keycloak + base), voir seed_demo_users.py.
+      # Mots de passe : variables du .env, sinon valeurs de démo par défaut du code.
+      SEED_DEMO_USERS: ${SEED_DEMO_USERS:-true}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-}
+      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-}
+      DEMO_ACCOUNTANT_PASSWORD: ${DEMO_ACCOUNTANT_PASSWORD:-}
+      DEMO_LAWYER_PASSWORD: ${DEMO_LAWYER_PASSWORD:-}
     ports:
       - "${USER_SERVICE_PORT:-8001}:8001"
     extra_hosts:
