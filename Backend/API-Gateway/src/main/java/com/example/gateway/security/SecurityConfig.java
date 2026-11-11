@@ -55,7 +55,9 @@ public class SecurityConfig {
             "/api/market/*/health", "/api/market/*/health/",
             "/api/ai/health", "/api/ai/health/",
             "/api/comptable/health",
-            "/actuator/health", "/actuator/health/**");
+            "/actuator/health", "/actuator/health/**",
+            // Scrapé par Prometheus sur le réseau Docker (compteurs techniques, aucune donnée métier)
+            "/actuator/prometheus");
 
     /**
      * Routes réservées aux appels entre services (réseau interne, sans passer par la gateway) : refusées ici,

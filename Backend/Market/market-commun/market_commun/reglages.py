@@ -52,9 +52,9 @@ def cle_secrete(debug):
 def base_de_donnees(base_dir, nom_base, debug):
     """PostgreSQL (base dédiée au service) ; DB_ENGINE=sqlite pour lancer les tests sans serveur."""
     if os.getenv("DB_ENGINE", "postgresql").lower() == "sqlite":
-        return {"ENGINE": "django.db.backends.sqlite3", "NAME": Path(base_dir) / "db.sqlite3"}
+        return {"ENGINE": "django_prometheus.db.backends.sqlite3", "NAME": Path(base_dir) / "db.sqlite3"}
     return {
-        "ENGINE": "django.db.backends.postgresql",
+        "ENGINE": "django_prometheus.db.backends.postgresql",
         "NAME": os.getenv("DB_NAME", nom_base),
         "USER": os.getenv("DB_USER", "postgres"),
         "PASSWORD": variable_secrete("DB_PASSWORD", debug),
@@ -65,6 +65,7 @@ def base_de_donnees(base_dir, nom_base, debug):
 
 def _applications(app):
     return [
+        "django_prometheus",
         "django.contrib.admin",
         "django.contrib.auth",
         "django.contrib.contenttypes",
@@ -81,6 +82,7 @@ def _applications(app):
 
 
 MIDDLEWARE = [
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",  # doit être le tout premier
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",  # fichiers statiques (admin) en Docker
     "corsheaders.middleware.CorsMiddleware",  # doit être avant CommonMiddleware
@@ -90,6 +92,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_prometheus.middleware.PrometheusAfterMiddleware",  # doit être le tout dernier
 ]
 
 TEMPLATES = [

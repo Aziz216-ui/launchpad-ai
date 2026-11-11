@@ -2,12 +2,20 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import * as client from 'prom-client';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
+
+  // Métriques Prometheus, exposées hors du préfixe global (scrapées sur /metrics)
+  client.collectDefaultMetrics();
+  app.getHttpAdapter().get('/metrics', async (_req, res) => {
+    res.set('Content-Type', client.register.contentType);
+    res.end(await client.register.metrics());
+  });
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3004);

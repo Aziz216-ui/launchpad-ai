@@ -43,7 +43,7 @@ public class SecuriteConfig {
         AuthenticationEntryPoint nonAuthentifie = (requete, reponse, exception) -> ecrire(reponse, objectMapper);
         return http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health/**", "/actuator/info", "/swagger-ui.html",
+                        .requestMatchers("/actuator/health/**", "/actuator/info", "/actuator/prometheus", "/swagger-ui.html",
                                 "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults())

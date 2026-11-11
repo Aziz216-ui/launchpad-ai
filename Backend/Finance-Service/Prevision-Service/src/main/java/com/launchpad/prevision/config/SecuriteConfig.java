@@ -52,7 +52,7 @@ public class SecuriteConfig {
                 HttpStatus.UNAUTHORIZED, "Non authentifié", "Jeton manquant ou invalide");
         return http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health/**", "/actuator/info", "/swagger-ui.html",
+                        .requestMatchers("/actuator/health/**", "/actuator/info", "/actuator/prometheus", "/swagger-ui.html",
                                 "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/finance/projets/*/synthese").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/finance/ia/analyse").permitAll()

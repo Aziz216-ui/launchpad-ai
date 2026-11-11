@@ -120,11 +120,46 @@ services:
       - "${RABBITMQ_MGMT_PORT:-15672}:15672"   # interface web : http://localhost:15672
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+      # Active le plugin rabbitmq_prometheus (metrics scrapées par Prometheus sur :15692)
+      - ./Backend/RabbitMQ/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       timeout: 10s
       retries: 10
+    networks: [launchpad-net]
+
+  # ===========================================================================
+  #  MONITORING : Prometheus (scrape) + Grafana (dashboards)
+  # ===========================================================================
+
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    container_name: launchpad-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./Backend/Monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    networks: [launchpad-net]
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: launchpad-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./Backend/Monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./Backend/Monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
     networks: [launchpad-net]
 
   eureka:
@@ -1179,6 +1214,8 @@ volumes:
   commentaire_pgdata:
   compta_db_data:
   compta_document_files:
+  prometheus_data:
+  grafana_data:
 
 networks:
   launchpad-net:

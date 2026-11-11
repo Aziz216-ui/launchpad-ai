@@ -1,0 +1,84 @@
+# =============================================================================
+# Prometheus : configuration de scrape pour toute la plateforme LaunchPad AI.
+# Monté en lecture seule dans le conteneur `prometheus` (voir docker-compose.yml).
+# Les cibles utilisent les noms de service Docker Compose (réseau launchpad-net),
+# aucun port n'a besoin d'être publié sur la machine pour que ça fonctionne.
+# =============================================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # --- Spring Boot (Actuator + Micrometer) : /actuator/prometheus -------------
+  - job_name: spring-boot
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["api-gateway:8090"]
+        labels: {service: api-gateway}
+      - targets: ["eureka:8761"]
+        labels: {service: eureka}
+      - targets: ["config-server:8888"]
+        labels: {service: config-server}
+      - targets: ["prevision-service:8081"]
+        labels: {service: prevision-service}
+      - targets: ["document-service:8083"]
+        labels: {service: document-service}
+      - targets: ["lawyer-client-service:8082"]
+        labels: {service: lawyer-client-service}
+      - targets: ["lawyer-message-service:8084"]
+        labels: {service: lawyer-message-service}
+      - targets: ["lawyer-docreview-service:8086"]
+        labels: {service: lawyer-docreview-service}
+
+  # --- Django (django-prometheus) : /metrics ----------------------------------
+  - job_name: django
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["secteur-service:8010"]
+        labels: {service: secteur-service}
+      - targets: ["concurrent-service:8011"]
+        labels: {service: concurrent-service}
+      - targets: ["etude-service:8012"]
+        labels: {service: etude-service}
+      - targets: ["swot-service:8013"]
+        labels: {service: swot-service}
+      - targets: ["user-service:8001"]
+        labels: {service: user-service}
+      - targets: ["projet-service:8006"]
+        labels: {service: projet-service}
+      - targets: ["recommandation-service:8007"]
+        labels: {service: recommandation-service}
+      - targets: ["conversation-service:8008"]
+        labels: {service: conversation-service}
+
+  # --- NestJS (prom-client) : /metrics -----------------------------------------
+  - job_name: nestjs
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["legal-service:3003"]
+        labels: {service: legal-service}
+      - targets: ["clause-service:3004"]
+        labels: {service: clause-service}
+      - targets: ["commentaire-service:3005"]
+        labels: {service: commentaire-service}
+
+  # --- Symfony (promphp/prometheus_client_php, adaptateur APCu) --------------
+  - job_name: symfony
+    metrics_path: /api/comptable/metrics
+    static_configs:
+      - targets: ["workspace-service:8091"]
+        labels: {service: workspace-service}
+      - targets: ["client-file-service:8092"]
+        labels: {service: client-file-service}
+      - targets: ["accounting-document-service:8093"]
+        labels: {service: accounting-document-service}
+      - targets: ["accounting-message-service:8094"]
+        labels: {service: accounting-message-service}
+
+  # --- RabbitMQ (plugin rabbitmq_prometheus intégré) ---------------------------
+  - job_name: rabbitmq
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["rabbitmq:15692"]
+        labels: {service: rabbitmq}

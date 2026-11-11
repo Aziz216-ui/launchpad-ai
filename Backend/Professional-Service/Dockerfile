@@ -6,10 +6,10 @@
 # (phpunit 13, sebastian/*) qui exigent toutes php>=8.4.
 FROM php:8.4-cli
 
-# Extensions PHP : pdo_mysql, intl, zip, sockets (RabbitMQ), opcache
+# Extensions PHP : pdo_mysql, intl, zip, sockets (RabbitMQ), opcache, apcu (métriques Prometheus)
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/download/2.7.20/install-php-extensions /usr/local/bin/
 RUN chmod +x /usr/local/bin/install-php-extensions \
-    && install-php-extensions pdo_mysql intl zip sockets opcache \
+    && install-php-extensions pdo_mysql intl zip sockets opcache apcu \
     && apt-get update && apt-get install -y --no-install-recommends git unzip \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
