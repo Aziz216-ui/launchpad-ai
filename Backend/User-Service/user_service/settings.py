@@ -120,6 +120,26 @@ KEYCLOAK_CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET", "")
 KEYCLOAK_ADMIN_USER = os.getenv("KEYCLOAK_ADMIN_USER", "admin")
 KEYCLOAK_ADMIN_PASSWORD = os.getenv("KEYCLOAK_ADMIN_PASSWORD", "admin")
 
+# « Mot de passe oublié » : code à 6 chiffres envoyé par e-mail (POST /api/auth/forgot-password/),
+# saisi avec le nouveau mot de passe (POST /api/auth/reset-password/).
+PASSWORD_RESET_CODE_MINUTES = int(os.getenv("PASSWORD_RESET_CODE_MINUTES", "10"))     # validité du code
+PASSWORD_RESET_MAX_ATTEMPTS = int(os.getenv("PASSWORD_RESET_MAX_ATTEMPTS", "5"))      # essais par code
+PASSWORD_RESET_MAX_REQUESTS = int(os.getenv("PASSWORD_RESET_MAX_REQUESTS", "3"))      # demandes par e-mail...
+PASSWORD_RESET_WINDOW_MINUTES = int(os.getenv("PASSWORD_RESET_WINDOW_MINUTES", "15"))  # ...et par 15 min
+# Envoi de l'e-mail hors de la requête : même temps de réponse, que le compte existe ou non
+PASSWORD_RESET_ASYNC = os.getenv("PASSWORD_RESET_ASYNC", "True").lower() in ("true", "1", "yes")
+
+# E-mails (SMTP). Identifiants UNIQUEMENT par variables d'environnement (fichier .env racine, non
+# suivi par Git). Sans EMAIL_HOST : Mailpit, serveur de test local (http://localhost:8025).
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.getenv("EMAIL_HOST") or "mailpit"
+EMAIL_PORT = int(os.getenv("EMAIL_PORT") or (1025 if EMAIL_HOST == "mailpit" else 587))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "False").lower() in ("true", "1", "yes")
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "15"))
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL") or "LaunchPad AI <no-reply@launchpad.local>"
+
 # CORS is handled exclusively by the API Gateway; this service must not send
 # its own CORS headers (duplicate headers cause browser errors).
 

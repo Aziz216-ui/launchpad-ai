@@ -33,6 +33,44 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, required=True)
 
 
+class ForgotPasswordSerializer(serializers.Serializer):
+    identifiant = serializers.CharField(
+        max_length=254, trim_whitespace=True,
+        help_text="Adresse e-mail ou nom d'utilisateur du compte.")
+
+
+class ForgotPasswordResponseSerializer(serializers.Serializer):
+    message = serializers.CharField()
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    identifiant = serializers.CharField(
+        max_length=254, trim_whitespace=True,
+        help_text="Adresse e-mail ou nom d'utilisateur (le même que pour la demande de code).",
+        error_messages={"required": "Saisissez votre e-mail ou nom d'utilisateur.",
+                        "blank": "Saisissez votre e-mail ou nom d'utilisateur."})
+    code = serializers.RegexField(
+        r"^\d{6}$", help_text="Code à 6 chiffres reçu par e-mail.",
+        error_messages={"invalid": "Le code doit contenir 6 chiffres.",
+                        "required": "Saisissez le code reçu par e-mail.",
+                        "blank": "Saisissez le code reçu par e-mail."})
+    nouveau_mot_de_passe = serializers.CharField(
+        write_only=True, trim_whitespace=False, max_length=128,
+        help_text="Au moins 8 caractères, une majuscule, un chiffre et un caractère spécial.",
+        error_messages={"required": "Saisissez un nouveau mot de passe.",
+                        "blank": "Saisissez un nouveau mot de passe."})
+
+
+class ResetPasswordResponseSerializer(serializers.Serializer):
+    message = serializers.CharField()
+
+
+class ResetPasswordErrorSerializer(serializers.Serializer):
+    error = serializers.CharField(help_text="Message en français, à afficher.")
+    code_erreur = serializers.ChoiceField(
+        choices=["code_invalide", "code_expire", "trop_essais", "mot_de_passe_faible", "champs_invalides"])
+
+
 class RefreshTokenSerializer(serializers.Serializer):
     refresh_token = serializers.CharField(required=True)
 

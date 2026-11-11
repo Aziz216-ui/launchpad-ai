@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService, RegisterPayload, Role } from '../../core/services/auth.service';
+import { ChampMotDePasseComponent } from './champ-mot-de-passe.component';
 
 const LABEL_ROLE: Record<Role, string> = {
   ENTREPRENEUR: 'Fondateur de Startup',
@@ -15,7 +16,7 @@ const LABEL_ROLE: Record<Role, string> = {
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, ChampMotDePasseComponent],
   template: `
     <div class="auth-page">
       <div class="auth-card">
@@ -104,8 +105,16 @@ const LABEL_ROLE: Record<Role, string> = {
           </div>
 
           <div class="form-group">
-            <label>Mot de passe</label>
-            <input type="password" [(ngModel)]="formData.password" name="password" placeholder="Min. 8 caractères" required />
+            <label for="register-password">Mot de passe</label>
+            <app-champ-mot-de-passe
+              inputId="register-password"
+              name="password"
+              [(ngModel)]="formData.password"
+              placeholder="Min. 8 caractères"
+              autocomplete="new-password"
+              [required]="true"
+              [compact]="true"
+            />
           </div>
 
           <button type="submit" class="btn-submit" [disabled]="loading">

@@ -22,10 +22,100 @@ from .serializers import (
     LoginResponseSerializer,
     LogoutResponseSerializer,
     HealthCheckResponseSerializer,
+    ForgotPasswordSerializer,
+    ForgotPasswordResponseSerializer,
+    ResetPasswordSerializer,
+    ResetPasswordResponseSerializer,
+    ResetPasswordErrorSerializer,
 )
+from . import reinitialisation
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
+
+
+class ForgotPasswordView(APIView):
+    """
+    « Mot de passe oublié », étape 1 : code envoyé par e-mail. Public, même réponse que le compte
+    existe ou non (voir authentication/reinitialisation.py). Pas d'authentification : un jeton
+    expiré envoyé par le navigateur ne doit pas provoquer de 401.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(
+        tags=["Authentication"],
+        summary="Forgot password (envoi d'un code)",
+        description=(
+            "Envoie par e-mail un code à 6 chiffres valable 10 minutes si un compte correspond à "
+            "l'e-mail ou au nom d'utilisateur (une nouvelle demande annule le code précédent). Réponse "
+            "identique que le compte existe ou non ; au plus 3 demandes par e-mail et par 15 minutes."
+        ),
+        request=ForgotPasswordSerializer,
+        responses={
+            200: ForgotPasswordResponseSerializer,
+            400: OpenApiResponse(description="Identifiant manquant"),
+            503: OpenApiResponse(description="Keycloak injoignable"),
+        },
+    )
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            reinitialisation.demander_code(serializer.validated_data["identifiant"])
+        except Exception as e:
+            logger.error(f"Mot de passe oublié : Keycloak injoignable ({e})")
+            return Response({"error": "Service temporairement indisponible, réessayez plus tard."},
+                            status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        return Response({"message": reinitialisation.MESSAGE}, status=status.HTTP_200_OK)
+
+
+class ResetPasswordView(APIView):
+    """« Mot de passe oublié », étape 2 : code reçu + nouveau mot de passe. Public."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(
+        tags=["Authentication"],
+        summary="Reset password (code reçu par e-mail)",
+        description=(
+            "Vérifie le code (expiration 10 min, au plus 5 essais, ensuite le code est annulé) et la "
+            "force du mot de passe (8 caractères, une majuscule, un chiffre, un caractère spécial), "
+            "puis change le mot de passe dans Keycloak. Erreurs : code_erreur = code_invalide, "
+            "code_expire, trop_essais, mot_de_passe_faible ou champs_invalides."
+        ),
+        request=ResetPasswordSerializer,
+        responses={
+            200: ResetPasswordResponseSerializer,
+            400: ResetPasswordErrorSerializer,
+            503: OpenApiResponse(description="Keycloak injoignable"),
+        },
+    )
+    def post(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+        if not serializer.is_valid():
+            premier = next(iter(serializer.errors.values()))[0]
+            return Response({"error": str(premier), "code_erreur": "champs_invalides",
+                             "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        donnees = serializer.validated_data
+        try:
+            reinitialisation.reinitialiser(donnees["identifiant"], donnees["code"], donnees["nouveau_mot_de_passe"])
+        except reinitialisation.ErreurReinitialisation as e:
+            return Response({"error": e.message, "code_erreur": e.code_erreur}, status=status.HTTP_400_BAD_REQUEST)
+        except KeycloakError as e:
+            # Ex. politique de mot de passe du realm plus stricte : message de Keycloak
+            logger.warning(f"Réinitialisation refusée par Keycloak : {e}")
+            return Response({"error": "Mot de passe refusé par le serveur d'authentification.",
+                             "code_erreur": "mot_de_passe_faible"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Réinitialisation : Keycloak injoignable ({e})")
+            return Response({"error": "Service temporairement indisponible, réessayez plus tard."},
+                            status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        return Response({"message": "Votre mot de passe a été modifié. Vous pouvez vous connecter."},
+                        status=status.HTTP_200_OK)
 
 
 class RegisterView(APIView):

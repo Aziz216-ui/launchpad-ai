@@ -7,12 +7,16 @@ from .views import (
     UserProfileView,
     HealthCheckView,
     LawyerListView,
+    ForgotPasswordView,
+    ResetPasswordView,
 )
 
 urlpatterns = [
     path("register/", RegisterView.as_view(), name="auth-register"),
     path("login/", LoginView.as_view(), name="auth-login"),
     path("refresh/", RefreshTokenView.as_view(), name="auth-refresh"),
+    path("forgot-password/", ForgotPasswordView.as_view(), name="auth-forgot-password"),
+    path("reset-password/", ResetPasswordView.as_view(), name="auth-reset-password"),
     path("logout/", LogoutView.as_view(), name="auth-logout"),
     path("profile/", UserProfileView.as_view(), name="auth-profile"),
     path("health/", HealthCheckView.as_view(), name="auth-health"),

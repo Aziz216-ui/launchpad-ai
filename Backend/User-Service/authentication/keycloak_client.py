@@ -39,6 +39,21 @@ class KeycloakService:
         users = self.admin.get_users({"username": username, "exact": True})
         return users[0] if users else None
 
+    def find_user_by_email(self, email):
+        """Compte Keycloak dont l'e-mail est exactement celui-ci (sans tenir compte de la casse), ou None."""
+        users = self.admin.get_users({"email": email, "exact": True})
+        return next((u for u in users if (u.get("email") or "").lower() == email.lower()), None)
+
+    def set_password(self, user_id, password):
+        """
+        Nouveau mot de passe définitif (PUT /users/{id}/reset-password, temporary=false) ; retire
+        l'action requise UPDATE_PASSWORD éventuelle (ex. compte recréé par sync_keycloak).
+        """
+        self.admin.set_user_password(user_id=user_id, password=password, temporary=False)
+        actions = self.admin.get_user(user_id).get("requiredActions") or []
+        if "UPDATE_PASSWORD" in actions:
+            self.admin.update_user(user_id, {"requiredActions": [a for a in actions if a != "UPDATE_PASSWORD"]})
+
     def list_users(self):
         """Tous les comptes du realm (hors comptes de service des clients)."""
         return [u for u in self.admin.get_users({}) if not u.get("serviceAccountClientId")]
