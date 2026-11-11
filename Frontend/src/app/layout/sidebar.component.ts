@@ -30,6 +30,9 @@ export class SidebarComponent {
     return MENU.filter((lien) => !lien.roles || (!!role && lien.roles.includes(role)));
   });
 
+  /** L'encart « Échanger avec mon IA » n'a de sens que si le Co-Fondateur IA est dans le menu de l'utilisateur. */
+  protected readonly accesCoFondateur = computed(() => this.liens().some((lien) => lien.route === '/co-fondateur-ia'));
+
   protected initiale(): string {
     const nom = this.utilisateurConnecte()?.username;
     return (nom?.charAt(0) || 'U').toUpperCase();

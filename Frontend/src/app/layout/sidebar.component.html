@@ -24,11 +24,14 @@
 
 <div class="espaceur"></div>
 
-<div class="encart">
-  <span class="titre">Un cap, à chaque étape.</span>
-  <span class="texte">Votre Co-Fondateur IA vous aide à structurer votre projet.</span>
-  <a routerLink="/co-fondateur-ia">Échanger avec mon IA →</a>
-</div>
+<!-- Encart affiché seulement aux rôles qui ont accès au Co-Fondateur IA (mêmes règles que le menu) -->
+@if (accesCoFondateur()) {
+  <div class="encart">
+    <span class="titre">Un cap, à chaque étape.</span>
+    <span class="texte">Votre Co-Fondateur IA vous aide à structurer votre projet.</span>
+    <a routerLink="/co-fondateur-ia">Échanger avec mon IA →</a>
+  </div>
+}
 
 <div class="compte">
   <span class="avatar">{{ initiale() }}</span>
