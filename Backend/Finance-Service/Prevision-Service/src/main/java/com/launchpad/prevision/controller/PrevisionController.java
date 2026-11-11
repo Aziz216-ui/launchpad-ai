@@ -1,6 +1,7 @@
 package com.launchpad.prevision.controller;
 
 import com.launchpad.prevision.domain.PrevisionFinanciere;
+import com.launchpad.prevision.dto.AvisRequest;
 import com.launchpad.prevision.dto.CreerPrevisionRequest;
 import com.launchpad.prevision.dto.EcartResponse;
 import com.launchpad.prevision.dto.GenererProjectionsRequest;
@@ -88,6 +89,12 @@ public class PrevisionController {
                 .stream().map(ProjectionResponse::depuis).toList();
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequestUri().build().toUri())
                 .body(projections);
+    }
+
+    @Operation(summary = "Avis du financier : valider ou rejeter la prévision (commentaire obligatoire pour un rejet)")
+    @PostMapping("/previsions/{id}/avis")
+    public PrevisionResponse donnerAvis(@PathVariable UUID id, @Valid @RequestBody AvisRequest requete) {
+        return PrevisionResponse.depuis(gestionPrevisions.donnerAvis(id, requete.decision(), requete.commentaire()));
     }
 
     @Operation(summary = "Consulter les projections d'une prévision")

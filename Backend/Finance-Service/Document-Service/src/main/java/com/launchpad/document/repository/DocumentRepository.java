@@ -1,5 +1,6 @@
 package com.launchpad.document.repository;
 
+import com.launchpad.document.domain.Certification;
 import com.launchpad.document.domain.DocumentFinancier;
 
 import java.util.List;
@@ -19,4 +20,7 @@ public interface DocumentRepository {
     List<DocumentFinancier> findByProjetId(Long projetId);
 
     void deleteById(UUID documentId);
+
+    /** Enregistre la certification d'un document existant. */
+    void updateCertification(UUID documentId, Certification certification);
 }

@@ -29,14 +29,32 @@ public class DocumentEntity extends AuditedEntity {
     @Column(nullable = false, columnDefinition = "jsonb")
     private ContenuDocument contenu;
 
+    @Column(name = "prevision_id", updatable = false)
+    private UUID previsionId;
+
+    @Column(name = "certifie_par", length = 320)
+    private String certifiePar;
+
+    @Column(name = "certifie_le")
+    private Instant certifieLe;
+
+    @Column(name = "commentaire_certification", length = 2000)
+    private String commentaireCertification;
+
     protected DocumentEntity() {
     }
 
-    public DocumentEntity(UUID id, Long projetId, TypeDocument type, ContenuDocument contenu, Instant createdAt) {
+    public DocumentEntity(UUID id, Long projetId, TypeDocument type, ContenuDocument contenu, Instant createdAt,
+                          UUID previsionId) {
         super(id, createdAt);
         this.projetId = projetId;
         this.type = type;
         this.contenu = contenu;
+        this.previsionId = previsionId;
+    }
+
+    public UUID getPrevisionId() {
+        return previsionId;
     }
 
     public Long getProjetId() {
@@ -49,5 +67,23 @@ public class DocumentEntity extends AuditedEntity {
 
     public ContenuDocument getContenu() {
         return contenu;
+    }
+
+    public String getCertifiePar() {
+        return certifiePar;
+    }
+
+    public Instant getCertifieLe() {
+        return certifieLe;
+    }
+
+    public String getCommentaireCertification() {
+        return commentaireCertification;
+    }
+
+    public void certifier(String auteur, String commentaire, Instant le) {
+        this.certifiePar = auteur;
+        this.commentaireCertification = commentaire;
+        this.certifieLe = le;
     }
 }

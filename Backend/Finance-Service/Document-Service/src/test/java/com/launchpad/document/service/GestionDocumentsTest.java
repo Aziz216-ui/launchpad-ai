@@ -7,7 +7,11 @@ import com.launchpad.document.domain.FichierExporte;
 import com.launchpad.document.domain.FormatExport;
 import com.launchpad.document.domain.SectionDocument;
 import com.launchpad.document.domain.TypeDocument;
+import com.launchpad.document.domain.DroitsProjet;
+import com.launchpad.document.exception.AccesRefuse;
 import com.launchpad.document.exception.DocumentIntrouvable;
+import com.launchpad.document.exception.DonneesInvalides;
+import com.launchpad.document.service.acces.ControleAcces;
 import com.launchpad.document.exception.IaIndisponible;
 import com.launchpad.document.exception.PrevisionIntrouvable;
 import com.launchpad.document.repository.DocumentRepository;
@@ -57,7 +61,7 @@ class GestionDocumentsTest {
     private GestionDocuments gestion;
 
     private final DocumentFinancier document = DocumentFinancier.creer(PROJET_ID, TypeDocument.PLAN_TRESORERIE,
-            new ContenuDocument("Plan de trésorerie - période 2026", List.of()));
+            new ContenuDocument("Plan de trésorerie - période 2026", List.of()), UUID.randomUUID());
 
     /** Stratégie d'export factice : renvoie le nom du format en octets. */
     private static StrategieExport strategieFactice(FormatExport format) {
@@ -79,7 +83,108 @@ class GestionDocumentsTest {
         gestion = new GestionDocuments(documents,
                 new GenerateurDocsFinanciers(previsions),
                 new ExporteurFinancier(List.of(strategieFactice(FormatExport.PDF), strategieFactice(FormatExport.EXCEL))),
-                stockage, analyse, evenements);
+                stockage, analyse, evenements, sansControle(), previsions);
+    }
+
+    /** Sécurité désactivée : aucun utilisateur, tous les droits (le Prevision-Service n'est pas interrogé). */
+    private static ControleAcces sansControle() {
+        return new ControleAcces(projetId -> {
+            throw new AssertionError("droits distants demandés sans utilisateur");
+        }, Optional::empty);
+    }
+
+    /** Utilisateur connecté avec ces droits sur le projet. */
+    private GestionDocuments avecDroits(boolean lecture, boolean ecriture, boolean validation) {
+        ControleAcces controle = new ControleAcces(
+                projetId -> new DroitsProjet(projetId, lecture, ecriture, validation),
+                () -> Optional.of("conseil@launchpad.tn"));
+        return new GestionDocuments(documents, new GenerateurDocsFinanciers(previsions),
+                new ExporteurFinancier(List.of(strategieFactice(FormatExport.PDF))), stockage, analyse, evenements,
+                controle, previsions);
+    }
+
+    @Test
+    void le_financier_certifie_un_document_une_seule_fois() {
+        when(documents.findById(document.id())).thenReturn(Optional.of(document));
+        when(previsions.statutValidation(document.previsionId())).thenReturn("VALIDEE");
+
+        DocumentFinancier certifie = avecDroits(true, false, true).certifierDocument(document.id(), "Conforme");
+
+        assertThat(certifie.certification().auteur()).isEqualTo("conseil@launchpad.tn");
+        assertThat(certifie.certification().commentaire()).isEqualTo("Conforme");
+        verify(documents).updateCertification(document.id(), certifie.certification());
+
+        when(documents.findById(document.id())).thenReturn(Optional.of(certifie));
+        assertThatThrownBy(() -> avecDroits(true, false, true).certifierDocument(document.id(), null))
+                .isInstanceOf(DonneesInvalides.class);
+    }
+
+    @Test
+    void un_document_tire_d_une_prevision_non_validee_ne_se_certifie_pas() {
+        when(documents.findById(document.id())).thenReturn(Optional.of(document));
+        when(previsions.statutValidation(document.previsionId())).thenReturn("EN_ATTENTE");
+
+        assertThatThrownBy(() -> avecDroits(true, false, true).certifierDocument(document.id(), null))
+                .isInstanceOf(DonneesInvalides.class)
+                .hasMessageContaining("validée");
+        verify(documents, never()).updateCertification(any(), any());
+    }
+
+    @Test
+    void un_document_ancien_sans_prevision_source_doit_etre_regenere() {
+        DocumentFinancier ancien = DocumentFinancier.creer(PROJET_ID, TypeDocument.PLAN_TRESORERIE,
+                new ContenuDocument("Plan de trésorerie - période 2025", List.of()));
+        when(documents.findById(ancien.id())).thenReturn(Optional.of(ancien));
+
+        assertThatThrownBy(() -> avecDroits(true, false, true).certifierDocument(ancien.id(), null))
+                .isInstanceOf(DonneesInvalides.class)
+                .hasMessageContaining("regénérez");
+    }
+
+    @Test
+    void le_document_genere_retient_la_prevision_source() {
+        UUID source = UUID.randomUUID();
+        com.launchpad.document.domain.SynthesePrevision s = synthese();
+        when(previsions.derniereSynthese(PROJET_ID)).thenReturn(new com.launchpad.document.domain.SynthesePrevision(
+                s.periode(), s.chiffreAffaires(), s.coutsDirects(), s.depenses(), s.resultat(), s.margeBrute(),
+                s.margeNette(), s.tauxMargeBrute(), s.tauxMargeNette(), s.ecartMontant(), s.ecartPourcentage(),
+                s.ecartStatut(), s.projections(), source));
+        when(documents.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        DocumentFinancier genere = gestion.genererDocument(PROJET_ID, TypeDocument.BUSINESS_PLAN, null, false);
+
+        assertThat(genere.previsionId()).isEqualTo(source);
+    }
+
+    @Test
+    void le_proprietaire_ne_peut_pas_certifier_son_propre_document() {
+        when(documents.findById(document.id())).thenReturn(Optional.of(document));
+
+        assertThatThrownBy(() -> avecDroits(true, true, false).certifierDocument(document.id(), null))
+                .isInstanceOf(AccesRefuse.class);
+        verify(documents, never()).updateCertification(any(), any());
+    }
+
+    @Test
+    void le_financier_ne_genere_ni_ne_supprime_de_document() {
+        when(documents.findById(document.id())).thenReturn(Optional.of(document));
+        GestionDocuments financier = avecDroits(true, false, true);
+
+        assertThatThrownBy(() -> financier.genererDocument(PROJET_ID, TypeDocument.BUSINESS_PLAN, null, false))
+                .isInstanceOf(AccesRefuse.class);
+        assertThatThrownBy(() -> financier.supprimerDocument(document.id())).isInstanceOf(AccesRefuse.class);
+        verifyNoInteractions(previsions, stockage);
+        verify(documents, never()).deleteById(any());
+    }
+
+    @Test
+    void sans_droit_de_lecture_le_document_n_est_pas_renvoye() {
+        when(documents.findById(document.id())).thenReturn(Optional.of(document));
+
+        assertThatThrownBy(() -> avecDroits(false, false, false).consulterDocument(document.id()))
+                .isInstanceOf(AccesRefuse.class);
+        assertThatThrownBy(() -> avecDroits(false, false, false).listerDocuments(PROJET_ID))
+                .isInstanceOf(AccesRefuse.class);
     }
 
     @Test

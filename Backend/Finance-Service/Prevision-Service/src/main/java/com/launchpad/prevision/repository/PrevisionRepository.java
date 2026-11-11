@@ -2,6 +2,8 @@ package com.launchpad.prevision.repository;
 
 import com.launchpad.prevision.domain.PrevisionFinanciere;
 import com.launchpad.prevision.domain.ProjectionFinanciere;
+import com.launchpad.prevision.domain.StatutValidation;
+import com.launchpad.prevision.domain.ValidationPrevision;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,4 +26,10 @@ public interface PrevisionRepository {
 
     /** Remplace toutes les projections de la prévision par celles fournies. */
     void replaceProjections(UUID previsionId, List<ProjectionFinanciere> projections);
+
+    /** Enregistre l'avis du financier (ou remet la prévision EN_ATTENTE). */
+    void updateValidation(UUID previsionId, ValidationPrevision validation);
+
+    /** Nombre de prévisions du projet dans ce statut. */
+    long countByProjetIdAndStatut(Long projetId, StatutValidation statut);
 }

@@ -86,7 +86,7 @@ class OutilsFinanciersTest {
                 org.mockito.ArgumentMatchers.eq("Quelle est ma marge ?"), org.mockito.ArgumentMatchers.any(Object[].class)))
                 .thenReturn("Votre marge est de 60 %.");
         AssistantFinancier assistant = new AssistantFinancier(llm, gestionPrevisions, new CalculateurMarge(),
-                documents);
+                documents, com.launchpad.prevision.service.acces.AccesFixtures.sansControle());
 
         assertThat(assistant.repondre(PROJET_ID, "Quelle est ma marge ?")).isEqualTo("Votre marge est de 60 %.");
         verify(llm).converser(org.mockito.ArgumentMatchers.eq(AssistantFinancier.CONSIGNES),

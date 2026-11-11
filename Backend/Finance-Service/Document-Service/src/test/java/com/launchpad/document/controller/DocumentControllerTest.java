@@ -37,6 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(DocumentController.class)
+@org.springframework.context.annotation.Import(com.launchpad.document.config.SecuriteConfig.class)
 class DocumentControllerTest {
 
     @Autowired
@@ -48,7 +49,8 @@ class DocumentControllerTest {
     private static DocumentFinancier document() {
         return DocumentFinancier.creer(PROJET_ID, TypeDocument.BUSINESS_PLAN, new ContenuDocument(
                 "Business plan - période 2026", List.of(new SectionDocument("Marges", List.of("Montant", "Taux (%)"),
-                List.of(LigneDocument.de("Marge brute", montant("60000.00"), montant("60.00"))), List.of()))));
+                List.of(LigneDocument.de("Marge brute", montant("60000.00"), montant("60.00"))), List.of()))),
+                UUID.randomUUID());
     }
 
     @Test
@@ -199,5 +201,50 @@ class DocumentControllerTest {
         mockMvc.perform(delete("/api/finance/documents/{id}", id))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON));
+    }
+
+    @Test
+    void post_certification_renvoie_le_document_certifie() throws Exception {
+        DocumentFinancier certifie = document().certifier(new com.launchpad.document.domain.Certification(
+                "conseil@launchpad.tn", "Conforme", java.time.Instant.parse("2026-11-10T10:00:00Z")), "VALIDEE");
+        when(gestionDocuments.certifierDocument(certifie.id(), "Conforme")).thenReturn(certifie);
+
+        mockMvc.perform(post("/api/finance/documents/{id}/certification", certifie.id())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"commentaire\":\"Conforme\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.certification.auteur").value("conseil@launchpad.tn"))
+                .andExpect(jsonPath("$.certification.commentaire").value("Conforme"));
+    }
+
+    @Test
+    void post_certification_sans_corps_est_accepte() throws Exception {
+        DocumentFinancier certifie = document().certifier(new com.launchpad.document.domain.Certification(
+                "conseil@launchpad.tn", null, java.time.Instant.parse("2026-11-10T10:00:00Z")), "VALIDEE");
+        when(gestionDocuments.certifierDocument(certifie.id(), null)).thenReturn(certifie);
+
+        mockMvc.perform(post("/api/finance/documents/{id}/certification", certifie.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.certification.auteur").value("conseil@launchpad.tn"));
+    }
+
+    @Test
+    void certification_refusee_renvoie_403() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(gestionDocuments.certifierDocument(id, null))
+                .thenThrow(new com.launchpad.document.exception.AccesRefuse("Seul un financier invité"));
+
+        mockMvc.perform(post("/api/finance/documents/{id}/certification", id))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.title").value("Accès refusé"));
+    }
+
+    @Test
+    void un_document_non_certifie_a_une_certification_nulle() throws Exception {
+        DocumentFinancier document = document();
+        when(gestionDocuments.consulterDocument(document.id())).thenReturn(document);
+
+        mockMvc.perform(get("/api/finance/documents/{id}", document.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.certification").isEmpty());
     }
 }

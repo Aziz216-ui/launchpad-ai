@@ -4,7 +4,7 @@ import com.launchpad.document.config.RabbitMQConfig;
 import com.launchpad.document.domain.ContenuDocument;
 import com.launchpad.document.domain.DocumentFinancier;
 import com.launchpad.document.domain.DocumentGenere;
-import com.launchpad.document.domain.NotificationDocument;
+import com.launchpad.document.domain.Notification;
 import com.launchpad.document.domain.TypeDocument;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.AmqpConnectException;
@@ -38,20 +38,21 @@ class EvenementsDocumentTest {
     // --- Producteur -------------------------------------------------------------------------
 
     @Test
-    void le_producteur_publie_sur_la_queue_par_son_nom() {
+    void le_producteur_publie_sur_l_exchange_finance_events() {
         RabbitTemplate rabbit = mock(RabbitTemplate.class);
         DocumentGenere evenement = evenement(PROJET_ID, "Business plan - période 2026");
 
         new PublicateurDocumentGenere(rabbit).publier(evenement);
 
-        verify(rabbit).convertAndSend(eq(RabbitMQConfig.DOCUMENT_GENERE_QUEUE), eq((Object) evenement));
+        verify(rabbit).convertAndSend(eq(RabbitMQConfig.EXCHANGE), eq(RabbitMQConfig.CLE_DOCUMENT_GENERE),
+                eq((Object) evenement));
     }
 
     @Test
     void broker_indisponible_n_interrompt_pas_l_appelant() {
         RabbitTemplate rabbit = mock(RabbitTemplate.class);
         doThrow(new AmqpConnectException(new IOException("refusé"))).when(rabbit)
-                .convertAndSend(any(String.class), any(Object.class));
+                .convertAndSend(any(String.class), any(String.class), any(Object.class));
 
         assertThatCode(() -> new PublicateurDocumentGenere(rabbit).publier(evenement(PROJET_ID, "t")))
                 .doesNotThrowAnyException();
@@ -66,7 +67,7 @@ class EvenementsDocumentTest {
 
         new DocumentGenereConsumer(journal).recevoir(evenement);
 
-        List<NotificationDocument> notifications = journal.notificationsDuProjet(PROJET_ID);
+        List<Notification> notifications = journal.notificationsDuProjet(PROJET_ID);
         assertThat(notifications).hasSize(1);
         assertThat(notifications.get(0).documentId()).isEqualTo(evenement.documentId());
         assertThat(notifications.get(0).message()).contains("Plan de trésorerie - période 2026");
@@ -93,7 +94,7 @@ class EvenementsDocumentTest {
         journal.enregistrer(evenement(autreProjet, "ailleurs"));
         journal.enregistrer(second);
 
-        assertThat(journal.notificationsDuProjet(PROJET_ID)).extracting(NotificationDocument::documentId)
+        assertThat(journal.notificationsDuProjet(PROJET_ID)).extracting(Notification::documentId)
                 .containsExactly(second.documentId(), premier.documentId());
         assertThat(journal.notificationsDuProjet(autreProjet)).hasSize(1);
     }

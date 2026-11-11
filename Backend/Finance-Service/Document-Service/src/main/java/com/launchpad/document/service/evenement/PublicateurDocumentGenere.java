@@ -11,7 +11,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
- * Producteur RabbitMQ. Il publie sur la queue par son nom, sans la déclarer.
+ * Producteur RabbitMQ : publie sur l'exchange topic finance.events avec la clé finance.document.genere.
  * <p>
  * La publication a lieu APRÈS le commit de la transaction qui a enregistré le document : aucun événement n'est
  * émis pour un document finalement annulé. Si le broker est indisponible, l'erreur est journalisée mais ne remet
@@ -33,7 +33,7 @@ public class PublicateurDocumentGenere {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void publier(DocumentGenere evenement) {
         try {
-            rabbitTemplate.convertAndSend(RabbitMQConfig.DOCUMENT_GENERE_QUEUE, evenement);
+            rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.CLE_DOCUMENT_GENERE, evenement);
             LOG.info("Événement DocumentGenere publié sur {} : document {}", RabbitMQConfig.DOCUMENT_GENERE_QUEUE,
                     evenement.documentId());
         } catch (AmqpException e) {

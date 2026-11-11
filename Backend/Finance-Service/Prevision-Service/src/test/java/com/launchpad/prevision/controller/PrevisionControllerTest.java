@@ -34,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PrevisionController.class)
+@org.springframework.context.annotation.Import(com.launchpad.prevision.config.SecuriteConfig.class)
 class PrevisionControllerTest {
 
     @Autowired
@@ -198,5 +199,50 @@ class PrevisionControllerTest {
         mockMvc.perform(get("/api/finance/previsions/{id}/projections", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].chiffreAffaires").value(110000.00));
+    }
+
+    @Test
+    void post_avis_renvoie_la_prevision_avec_sa_validation() throws Exception {
+        PrevisionFinanciere p = prevision().avecValidation(com.launchpad.prevision.domain.ValidationPrevision.avis(
+                com.launchpad.prevision.domain.StatutValidation.REJETEE, "Croissance irréaliste", "conseil@x.tn",
+                java.time.Instant.parse("2026-11-10T10:00:00Z")));
+        when(gestionPrevisions.donnerAvis(p.id(), com.launchpad.prevision.domain.StatutValidation.REJETEE,
+                "Croissance irréaliste")).thenReturn(p);
+
+        mockMvc.perform(post("/api/finance/previsions/{id}/avis", p.id()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"decision\":\"REJETEE\",\"commentaire\":\"Croissance irréaliste\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.validation.statut").value("REJETEE"))
+                .andExpect(jsonPath("$.validation.auteur").value("conseil@x.tn"));
+    }
+
+    @Test
+    void post_avis_sans_decision_renvoie_400() throws Exception {
+        mockMvc.perform(post("/api/finance/previsions/{id}/avis", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"commentaire\":\"ok\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erreurs.decision").exists());
+        verifyNoInteractions(gestionPrevisions);
+    }
+
+    @Test
+    void acces_refuse_renvoie_403_problem_detail() throws Exception {
+        when(gestionPrevisions.listerPrevisions(PROJET_ID))
+                .thenThrow(new com.launchpad.prevision.exception.AccesRefuse("Vous n'avez pas accès au projet 1"));
+
+        mockMvc.perform(get("/api/finance/projets/{id}/previsions", PROJET_ID))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Accès refusé"));
+    }
+
+    @Test
+    void une_prevision_expose_son_statut_de_validation() throws Exception {
+        PrevisionFinanciere p = prevision();
+        when(gestionPrevisions.consulterPrevision(p.id())).thenReturn(p);
+
+        mockMvc.perform(get("/api/finance/previsions/{id}", p.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.validation.statut").value("EN_ATTENTE"));
     }
 }

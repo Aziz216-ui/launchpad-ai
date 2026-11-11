@@ -50,11 +50,35 @@ public class PrevisionDistanteFeign implements PrevisionDistante {
         }
     }
 
+    @Override
+    public String statutValidation(UUID previsionId) {
+        try {
+            SyntheseJson.PrevisionJson json = previsions.prevision(previsionId);
+            if (json == null || json.validation() == null || json.validation().statut() == null) {
+                throw new ServiceIndisponible("Réponse inattendue du Prevision-Service");
+            }
+            return json.validation().statut();
+        } catch (FeignException e) {
+            if (e.status() == 404) {
+                throw new PrevisionIntrouvable(previsionId);
+            }
+            if (e.status() >= 400 && e.status() < 500) {
+                throw new ServiceIndisponible("Prevision-Service a refusé la requête : " + e.status());
+            }
+            LOG.warn("Prevision-Service injoignable ou en erreur (prévision {})", previsionId, e);
+            throw new ServiceIndisponible("Le service des prévisions est momentanément indisponible");
+        }
+    }
+
     /** Forme JSON de SyntheseResponse (Prevision-Service) ; les champs inconnus sont ignorés. */
     public record SyntheseJson(PrevisionJson prevision, MargesJson marges, EcartJson ecart) {
 
-        public record PrevisionJson(String periode, BigDecimal chiffreAffaires, BigDecimal coutsDirects, BigDecimal depenses,
-                             BigDecimal resultat, List<ProjectionJson> projections) {
+        public record PrevisionJson(UUID previsionId, String periode, BigDecimal chiffreAffaires,
+                                    BigDecimal coutsDirects, BigDecimal depenses, BigDecimal resultat,
+                                    List<ProjectionJson> projections, ValidationJson validation) {
+        }
+
+        public record ValidationJson(String statut) {
         }
 
         public record ProjectionJson(int annee, BigDecimal chiffreAffaires, BigDecimal depenses, BigDecimal marge) {
@@ -75,7 +99,7 @@ public class PrevisionDistanteFeign implements PrevisionDistante {
             return new SynthesePrevision(prevision.periode(), prevision.chiffreAffaires(), prevision.coutsDirects(),
                     prevision.depenses(), prevision.resultat(), marges.margeBrute(), marges.margeNette(),
                     marges.tauxMargeBrute(), marges.tauxMargeNette(), ecart.montant(), ecart.pourcentage(),
-                    ecart.statut(), projections);
+                    ecart.statut(), projections, prevision.previsionId());
         }
     }
 }

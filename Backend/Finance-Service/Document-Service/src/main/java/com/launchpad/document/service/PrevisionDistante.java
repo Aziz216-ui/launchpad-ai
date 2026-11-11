@@ -16,4 +16,12 @@ public interface PrevisionDistante {
      * @throws com.launchpad.document.exception.ServiceIndisponible  le Prevision-Service ne répond pas
      */
     SynthesePrevision derniereSynthese(Long projetId);
+
+    /**
+     * Statut de validation de la prévision (EN_ATTENTE, VALIDEE ou REJETEE).
+     *
+     * @throws com.launchpad.document.exception.PrevisionIntrouvable la prévision n'existe plus
+     * @throws com.launchpad.document.exception.ServiceIndisponible  le Prevision-Service ne répond pas
+     */
+    String statutValidation(java.util.UUID previsionId);
 }

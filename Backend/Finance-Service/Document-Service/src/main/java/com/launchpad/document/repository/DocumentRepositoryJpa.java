@@ -1,7 +1,9 @@
 package com.launchpad.document.repository;
 
+import com.launchpad.document.domain.Certification;
 import com.launchpad.document.domain.DocumentFinancier;
 import com.launchpad.document.entities.DocumentEntity;
+import com.launchpad.document.exception.DocumentIntrouvable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +28,7 @@ public class DocumentRepositoryJpa implements DocumentRepository {
     @Transactional
     public DocumentFinancier save(DocumentFinancier document) {
         documents.save(new DocumentEntity(document.id(), document.projetId(), document.type(), document.contenu(),
-                document.creeLe()));
+                document.creeLe(), document.previsionId()));
         return document;
     }
 
@@ -48,7 +50,17 @@ public class DocumentRepositoryJpa implements DocumentRepository {
         documents.deleteById(documentId);
     }
 
+    @Override
+    @Transactional
+    public void updateCertification(UUID documentId, Certification c) {
+        documents.findById(documentId).orElseThrow(() -> new DocumentIntrouvable(documentId))
+                .certifier(c.auteur(), c.commentaire(), c.le());
+    }
+
     private static DocumentFinancier versDomaine(DocumentEntity e) {
-        return new DocumentFinancier(e.getId(), e.getProjetId(), e.getType(), e.getContenu(), e.getCreatedAt());
+        Certification certification = e.getCertifiePar() == null ? null
+                : new Certification(e.getCertifiePar(), e.getCommentaireCertification(), e.getCertifieLe());
+        return new DocumentFinancier(e.getId(), e.getProjetId(), e.getType(), e.getContenu(), e.getCreatedAt(),
+                e.getPrevisionId(), certification);
     }
 }

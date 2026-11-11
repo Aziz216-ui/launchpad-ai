@@ -4,6 +4,7 @@ import com.launchpad.prevision.exception.DonneesInvalides;
 import com.launchpad.prevision.service.CalculateurMarge;
 import com.launchpad.prevision.service.DocumentDistant;
 import com.launchpad.prevision.service.GestionPrevisions;
+import com.launchpad.prevision.service.acces.ControleAcces;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -26,13 +27,15 @@ public class AssistantFinancier {
     private final GestionPrevisions gestionPrevisions;
     private final CalculateurMarge calculateurMarge;
     private final DocumentDistant documents;
+    private final ControleAcces controle;
 
     public AssistantFinancier(ClientLLM llm, GestionPrevisions gestionPrevisions, CalculateurMarge calculateurMarge,
-                              DocumentDistant documents) {
+                              DocumentDistant documents, ControleAcces controle) {
         this.llm = llm;
         this.gestionPrevisions = gestionPrevisions;
         this.calculateurMarge = calculateurMarge;
         this.documents = documents;
+        this.controle = controle;
     }
 
     public String repondre(Long projetId, String message) {
@@ -45,6 +48,8 @@ public class AssistantFinancier {
         if (message.length() > MESSAGE_LONGUEUR_MAX) {
             throw new DonneesInvalides("message ne doit pas dépasser " + MESSAGE_LONGUEUR_MAX + " caractères");
         }
+        // L'assistant peut générer des documents : réservé au propriétaire du projet.
+        controle.exigerEcriture(projetId);
         return llm.converser(CONSIGNES, message,
                 new OutilsFinanciers(projetId, gestionPrevisions, calculateurMarge, documents));
     }

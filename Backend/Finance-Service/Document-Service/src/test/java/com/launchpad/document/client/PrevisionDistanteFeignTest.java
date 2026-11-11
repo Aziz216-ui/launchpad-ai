@@ -177,4 +177,30 @@ class PrevisionDistanteFeignTest {
                 .isInstanceOf(ServiceIndisponible.class)
                 .hasMessageNotContaining("localhost");
     }
+
+    private AccesDistantFeign acces(String adresse) {
+        return new AccesDistantFeign(feign(PrevisionFeignClient.class, adresse));
+    }
+
+    @Test
+    void lit_les_droits_de_l_utilisateur_sur_le_projet() {
+        repondre("/api/finance/projets/" + PROJET_ID + "/acces", 200,
+                "{\"projetId\":1,\"role\":\"FINANCIER\",\"lecture\":true,\"ecriture\":false,\"validation\":true}");
+
+        com.launchpad.document.domain.DroitsProjet droits = acces(adresseServeur()).droits(PROJET_ID);
+
+        assertThat(droits.lecture()).isTrue();
+        assertThat(droits.ecriture()).isFalse();
+        assertThat(droits.validation()).isTrue();
+    }
+
+    @Test
+    void droits_refuses_ou_service_eteint_n_accordent_jamais_l_acces() throws IOException {
+        repondre("/api/finance/projets/" + PROJET_ID + "/acces", 401, "{}");
+
+        assertThatThrownBy(() -> acces(adresseServeur()).droits(PROJET_ID))
+                .isInstanceOf(com.launchpad.document.exception.AccesRefuse.class);
+        assertThatThrownBy(() -> acces("http://localhost:" + portLibre()).droits(PROJET_ID))
+                .isInstanceOf(ServiceIndisponible.class);
+    }
 }

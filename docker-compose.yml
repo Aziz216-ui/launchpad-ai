@@ -688,6 +688,13 @@ services:
       DB_PASSWORD: prevision
       EUREKA_SERVER_URL: http://eureka:8761/eureka/
       EUREKA_INSTANCE_HOST: prevision-service
+      # Rôles par projet (propriétaire / financier) : jeton Keycloak vérifié aussi par le service
+      JWT_ENABLED: "true"
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/launchpad/protocol/openid-connect/certs
+      # Événements du suivi des prévisions (exchange finance.events)
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
       SPRING_AI_MODEL_CHAT: none
       XAI_API_KEY: ${XAI_API_KEY:-}
     depends_on:
@@ -704,6 +711,8 @@ services:
       DB_PASSWORD: document
       EUREKA_SERVER_URL: http://eureka:8761/eureka/
       EUREKA_INSTANCE_HOST: document-service
+      JWT_ENABLED: "true"
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/launchpad/protocol/openid-connect/certs
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_USERNAME: ${RABBITMQ_USER:-guest}
       RABBITMQ_USER: ${RABBITMQ_USER:-guest}

@@ -11,6 +11,7 @@ import java.util.UUID;
 /**
  * Prévision financière d'un projet sur une période. Relation 1 → * avec {@link ProjectionFinanciere}.
  * Les dépenses incluent les coûts directs (coutsDirects ≤ depenses).
+ * {@code validation} porte l'avis du financier (EN_ATTENTE tant qu'aucun avis n'a été donné).
  */
 public record PrevisionFinanciere(
         UUID id,
@@ -20,9 +21,18 @@ public record PrevisionFinanciere(
         BigDecimal coutsDirects,
         BigDecimal depenses,
         Instant creeLe,
-        List<ProjectionFinanciere> projections) {
+        List<ProjectionFinanciere> projections,
+        ValidationPrevision validation) {
 
     public static final int PERIODE_LONGUEUR_MAX = 50;
+
+    /** Prévision sans avis (EN_ATTENTE). */
+    public PrevisionFinanciere(UUID id, Long projetId, String periode, BigDecimal chiffreAffaires,
+                               BigDecimal coutsDirects, BigDecimal depenses, Instant creeLe,
+                               List<ProjectionFinanciere> projections) {
+        this(id, projetId, periode, chiffreAffaires, coutsDirects, depenses, creeLe, projections,
+                ValidationPrevision.EN_ATTENTE);
+    }
 
     public PrevisionFinanciere {
         if (id == null) {
@@ -48,6 +58,7 @@ public record PrevisionFinanciere(
             throw new DonneesInvalides("La date de création est obligatoire");
         }
         projections = projections == null ? List.of() : List.copyOf(projections);
+        validation = validation == null ? ValidationPrevision.EN_ATTENTE : validation;
     }
 
     /** Nouvelle prévision (identifiant généré, sans projection). */
@@ -64,6 +75,11 @@ public record PrevisionFinanciere(
 
     public PrevisionFinanciere avecProjections(List<ProjectionFinanciere> nouvellesProjections) {
         return new PrevisionFinanciere(id, projetId, periode, chiffreAffaires, coutsDirects, depenses, creeLe,
-                nouvellesProjections);
+                nouvellesProjections, validation);
+    }
+
+    public PrevisionFinanciere avecValidation(ValidationPrevision nouvelleValidation) {
+        return new PrevisionFinanciere(id, projetId, periode, chiffreAffaires, coutsDirects, depenses, creeLe,
+                projections, nouvelleValidation);
     }
 }

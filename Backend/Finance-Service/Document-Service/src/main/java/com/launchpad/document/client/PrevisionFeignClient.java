@@ -4,7 +4,6 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-import java.util.UUID;
 
 /**
  * Client Feign du Prevision-Service (communication SYNCHRONE). Le service est résolu par son nom dans Eureka
@@ -16,4 +15,12 @@ public interface PrevisionFeignClient {
 
     @GetMapping("/api/finance/projets/{projetId}/synthese")
     PrevisionDistanteFeign.SyntheseJson synthese(@PathVariable("projetId") Long projetId);
+
+    /** Une prévision (dont son statut de validation). */
+    @GetMapping("/api/finance/previsions/{previsionId}")
+    PrevisionDistanteFeign.SyntheseJson.PrevisionJson prevision(@PathVariable("previsionId") java.util.UUID previsionId);
+
+    /** Droits de l'utilisateur (jeton relayé par RelaisJetonFeign) sur le projet. */
+    @GetMapping("/api/finance/projets/{projetId}/acces")
+    AccesDistantFeign.DroitsJson acces(@PathVariable("projetId") Long projetId);
 }
