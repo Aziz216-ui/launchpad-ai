@@ -174,16 +174,27 @@ class PersonaViewSet(viewsets.ModelViewSet):
 # --- Analyse ------------------------------------------------------------------
 
 class AnalyseProjetView(APIView):
-    """Résumé du marché pour un projet (appelé notamment par le AI-Service)."""
+    """
+    Résumé du marché pour un projet (appelé notamment par le AI-Service).
+
+    - Appel interne sans jeton (AI-Service, consumers) et ADMIN : toutes les études du projet.
+    - Entrepreneur (jeton transmis par la gateway) : seulement SES études du projet ; s'il n'en a
+      aucune, réponse vide normale (listes vides, niveau "inconnu").
+    Le format de la réponse est le même dans tous les cas.
+    """
 
     @extend_schema(
         responses={200: AnalyseProjetSerializer, **ERREURS},
         summary="Analyse du marché d'un projet",
         description=(
             "Toujours 200 : un projet sans étude renvoie des listes vides "
-            "et niveau_concurrence = 'inconnu'. 503 seulement si un service appelé est arrêté."
+            "et niveau_concurrence = 'inconnu'. 503 seulement si un service appelé est arrêté. "
+            "Avec le jeton d'un entrepreneur, seules ses propres études du projet sont prises en compte "
+            "(appel interne sans jeton et ADMIN : toutes)."
         ),
     )
     def get(self, request, projet_id):
-        return Response(services.analyser_projet(projet_id))
+        filtrer = proprietaire_a_filtrer(request) is not None
+        return Response(services.analyser_projet(
+            projet_id, etudes_visibles=etudes_visibles(request) if filtrer else None))
 

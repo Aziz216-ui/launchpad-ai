@@ -18,6 +18,8 @@ from reportlab.platypus import (
     KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle,
 )
 
+from market_commun.formats import montant, pourcentage
+
 LIBELLES = {
     "brouillon": "Brouillon", "finalisee": "Finalisée",
     "positif": "Positif", "negatif": "Négatif", "neutre": "Neutre",
@@ -48,10 +50,7 @@ def _texte(valeur):
     return escape(str(valeur)).replace("\n", "<br/>")
 
 
-def _nombre(valeur, suffixe=""):
-    if valeur is None:
-        return "—"
-    return f"{valeur:,.2f}".replace(",", " ") + suffixe
+# Nombres au format français (market_commun.formats) : 2 000 000 €, 25 €, 12 %, 65,28 %, 400 € / mois
 
 
 def _libelle(code):
@@ -112,13 +111,13 @@ def generer_rapport_pdf(rapport):
         ["Secteur", _texte(marche["secteur"]["nom"])],
         ["Cible", _texte(marche["cible"])],
         ["Zone géographique", _texte(marche["zone_geographique"])],
-        ["Taille du marché", _nombre(marche["taille_marche"])],
-        ["Croissance annuelle", _nombre(marche["taux_croissance"], " %")],
+        ["Taille du marché", montant(marche["taille_marche"])],
+        ["Croissance annuelle", pourcentage(marche["taux_croissance"])],
     ], [4.5 * cm, largeur - 4.5 * cm], styles, entete=False))
 
     h.append(Paragraph("Offre et hypothèses", styles["h2"]))
     h.append(Paragraph(f"<b>Offre :</b> {_texte(rapport['offre']['description'])}", styles["texte"]))
-    h.append(Paragraph(f"<b>Prix proposé :</b> {_nombre(rapport['offre']['prix_propose'])}",
+    h.append(Paragraph(f"<b>Prix proposé :</b> {montant(rapport['offre']['prix_propose'])}",
                        styles["texte"]))
     h.append(Paragraph(f"<b>Hypothèses :</b> {_texte(rapport['hypotheses'])}", styles["texte"]))
 
@@ -136,8 +135,8 @@ def generer_rapport_pdf(rapport):
     if rapport["concurrents"]:
         h.append(_tableau(
             [["Concurrent", "Pays", "Prix moyen", "Part de marché", "Forces", "Faiblesses"]] + [
-                [_texte(c["nom"]), _texte(c["pays"]), _nombre(c["prix_moyen"]),
-                 _nombre(c["part_de_marche"], " %"), _texte(c["forces"]), _texte(c["faiblesses"])]
+                [_texte(c["nom"]), _texte(c["pays"]), montant(c["prix_moyen"]),
+                 pourcentage(c["part_de_marche"]), _texte(c["forces"]), _texte(c["faiblesses"])]
                 for c in rapport["concurrents"]
             ], [3.1 * cm, 2 * cm, 2 * cm, 2 * cm, (largeur - 9.1 * cm) / 2,
                 (largeur - 9.1 * cm) / 2], styles))
@@ -146,8 +145,8 @@ def generer_rapport_pdf(rapport):
 
     h.append(KeepTogether([Paragraph("Comparaison des prix", styles["h2"]), _tableau([
         ["Prix proposé", "Prix min", "Prix moyen", "Prix max", "Écart / moyenne", "Positionnement"],
-        [_nombre(prix["prix_propose"]), _nombre(prix["prix_min"]), _nombre(prix["prix_moyen"]),
-         _nombre(prix["prix_max"]), _nombre(prix["ecart_moyenne_pct"], " %"),
+        [montant(prix["prix_propose"]), montant(prix["prix_min"]), montant(prix["prix_moyen"]),
+         montant(prix["prix_max"]), pourcentage(prix["ecart_moyenne_pct"], signe=True),
          _libelle(prix["positionnement"])],
     ], [largeur / 6] * 6, styles)]))
 
@@ -161,7 +160,7 @@ def generer_rapport_pdf(rapport):
                 Paragraph(f"<b>{_texte(p['nom'])}</b> {('— ' + details) if details else ''}",
                           styles["texte"]),
                 _tableau([
-                    ["Revenu estimé", _nombre(p["revenu_estime"])],
+                    ["Revenu estimé", montant(p["revenu_estime"], par="mois")],
                     ["Besoins", _texte(p["besoins"])],
                     ["Frustrations", _texte(p["frustrations"])],
                     ["Comportement d'achat", _texte(p["comportement_achat"])],

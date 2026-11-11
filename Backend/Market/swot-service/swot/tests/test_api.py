@@ -133,7 +133,8 @@ class GenererSwotTests(EtudeServiceMockeMixin, APITestCase):
         self.assertIn(("force", "Équipe expérimentée"), descriptions)
         # Règles : prix sous la moyenne -> force ; concurrence élevée -> menace ;
         # croissance > 10 % -> opportunité ; aucun persona -> faiblesse
-        self.assertIn(("force", "Prix proposé inférieur de 20 % à la moyenne des concurrents."), descriptions)
+        # Format français : espace insécable avant « % »
+        self.assertIn(("force", "Prix proposé inférieur de 20 % à la moyenne des concurrents."), descriptions)
         self.assertIn(("faiblesse", "Cible clients non définie : aucun persona."), descriptions)
         self.assertIn(("opportunite", "Mobile : En hausse"), descriptions)
         self.assertIn(("menace", "Régulation"), descriptions)

@@ -124,12 +124,33 @@ class ProprietaireTests(APITestCase):
 
     # --- Contrat de l'AI-Service inchangé, jeton invalide ---------------------------
 
-    def test_analyse_projet_inchangee(self):
-        # Appelée en service à service : même résultat avec ou sans jeton
-        sans = self.client.get(reverse("analyse-projet", args=[1])).json()
-        avec = self.client.get(reverse("analyse-projet", args=[1]), **B).json()
-        self.assertEqual(sans, avec)
-        self.assertEqual(sans["nombre_etudes"], 2)
+    # --- GET /analyse/projet/{id}/ : appel interne, ADMIN, entrepreneur -------------------
+
+    def analyse(self, projet_id=1, **entetes):
+        response = self.client.get(reverse("analyse-projet", args=[projet_id]), **entetes)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        return response.json()
+
+    def test_analyse_projet_appel_interne_inchange(self):
+        # AI-Service et consumers appellent sans jeton : toutes les études du projet
+        data = self.analyse()
+        self.assertEqual(data["nombre_etudes"], 2)
+        self.assertEqual(sorted(e["titre"] for e in data["etudes"]), ["Étude d'Aziz", "Étude de Bouthaina"])
+
+    def test_analyse_projet_admin_inchange(self):
+        self.assertEqual(self.analyse(**ADMIN), self.analyse())
+
+    def test_analyse_projet_entrepreneur_ne_compte_que_ses_etudes(self):
+        data = self.analyse(**B)
+        self.assertEqual(data["nombre_etudes"], 1)
+        self.assertEqual([e["titre"] for e in data["etudes"]], ["Étude de Bouthaina"])
+        self.assertEqual(set(data), set(self.analyse()))  # mêmes clés : contrat inchangé
+
+    def test_analyse_projet_entrepreneur_sans_etude_reponse_vide(self):
+        sans_etude = connecte("sub-nouveau", "nouveau")
+        data = self.analyse(**sans_etude)
+        self.assertEqual(data, {"projet_id": 1, "nombre_etudes": 0, "etudes": [], "secteurs": [],
+                                "concurrents": [], "tendances": [], "niveau_concurrence": "inconnu"})
 
     def test_jeton_illisible_401(self):
         response = self.client.get(reverse("etude-list"), HTTP_AUTHORIZATION="Bearer pas-un-jwt")

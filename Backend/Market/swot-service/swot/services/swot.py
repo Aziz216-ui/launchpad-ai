@@ -14,13 +14,14 @@ from decimal import Decimal
 from django.db import transaction
 
 from clients import EtudeClient
+from market_commun.formats import pourcentage
 
 from ..models import ElementSWOT
 
 
 def _pourcentage(valeur):
-    """Formate un écart en % pour les textes (ex : -20.00 -> "20 %")."""
-    return f"{abs(Decimal(str(valeur))).normalize():f} %"
+    """Écart en % pour les textes, sans signe, au format français (ex : -20.00 -> "20 %", 33.33 -> "33,33 %")."""
+    return pourcentage(abs(Decimal(str(valeur))))
 
 
 def calculer_elements_swot(etude_id):

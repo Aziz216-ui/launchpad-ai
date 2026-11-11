@@ -14,6 +14,7 @@ lue sur SWOT-SERVICE (qui en détient les règles de génération).
 from decimal import Decimal
 
 from clients import ConcurrentClient, SecteurClient, SwotClient
+from market_commun.formats import pourcentage
 
 from ..models import EtudeMarche
 from .analyse import arrondir, concurrent_resume, decimal, niveau_des_concurrents, positionner_prix
@@ -47,8 +48,8 @@ def tendances_de(etude: EtudeMarche):
 
 
 def _pourcentage(valeur):
-    """Formate un écart en % pour les textes (ex : -20.00 -> "20 %")."""
-    return f"{abs(valeur).normalize():f} %"
+    """Écart en % pour les textes, sans signe, au format français (ex : -20.00 -> "20 %", 65.28 -> "65,28 %")."""
+    return pourcentage(abs(valeur))
 
 
 def niveau_concurrence_etude(etude: EtudeMarche):
@@ -163,7 +164,9 @@ def _swot_par_type(elements):
 def evaluer_potentiel(etude: EtudeMarche, niveau, prix, opportunites_menaces):
     """
     Potentiel commercial (faible / moyen / fort) à partir d'un score sur 7 :
-    croissance (0 à 2), concurrence (-1 à 2), prix (0 à 1), tendances (-1 à 1), personas (0 à 1).
+    croissance (-1 à 2), concurrence (-1 à 2), prix (0 à 1), tendances (-1 à 1), personas (0 à 1).
+    La somme des points peut être négative : le score affiché est borné entre 0 et SCORE_MAX,
+    la justification garde le détail de chaque point (+2, -1...).
     """
     score = 0
     justification = []
@@ -203,6 +206,7 @@ def evaluer_potentiel(etude: EtudeMarche, niveau, prix, opportunites_menaces):
         score += 1
         justification.append("Cible clients définie par des personas : +1")
 
+    score = max(0, min(SCORE_MAX, score))
     if score >= SEUIL_POTENTIEL_FORT:
         niveau_potentiel = "fort"
     elif score >= SEUIL_POTENTIEL_MOYEN:

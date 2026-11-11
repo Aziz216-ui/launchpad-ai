@@ -92,7 +92,7 @@ def _resume_etude(etude, noms, concurrents_par_id):
     }
 
 
-def analyser_projet(projet_id: int):
+def analyser_projet(projet_id: int, etudes_visibles=None):
     """
     Résumé du marché pour un projet : ses études, les secteurs concernés,
     les concurrents et tendances associés, et le niveau de concurrence.
@@ -109,7 +109,10 @@ def analyser_projet(projet_id: int):
     Un secteur supprimé dans SECTEUR-SERVICE (secteur_id null) est ignoré : nom de secteur
     null dans "etudes".
     """
-    etudes = list(EtudeMarche.objects.filter(projet_id=projet_id))
+    # etudes_visibles : études accessibles à l'utilisateur (ses études pour un entrepreneur) ;
+    # None = toutes (appel interne entre services, ADMIN). Même format de réponse dans tous les cas.
+    base = EtudeMarche.objects.all() if etudes_visibles is None else etudes_visibles
+    etudes = list(base.filter(projet_id=projet_id))
 
     secteur_ids = {e.secteur_id for e in etudes if e.secteur_id is not None}
     secteurs = SecteurClient().list(ids=secteur_ids) if secteur_ids else []  # triés par nom

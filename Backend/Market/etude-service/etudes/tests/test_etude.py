@@ -466,6 +466,48 @@ class RapportTests(EtudeBaseTestCase):
                                            concurrent_ids=self.concurrents, tendance_ids=[self.negative])
         data = self.client.get(self.url("rapport", etude)).json()
         self.assertEqual(data["potentiel_commercial"]["niveau"], "faible")
+        # Somme des points = -3 : le score affiché est borné à 0, le détail reste visible
+        self.assertEqual(data["potentiel_commercial"]["score"], 0)
+        self.assertEqual(data["potentiel_commercial"]["conclusion"], "Potentiel commercial faible (score 0/7).")
+        self.assertIn("Marché en recul (5 %/an) : -1", data["potentiel_commercial"]["justification"])
+        self.assertIn("Niveau de concurrence élevé : -1", data["potentiel_commercial"]["justification"])
+
+    def test_potentiel_concurrence_elevee_sans_croissance_zero_sur_7(self):
+        # Concurrence élevée (-1), croissance nulle (0), aucun autre point : 0/7, pas -1/7
+        etude = EtudeMarche.objects.create(projet_id=3, secteur_id=self.secteur, titre="Saturée",
+                                           taux_croissance=Decimal("0"), concurrent_ids=self.concurrents)
+        p = self.client.get(self.url("rapport", etude)).json()["potentiel_commercial"]
+        self.assertEqual((p["score"], p["score_max"], p["niveau"]), (0, 7, "faible"))
+        self.assertEqual(p["justification"], ["Niveau de concurrence élevé : -1"])
+
+    def test_textes_au_format_francais(self):
+        om = self.client.get(self.url("opportunites-menaces")).json()
+        textes = [e["description"] for e in om["opportunites"] + om["menaces"]]
+        self.assertIn("Marché en forte croissance (+12,5 % par an).", textes)
+        self.assertIn("Prix inférieur de 20 % à la moyenne des concurrents : "
+                      "argument fort pour attirer les clients.", textes)
+        justification = self.client.get(self.url("rapport")).json()["potentiel_commercial"]["justification"]
+        self.assertIn("Forte croissance du marché (+12,5 %/an) : +2", justification)
+        # Les nombres bruts du JSON restent des nombres
+        self.assertEqual(om["taux_croissance"], 12.5)
+
+    def test_rapport_pdf_nombres_au_format_francais(self):
+        self.etude.taille_marche = Decimal("2000000")
+        self.etude.prix_propose = Decimal("25")
+        self.etude.save()
+        Persona.objects.create(etude=self.etude, nom="Sami", revenu_estime=Decimal("400"))
+        textes = []
+        from etudes.services import rapport_pdf
+        vrai = rapport_pdf.Paragraph
+        with mock.patch.object(rapport_pdf, "Paragraph",
+                               side_effect=lambda texte, *a, **k: textes.append(str(texte)) or vrai(texte, *a, **k)):
+            response = self.client.get(self.url("rapport-pdf"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        S = " "
+        for attendu in (f"2{S}000{S}000{S}€", f"12,5{S}%", f"25{S}€", f"400{S}€ / mois",
+                        f"20{S}€", f"+25{S}%", f"30{S}%"):  # prix moyen 20 €, écart +25 %, part 30 %
+            self.assertIn(attendu, textes, attendu)
+        self.assertFalse([t for t in textes if ".00" in t], "aucun « .00 » dans le PDF")
 
     def test_rapport_etude_vide(self):
         etude = EtudeMarche.objects.create(projet_id=3, secteur_id=self.secteur, titre="Vide")
