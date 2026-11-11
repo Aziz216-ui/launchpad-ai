@@ -80,6 +80,10 @@ class RoutesTest extends GatewayTestSupport {
                 Map.entry("ai-conversation-service", "lb://CONVERSATION-SERVICE"),
                 Map.entry("document-service", "lb://DOCUMENT-SERVICE"),
                 Map.entry("prevision-service", "lb://PREVISION-SERVICE"),
+                Map.entry("finance-prevision-docs", "lb://PREVISION-SERVICE"),
+                Map.entry("finance-document-docs", "lb://DOCUMENT-SERVICE"),
+                Map.entry("finance-prevision-schema", "lb://PREVISION-SERVICE"),
+                Map.entry("finance-document-schema", "lb://DOCUMENT-SERVICE"),
                 Map.entry("user-service", "lb://user-service"),
                 Map.entry("user-docs", "lb://user-service"),
                 Map.entry("user-schema", "lb://user-service")));
@@ -136,7 +140,7 @@ class RoutesTest extends GatewayTestSupport {
         client.get().uri("/actuator/gateway/routes").exchange()
                 .expectStatus().isOk()
                 .expectBody()
-                .jsonPath("$.length()").isEqualTo(39)
+                .jsonPath("$.length()").isEqualTo(43)
                 .jsonPath("$[?(@.route_id == 'accounting-workspace-service')].uri").isEqualTo("lb://ACCOUNTING-WORKSPACE-SERVICE")
                 .jsonPath("$[?(@.route_id == 'lawyer-message-service')].uri").isEqualTo("lb://lawyer-message-service");
     }
