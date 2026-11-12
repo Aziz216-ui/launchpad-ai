@@ -1,0 +1,15 @@
+# =============================================================================
+# Configuration propre au Lawyer-Client-Service (spring.application.name = lawyer-client-service).
+# S'ajoute à application.yml (commun) ; servie par GET /lawyer-client-service/default.
+# Priorité : variables d'environnement > Config Server > application.yml du service.
+# =============================================================================
+
+launchpad:
+  configuration:
+    service: lawyer-client-service
+
+# Présentation de la documentation (Swagger UI)
+springdoc:
+  swagger-ui:
+    operations-sorter: method
+    tags-sorter: alpha

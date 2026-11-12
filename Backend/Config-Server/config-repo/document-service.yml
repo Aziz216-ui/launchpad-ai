@@ -1,0 +1,23 @@
+# =============================================================================
+# Configuration propre au Document-Service (spring.application.name = document-service).
+# S'ajoute à application.yml (commun) ; servie par GET /document-service/default.
+# Priorité : variables d'environnement > Config Server > application.yml du service.
+# =============================================================================
+
+launchpad:
+  configuration:
+    service: document-service
+
+spring:
+  cloud:
+    openfeign:
+      client:
+        config:
+          # Appels Feign vers le Prevision-Service (ms) : court pour les données,
+          # long pour l'analyse IA (appel au LLM)
+          prevision:
+            connect-timeout: 5000
+            read-timeout: 5000
+          prevision-analyse:
+            connect-timeout: 5000
+            read-timeout: 45000

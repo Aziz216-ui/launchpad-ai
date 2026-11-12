@@ -60,6 +60,11 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
+        <!-- Client du Config Server (Backend/Config-Server) : configuration centralisée au démarrage -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-config</artifactId>
+        </dependency>
 
         <!-- Spring Cloud OpenFeign -->
         <dependency>

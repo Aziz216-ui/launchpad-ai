@@ -8,6 +8,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
@@ -47,6 +49,16 @@ class ConfigServerApplicationTests {
         String config = get("/AUTRE-SERVICE/default");
         assertThat(config).contains("application.yml").doesNotContain("API-GATEWAY.yml");
         assertThat(config).contains("eureka.client.registry-fetch-interval-seconds");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "prevision-service", "document-service",
+            "lawyer-client-service", "lawyer-message-service", "lawyer-docreview-service"})
+    void sertLaConfigurationDesServicesFinanceEtAvocat(String service) throws Exception {
+        String config = get("/" + service + "/default");
+        assertThat(config).contains(service + ".yml", "application.yml");
+        assertThat(config).contains("\"launchpad.configuration.service\":\"" + service + "\"");
     }
 
     @Test

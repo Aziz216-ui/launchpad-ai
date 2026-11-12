@@ -9,15 +9,24 @@ Il sert la configuration des microservices depuis un seul endroit : le dossier
 | Port | `8888` (publié sur `127.0.0.1` uniquement) |
 | Nom Eureka | `CONFIG-SERVER` |
 | Profil | `native` : fichiers lus dans un dossier (pas de dépôt Git distant) |
-| Clients | **API Gateway** (`spring.config.import=optional:configserver:...`) |
+| Clients | **API Gateway**, **Finance** (`prevision-service`, `document-service`), **Espace avocat** (`lawyer-client-service`, `lawyer-message-service`, `lawyer-docreview-service`), tous via `spring.config.import=optional:configserver:...` |
 
 ## Fonctionnement
 
 ```
 config-repo/
-├── application.yml    # commun à TOUS les clients (Eureka, cache du load balancer...)
-└── API-GATEWAY.yml    # propre à l'application spring.application.name=API-GATEWAY
+├── application.yml                # commun à TOUS les clients (Eureka, cache du load balancer...)
+├── API-GATEWAY.yml                # gateway : timeouts du client HTTP
+├── prevision-service.yml          # Finance : timeouts Feign vers le Document-Service
+├── document-service.yml           # Finance : timeouts Feign vers le Prevision-Service (dont l'analyse IA)
+├── lawyer-client-service.yml      # Avocat : présentation Swagger UI
+├── lawyer-message-service.yml     # Avocat : reprise des publications RabbitMQ, Swagger UI
+└── lawyer-docreview-service.yml   # Avocat : reprise des publications RabbitMQ, Swagger UI
 ```
+
+Le nom du fichier est exactement `spring.application.name` (majuscules et minuscules comprises).
+Chaque fichier contient `launchpad.configuration.service: <nom>` : la valeur apparaît dans
+`/actuator/env` du service et prouve que sa configuration vient du Config Server.
 
 Au démarrage, un client appelle `GET /{spring.application.name}/{profil}` et reçoit
 `application.yml` + `{nom}.yml` (+ `{nom}-{profil}.yml` s'il existe).
@@ -33,6 +42,8 @@ configuration (vérifié : la gateway démarre sans lui).
 ```bash
 curl http://localhost:8888/API-GATEWAY/default     # commun + gateway
 curl http://localhost:8888/API-GATEWAY/eureka      # avec le profil "eureka"
+curl http://localhost:8888/prevision-service/default
+curl http://localhost:8888/lawyer-client-service/default
 curl http://localhost:8888/actuator/health
 ```
 
@@ -46,10 +57,11 @@ ConfigServerConfigDataLoader : Located environment: name=API-GATEWAY, profiles=[
 ## Modifier une configuration
 
 1. Modifier ou ajouter un fichier dans `config-repo/`. Pour un nouveau client, le fichier
-   s'appelle `<spring.application.name>.yml`, par exemple `PREVISION-SERVICE.yml`.
+   s'appelle `<spring.application.name>.yml`, par exemple `prevision-service.yml`.
 2. docker-compose monte `config-repo/` en lecture seule dans le conteneur : **pas besoin de
    reconstruire le Config Server**.
-3. Redémarrer le client : `docker restart launchpad-api-gateway`.
+3. Redémarrer le client : `docker restart launchpad-api-gateway` (ou `prevision-service`,
+   `lawyer-client-service`...).
 
 **Ne jamais mettre de secret** (mot de passe, clé d'API) dans `config-repo/` : il est versionné.
 Les secrets restent dans le `.env` racine (non suivi par Git).
