@@ -142,7 +142,8 @@ def assurer_compte_demo(compte, keycloak, rapport):
     """
     Compte de démo présent des deux côtés, sans doublon :
     - absent de Keycloak : créé avec son rôle et son mot de passe de démo ;
-    - présent : rôle applicatif corrigé s'il diffère (le mot de passe n'est pas modifié) ;
+    - présent : rôle applicatif corrigé s'il diffère, et mot de passe de démo réappliqué (un test
+      de « Mot de passe oublié » ne doit pas casser la connexion des comptes de démo) ;
     - profil absent : créé ; présent : keycloak_id et rôle corrigés.
     """
     kc = keycloak.find_user(compte.username)
@@ -160,6 +161,8 @@ def assurer_compte_demo(compte, keycloak, rapport):
             rapport.ajouter(compte.username, f"rôle Keycloak corrigé : {roles or 'aucun'} -> {compte.role}")
             if not rapport.dry_run:
                 keycloak.set_app_role(keycloak_id, compte.role)
+        if not rapport.dry_run:
+            keycloak.set_password(keycloak_id, compte.password)
 
     profil = _profil_par_username(compte.username)
     if profil is None:
