@@ -112,7 +112,7 @@ class JwtSecurityTest extends GatewayTestSupport {
             "/api/market/secteurs/docs/", "/api/market/concurrents/schema/",
             "/api/market/etudes/docs/", "/api/market/swot/schema/",
             "/api/comptable/docs", "/api/comptable/docs.json",
-            "/docs/legal", "/docs/legal-json",
+            "/docs/legal", "/docs/legal-json", "/api/legal/docs-json",
             "/api/market/secteurs/health/", "/api/market/concurrents/health/",
             "/api/market/etudes/health/", "/api/market/swot/health/", "/api/comptable/health",
             "/api/ai/health/", "/api/ai/docs/", "/api/ai/schema/",

@@ -501,6 +501,58 @@ launchpad:
     user:
       uri: ${USER_SERVICE_URI:lb://user-service}
 
+# -----------------------------------------------------------------------------
+# Swagger UI UNIQUE de la plateforme : http://localhost:8090/docs
+# Un menu déroulant (en haut à droite) liste la définition OpenAPI de chaque
+# microservice, chargée via les routes de docs ci-dessus (donc via la gateway).
+# /docs redirige vers /swagger-ui/index.html. Chemins publics dans SecurityConfig,
+# et distincts des chemins
+# /v3/api-docs/** et /swagger-ui/** que la gateway route vers les services.
+# -----------------------------------------------------------------------------
+springdoc:
+  api-docs:
+    path: /docs/gateway/api-docs          # définition propre de la gateway (vide) et swagger-config
+  swagger-ui:
+    path: /docs                            # redirige vers la page Swagger UI
+    disable-swagger-default-url: true
+    display-request-duration: true
+    urls-primary-name: "Finance - Prévisions"
+    urls:
+      - name: "Utilisateurs (User-Service)"
+        url: /docs/user/schema/
+      - name: "Étude de marché - Secteurs"
+        url: /api/market/secteurs/schema/
+      - name: "Étude de marché - Concurrents"
+        url: /api/market/concurrents/schema/
+      - name: "Étude de marché - Études"
+        url: /api/market/etudes/schema/
+      - name: "Étude de marché - SWOT"
+        url: /api/market/swot/schema/
+      - name: "Co-Fondateur IA - Projets"
+        url: /docs/ai/projet/schema/
+      - name: "Co-Fondateur IA - Recommandations"
+        url: /docs/ai/recommandation/schema/
+      - name: "Co-Fondateur IA - Conversations"
+        url: /docs/ai/conversation/schema/
+      - name: "Finance - Prévisions"
+        url: /docs/finance/prevision/v3/api-docs
+      - name: "Finance - Documents"
+        url: /docs/finance/document/v3/api-docs
+      - name: "Juridique - Documents légaux"
+        url: /api/legal/docs-json
+      - name: "Juridique - Clauses"
+        url: /api/clauses/docs-json
+      - name: "Juridique - Commentaires"
+        url: /api/commentaires/docs-json
+      - name: "Avocat - Clients"
+        url: /docs/lawyer/client/v3/api-docs
+      - name: "Avocat - Messages"
+        url: /docs/lawyer/message/v3/api-docs
+      - name: "Avocat - Revue de documents"
+        url: /docs/lawyer/docreview/v3/api-docs
+      - name: "Comptable - Espace de travail"
+        url: /api/comptable/docs.json
+
 # Actuator : /actuator/health et /actuator/gateway/routes
 management:
   endpoints:

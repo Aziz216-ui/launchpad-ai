@@ -48,6 +48,12 @@ public class SecurityConfig {
             // Docs des 3 services IA : la page /docs/ai/<service>/docs/ charge /api/ai/schema/
             "/api/ai/docs/**", "/api/ai/schema/**",
             "/docs/**",
+            // Swagger UI unique : /docs redirige vers /swagger-ui/index.html (fichiers statiques de springdoc)
+            "/swagger-ui/**",
+            // Définitions OpenAPI des services NestJS (juridique), listées par la page /docs
+            "/api/legal/docs", "/api/legal/docs/**", "/api/legal/docs-json",
+            "/api/clauses/docs", "/api/clauses/docs/**", "/api/clauses/docs-json",
+            "/api/commentaires/docs", "/api/commentaires/docs/**", "/api/commentaires/docs-json",
             // Docs avocat : la page /docs/lawyer/<service>/swagger-ui/ charge /v3/api-docs/
             "/v3/api-docs/**",
             // Docs utilisateurs : la page /docs/user/docs/ charge /api/schema/
