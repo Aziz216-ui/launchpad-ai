@@ -35,9 +35,6 @@ const LABEL_ROLE: Record<Role, string> = {
           <p>Rejoignez LaunchPad AI en tant que Fondateur de Startup ou Avocat.</p>
         </div>
 
-        <div class="alert error" *ngIf="errorMessage">
-          {{ errorMessage }}
-        </div>
         <div class="alert success" *ngIf="successMessage">
           {{ successMessage }}
         </div>
@@ -115,6 +112,11 @@ const LABEL_ROLE: Record<Role, string> = {
               [required]="true"
               [compact]="true"
             />
+          </div>
+
+          <!-- Près du bouton : visible sans remonter en haut du formulaire -->
+          <div class="alert error" *ngIf="errorMessage" role="alert">
+            {{ errorMessage }}
           </div>
 
           <button type="submit" class="btn-submit" [disabled]="loading">
@@ -367,8 +369,37 @@ export class RegisterComponent {
       },
       error: (err) => {
         this.loading = false;
-        this.errorMessage = err?.error?.error || 'Échec de la création du compte.';
+        this.errorMessage = messageErreurInscription(err?.error);
       }
     });
   }
+}
+
+/** Messages du User-Service (erreurs par champ, en anglais) traduits pour l'utilisateur. */
+const TRADUCTIONS: Record<string, string> = {
+  'A user with this username already exists.': "Ce nom d'utilisateur est déjà utilisé. Choisissez-en un autre ou connectez-vous.",
+  'A user with this email already exists.': 'Cette adresse e-mail est déjà utilisée. Connectez-vous ou utilisez « Mot de passe oublié ».',
+  'Ensure this field has at least 6 characters.': 'Le mot de passe doit contenir au moins 6 caractères.',
+  'Enter a valid email address.': 'Adresse e-mail invalide.',
+};
+
+/**
+ * Message lisible pour une erreur d'inscription. Le backend renvoie soit {"error": "..."},
+ * soit les erreurs de validation par champ : {"username": ["..."], "email": ["..."]}.
+ */
+function messageErreurInscription(corps: unknown): string {
+  if (corps && typeof corps === 'object') {
+    const erreurs = corps as Record<string, unknown>;
+    if (typeof erreurs['error'] === 'string') {
+      return erreurs['error'];
+    }
+    const messages = Object.values(erreurs)
+      .flatMap(v => (Array.isArray(v) ? v : [v]))
+      .filter((m): m is string => typeof m === 'string')
+      .map(m => TRADUCTIONS[m] ?? m);
+    if (messages.length) {
+      return [...new Set(messages)].join(' ');
+    }
+  }
+  return 'Échec de la création du compte.';
 }
