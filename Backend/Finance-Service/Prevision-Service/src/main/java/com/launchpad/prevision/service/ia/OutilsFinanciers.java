@@ -34,9 +34,11 @@ public class OutilsFinanciers {
     }
 
     @Tool(description = "Calcule les marges brute et nette (montants et taux en % du CA) du projet pour une période. "
-            + "Sans période, utilise la prévision la plus récente.")
-    public String calculerMarges(@ToolParam(description = "Période de la prévision, par exemple 2026", required = false)
-                                 String periode) {
+            + "Avec une chaîne vide comme période, utilise la prévision la plus récente.")
+    // Paramètre obligatoire (chaîne vide = la plus récente) : un paramètre facultatif amène certains modèles à
+    // envoyer null, que des fournisseurs à validation stricte (ex. Groq) rejettent (HTTP 400 tool_use_failed).
+    public String calculerMarges(@ToolParam(description = "Période de la prévision, par exemple 2026, "
+            + "ou chaîne vide \"\" pour la plus récente") String periode) {
         boolean sansPeriode = periode == null || periode.isBlank();
         try {
             PrevisionFinanciere prevision = gestionPrevisions.listerPrevisions(projetId).stream()

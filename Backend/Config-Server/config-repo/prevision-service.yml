@@ -1,0 +1,20 @@
+# =============================================================================
+# Configuration propre au Prevision-Service (spring.application.name = prevision-service).
+# S'ajoute à application.yml (commun) ; servie par GET /prevision-service/default.
+# Priorité : variables d'environnement > Config Server > application.yml du service.
+# =============================================================================
+
+launchpad:
+  configuration:
+    service: prevision-service
+
+spring:
+  cloud:
+    openfeign:
+      client:
+        config:
+          # Appels Feign vers le Document-Service : timeout court (ms), un service
+          # éteint ne bloque pas l'assistant financier
+          document:
+            connect-timeout: 5000
+            read-timeout: 5000

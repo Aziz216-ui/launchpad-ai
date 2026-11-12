@@ -48,6 +48,9 @@ class FauxKeycloak:
     def set_app_role(self, user_id, role):
         self.comptes[user_id]["roles"] = [role]
 
+    def set_password(self, user_id, password):
+        self.comptes[user_id].update(password=password, temporary=False)
+
     def create_account(self, username, email, password, role, first_name="", last_name="", temporary=False):
         self.crees.append({"username": username, "password": password, "role": role, "temporary": temporary})
         user_id = self.ajouter(username, role, email)
@@ -109,6 +112,19 @@ class SeedDemoUsersTests(TestCase):
         lancer("seed_demo_users", self.kc)
         self.assertEqual(self.kc.get_app_roles(kc_id), ["ENTREPRENEUR"])
         self.assertEqual(User.objects.get(username="adem").role, "ENTREPRENEUR")
+
+    def test_mot_de_passe_modifie_reapplique(self):
+        # Le cas constaté : mot de passe d'adem changé par un test de « Mot de passe oublié »
+        lancer("seed_demo_users", self.kc)
+        compte = self.kc.find_user("adem")
+        compte.update(password="ChangeParTest!1")
+        lancer("seed_demo_users", self.kc)
+        self.assertEqual((compte["password"], compte["temporary"]), ("Adem@2026!", False))
+
+    def test_dry_run_ne_reapplique_pas_le_mot_de_passe(self):
+        kc_id = self.kc.ajouter("adem", "ENTREPRENEUR")
+        lancer("seed_demo_users", self.kc, "--dry-run")
+        self.assertEqual(self.kc.comptes[kc_id]["password"], "x")
 
     def test_idempotent(self):
         lancer("seed_demo_users", self.kc)

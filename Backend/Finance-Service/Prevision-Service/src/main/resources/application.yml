@@ -1,6 +1,11 @@
 spring:
   application:
     name: prevision-service
+  # Configuration centralisée (Backend/Config-Server : config-repo/application.yml commun
+  # et config-repo/<spring.application.name>.yml). "optional" : si le Config Server est
+  # arrêté, le service démarre quand même avec les valeurs de ce fichier.
+  config:
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
   cloud:
     openfeign:
       client:

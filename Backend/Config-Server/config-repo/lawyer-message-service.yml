@@ -1,0 +1,24 @@
+# =============================================================================
+# Configuration propre au Lawyer-Message-Service (spring.application.name = lawyer-message-service).
+# S'ajoute à application.yml (commun) ; servie par GET /lawyer-message-service/default.
+# Priorité : variables d'environnement > Config Server > application.yml du service.
+# =============================================================================
+
+launchpad:
+  configuration:
+    service: lawyer-message-service
+
+spring:
+  rabbitmq:
+    template:
+      # Publication des événements : 3 tentatives espacées de 2 s si RabbitMQ ne répond pas
+      retry:
+        enabled: true
+        initial-interval: 2000ms
+        max-attempts: 3
+
+# Présentation de la documentation (Swagger UI)
+springdoc:
+  swagger-ui:
+    operations-sorter: alpha
+    tags-sorter: alpha

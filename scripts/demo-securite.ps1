@@ -1,4 +1,4 @@
-# Démonstration de la sécurité : tout passe par l'API Gateway (http://localhost:8090), protégée par Keycloak.
+﻿# Démonstration de la sécurité : tout passe par l'API Gateway (http://localhost:8090), protégée par Keycloak.
 #   1. sans jeton                       -> 401 Unauthorized
 #   2. inscription + connexion          -> jeton JWT émis par Keycloak (realm "launchpad")
 #   3. avec le jeton, via la gateway    -> 200 OK (marché, avocat, finance, IA, comptabilité)

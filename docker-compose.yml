@@ -78,8 +78,8 @@ x-ai-env: &ai-env
   RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
   LLM_PROVIDER: openai
   LLM_API_KEY: ${LLM_API_KEY:-}
-  LLM_MODEL: gpt-4o-mini
-  LLM_BASE_URL: https://api.openai.com/v1
+  LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+  LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
 
 x-compta-service: &compta-service
   restart: unless-stopped
@@ -772,6 +772,7 @@ services:
       DB_PASSWORD: prevision
       EUREKA_SERVER_URL: http://eureka:8761/eureka/
       EUREKA_INSTANCE_HOST: prevision-service
+      CONFIG_SERVER_URL: http://config-server:8888   # configuration centralisée (config-repo/)
       # Rôles par projet (propriétaire / financier) : jeton Keycloak vérifié aussi par le service
       JWT_ENABLED: "true"
       KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/launchpad/protocol/openid-connect/certs
@@ -787,6 +788,7 @@ services:
       XAI_MODEL: ${XAI_MODEL:-grok-4}
     depends_on:
       prevision-db: {condition: service_healthy}
+      config-server: {condition: service_healthy}
 
   document-service:
     <<: *java-commun
@@ -799,6 +801,7 @@ services:
       DB_PASSWORD: document
       EUREKA_SERVER_URL: http://eureka:8761/eureka/
       EUREKA_INSTANCE_HOST: document-service
+      CONFIG_SERVER_URL: http://config-server:8888   # configuration centralisée (config-repo/)
       JWT_ENABLED: "true"
       KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/launchpad/protocol/openid-connect/certs
       RABBITMQ_HOST: rabbitmq
@@ -809,6 +812,7 @@ services:
       - document_files:/app/data/documents
     depends_on:
       document-db: {condition: service_healthy}
+      config-server: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
 
   # ===========================================================================
@@ -872,8 +876,10 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
       EUREKA_SERVER_URL: http://eureka:8761/eureka
       EUREKA_INSTANCE_HOSTNAME: lawyer-client-service
+      CONFIG_SERVER_URL: http://config-server:8888   # configuration centralisée (config-repo/)
     depends_on:
       postgres-client: {condition: service_healthy}
+      config-server: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
 
   lawyer-message-service:
@@ -891,8 +897,10 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
       EUREKA_SERVER_URL: http://eureka:8761/eureka
       EUREKA_INSTANCE_HOSTNAME: lawyer-message-service
+      CONFIG_SERVER_URL: http://config-server:8888   # configuration centralisée (config-repo/)
     depends_on:
       postgres-message: {condition: service_healthy}
+      config-server: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
       lawyer-client-service: {condition: service_started}
 
@@ -911,8 +919,10 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
       EUREKA_SERVER_URL: http://eureka:8761/eureka
       EUREKA_INSTANCE_HOSTNAME: lawyer-docreview-service
+      CONFIG_SERVER_URL: http://config-server:8888   # configuration centralisée (config-repo/)
     depends_on:
       postgres-docreview: {condition: service_healthy}
+      config-server: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
       lawyer-client-service: {condition: service_started}
 

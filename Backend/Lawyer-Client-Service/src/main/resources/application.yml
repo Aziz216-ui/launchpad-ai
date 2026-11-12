@@ -4,6 +4,11 @@ server:
 spring:
   application:
     name: lawyer-client-service
+  # Configuration centralisée (Backend/Config-Server : config-repo/application.yml commun
+  # et config-repo/<spring.application.name>.yml). "optional" : si le Config Server est
+  # arrêté, le service démarre quand même avec les valeurs de ce fichier.
+  config:
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:lawyer_client_db}
     username: ${DB_USER:app_user}
